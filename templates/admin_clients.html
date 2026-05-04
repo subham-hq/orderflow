@@ -1,0 +1,212 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Client Directory
+{% endblock %}
+
+{% block main %}
+<div class="container py-4 text-start">
+
+    <div class="d-flex justify-content-between align-items-end mb-4 pb-3 border-bottom">
+        <div>
+            <h2 class="fw-bold text-dark mb-1">Client Directory</h2>
+            <p class="text-muted mb-0">Manage your active buyer network, provision new accounts, and configure custom B2B pricing.</p>
+        </div>
+        <div class="w-25">
+            <input type="text" class="form-control form-control-sm shadow-sm focus-ring-dark" id="clientSearch" placeholder="Search Company or Name...">
+        </div>
+    </div>
+
+    <ul class="nav nav-pills mb-4 filter-pills" id="clientTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active fw-semibold px-4 rounded-pill" id="directory-tab" data-bs-toggle="tab" data-bs-target="#directory-pane" type="button" role="tab">
+                Active Network
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link text-muted fw-semibold px-4 rounded-pill" id="provision-tab" data-bs-toggle="tab" data-bs-target="#provision-pane" type="button" role="tab">
+                + Provision New Client
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="clientTabsContent">
+
+        <div class="tab-pane fade show active" id="directory-pane" role="tabpanel" tabindex="0">
+            <div class="card border-0 shadow-sm rounded-3 overflow-hidden mb-5">
+                <div class="table-responsive" style="min-height: 400px;">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light text-muted" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                            <tr>
+                                <th class="py-3 px-4 fw-semibold border-bottom-0" style="width: 25%;">Organization</th>
+                                <th class="py-3 px-4 fw-semibold border-bottom-0" style="width: 20%;">Primary Contact</th>
+                                <th class="py-3 px-4 fw-semibold border-bottom-0" style="width: 15%;">Account Status</th>
+                                <th class="py-3 px-4 fw-semibold border-bottom-0" style="width: 15%;">Join Date</th>
+                                <th class="py-3 px-4 fw-semibold border-bottom-0 text-end" style="width: 25%;">Management Details</th>
+                            </tr>
+                        </thead>
+                        <tbody class="border-top-0">
+                            {% for client in clients %}
+                            <tr>
+                                <td class="py-3 px-4">
+                                    <div class="fw-bold text-dark" style="font-size: 0.95rem;">{{ client.company_name }}</div>
+                                    {% if client.has_custom_pricing %}
+                                        <span class="badge bg-dark bg-opacity-10 text-dark border border-dark border-opacity-25 mt-1" style="font-size: 0.65rem;">Custom Rates Applied</span>
+                                    {% endif %}
+                                </td>
+
+                                <td class="py-3 px-4">
+                                    <div class="fw-bold text-secondary" style="font-size: 0.85rem;">{{ client.first_name }} {{ client.last_name }}</div>
+                                    <div class="text-muted text-truncate" style="font-size: 0.75rem;">
+                                        <a href="mailto:{{ client.email }}" class="text-decoration-none text-muted email-link">{{ client.email }}</a>
+                                    </div>
+                                </td>
+
+                                <td class="py-3 px-4">
+                                    {% if client.is_active == 1 %}
+                                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-3 py-2 text-uppercase d-inline-flex align-items-center" style="font-size: 0.65rem; letter-spacing: 0.5px;">
+                                            <span class="rounded-circle bg-success me-2" style="width: 0.35rem; height: 0.35rem;"></span> Active
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill px-3 py-2 text-uppercase d-inline-flex align-items-center" style="font-size: 0.65rem; letter-spacing: 0.5px;">
+                                            <span class="rounded-circle bg-danger me-2" style="width: 0.35rem; height: 0.35rem;"></span> Suspended
+                                        </span>
+                                    {% endif %}
+                                </td>
+
+                                <td class="py-3 px-4 text-muted" style="font-size: 0.85rem;">
+                                    {{ client.created_at }}
+                                </td>
+
+                                <td class="py-3 px-4 text-end">
+                                    <div class="d-flex justify-content-end gap-2">
+
+                                        <form action="/admin/clients/toggle" method="POST" class="m-0">
+                                            <input type="hidden" name="user_id" value="{{ client.id }}">
+                                            {% if client.is_active == 1 %}
+                                                <button type="submit" class="btn btn-sm btn-outline-warning fw-bold shadow-sm action-btn" title="Suspend Login Access">Suspend</button>
+                                            {% else %}
+                                                <button type="submit" class="btn btn-sm btn-outline-success fw-bold shadow-sm action-btn" title="Restore Login Access">Restore</button>
+                                            {% endif %}
+                                        </form>
+
+                                        <form action="/admin/clients/delete" method="POST" class="m-0" onsubmit="return confirm('Are you sure you want to permanently delete this client? This cannot be undone.');">
+                                            <input type="hidden" name="client_id" value="{{ client.id }}">
+                                            <button type="submit" class="btn btn-sm btn-danger fw-bold shadow-sm action-btn" title="Permanently Delete Account">Delete</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center py-5 text-muted">
+                                    <div class="fs-1 mb-3">🤝</div>
+                                    <h5 class="fw-bold text-dark">No clients found</h5>
+                                    <p class="mb-4">Switch to the "Provision New Client" tab to register your first buyer.</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="provision-pane" role="tabpanel" tabindex="0">
+            <div class="card border-0 shadow-sm rounded-3 p-4 mb-5" style="max-width: 800px;">
+                <div class="d-flex align-items-center mb-4">
+                    <div class="bg-primary bg-opacity-10 text-primary rounded p-2 fs-5 me-3">🏢</div>
+                    <div>
+                        <h5 class="fw-bold text-dark mb-0">Register New Organization</h5>
+                        <p class="text-muted mb-0" style="font-size: 0.85rem;">This creates both the Company profile and their primary User login.</p>
+                    </div>
+                </div>
+
+                <form action="/admin/clients" method="POST">
+
+                    <div class="row g-4 mb-4">
+                        <div class="col-12">
+                            <label for="company_name" class="form-label text-muted fw-semibold" style="font-size: 0.85rem;">Registered Company Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control form-control-lg bg-light border-0 shadow-none focus-ring-dark" id="company_name" name="company_name" placeholder="e.g., Apex Manufacturing Pvt Ltd" required>
+                        </div>
+
+                        <div class="col-12"><hr class="text-muted opacity-25 my-1"></div>
+
+                        <div class="col-md-6">
+                            <label for="first_name" class="form-label text-muted fw-semibold" style="font-size: 0.85rem;">Representative First Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control form-control-lg bg-light border-0 shadow-none focus-ring-dark" id="first_name" name="first_name" placeholder="First name"required>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="last_name" class="form-label text-muted fw-semibold" style="font-size: 0.85rem;">Representative Last Name</label>
+                            <input type="text" class="form-control form-control-lg bg-light border-0 shadow-none focus-ring-dark" id="last_name" name="last_name" placeholder="Last name">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="email" class="form-label text-muted fw-semibold" style="font-size: 0.85rem;">Primary Email (Login ID) <span class="text-danger">*</span></label>
+                            <input type="email" class="form-control form-control-lg bg-light border-0 shadow-none focus-ring-dark" id="email" name="email" placeholder="e.g., orders@apexmfg.com" required>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="password" class="form-label text-muted fw-semibold" style="font-size: 0.85rem;">Temporary Password <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control form-control-lg bg-light border-0 shadow-none focus-ring-dark" id="password" name="password" placeholder="Create temporary password" required>
+                            <div class="form-text mt-1" style="font-size: 0.7rem;">The client can change this in their Settings.</div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mt-2 p-3 bg-light rounded-3 border">
+                        <div class="d-flex text-muted" style="font-size: 0.8rem; max-width: 60%;">
+                            <span class="me-2 fs-5">ℹ️</span>
+                            <p class="mb-0">After creating the account, you can set custom contracted pricing for this organization from the directory tab.</p>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-lg fw-bold shadow-sm px-4" style="font-size: 0.95rem;">
+                            Provision Account
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    // Standard Bootstrap Tab Initialization
+    document.addEventListener('DOMContentLoaded', function () {
+        var tabEls = document.querySelectorAll('button[data-bs-toggle="tab"]')
+        tabEls.forEach(function(tabEl) {
+            tabEl.addEventListener('click', function (event) {
+                event.preventDefault()
+                var tab = new bootstrap.Tab(tabEl)
+                tab.show()
+            })
+        })
+    });
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // 1. Initialize all standard tab clicking functionality
+        var tabEls = document.querySelectorAll('button[data-bs-toggle="tab"]');
+        tabEls.forEach(function(tabEl) {
+            tabEl.addEventListener('click', function (event) {
+                event.preventDefault();
+                var tab = new bootstrap.Tab(tabEl);
+                tab.show();
+            });
+        });
+
+        // 2. The Magic Trick: Check if the URL has the secret hash
+        if (window.location.hash === '#provision') {
+            // Find the "Provision New Client" tab button by its ID
+            var targetTab = document.querySelector('#provision-tab');
+            if (targetTab) {
+                // Tell Bootstrap to show this specific tab instantly
+                var tab = new bootstrap.Tab(targetTab);
+                tab.show();
+            }
+        }
+    });
+</script>
+{% endblock %}

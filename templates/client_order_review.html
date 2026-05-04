@@ -1,0 +1,83 @@
+{% extends "layout.html" %}
+
+{% block title %}Review Order{% endblock %}
+
+{% block main %}
+<div class="container py-4 text-start">
+
+    <div class="mb-4 pb-3 border-bottom">
+        <h2 class="fw-bold text-dark mb-1">Review Your Order</h2>
+        <p class="text-muted mb-0">Please verify your items and add any delivery instructions before submitting.</p>
+    </div>
+
+    <form action="/order/submit" method="POST">
+
+        {% for item in items %}
+            <input type="hidden" name="qty_{{ item.id }}" value="{{ item.quantity }}">
+        {% endfor %}
+
+        <div class="row g-4">
+
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
+                    <div class="table-responsive">
+                        <table class="table align-middle mb-0">
+                            <thead class="bg-light text-muted" style="font-size: 0.75rem; text-transform: uppercase;">
+                                <tr>
+                                    <th class="py-3 px-4 border-bottom-0" style="width: 50%;">Product</th>
+                                    <th class="py-3 px-4 border-bottom-0 text-center" style="width: 15%;">Qty</th>
+                                    <th class="py-3 px-4 border-bottom-0 text-end" style="width: 15%;">Unit Price</th>
+                                    <th class="py-3 px-4 border-bottom-0 text-end" style="width: 20%;">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody class="border-top-0">
+                                {% for item in items %}
+                                <tr>
+                                    <td class="py-3 px-4 text-dark fw-semibold">
+                                        {{ item.name }}
+                                        <div class="text-muted fw-normal" style="font-size: 0.75rem;">SKU: {{ item.sku }}</div>
+                                    </td>
+                                    <td class="py-3 px-4 text-center fw-bold text-dark">{{ item.quantity }}</td>
+                                    <td class="py-3 px-4 text-end text-muted">{{ item.base_price_formatted | inr }}</td>
+                                    <td class="py-3 px-4 text-end fw-bold text-dark">{{ item.line_total_formatted | inr }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm rounded-3 mt-4 p-4 bg-light">
+                    <label for="notes" class="fw-bold text-dark text-uppercase mb-2" style="letter-spacing: 0.5px; font-size: 0.85rem;">📝 Order Notes & Instructions</label>
+                    <textarea class="form-control bg-white border-0 shadow-sm focus-ring-dark" id="notes" name="notes" rows="3" placeholder="Add delivery instructions, PO numbers, or special requests here..."></textarea>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm rounded-3 p-4 position-sticky" style="top: 2rem;">
+                    <h6 class="fw-bold text-dark text-uppercase mb-4" style="letter-spacing: 0.5px; font-size: 0.85rem;">Order Summary</h6>
+
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="text-muted">Subtotal</span>
+                        <span class="fw-semibold text-dark">{{ grand_total | inr }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3 pb-3 border-bottom">
+                        <span class="text-muted">Estimated Tax</span>
+                        <span class="text-muted fst-italic" style="font-size: 0.85rem;">Calculated at billing</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-4">
+                        <span class="fw-bold text-dark fs-5">Total</span>
+                        <span class="fw-bold text-primary fs-5">{{ grand_total | inr }}</span>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg fw-bold shadow-sm action-btn">Confirm & Place Order</button>
+                        <a href="/catalog" class="btn btn-light border text-secondary fw-semibold mt-2 shadow-sm action-btn">← Back to Catalog</a>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,177 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Streamline Your B2B Sales
+{% endblock %}
+
+{% block body_class %}landing-page-bg{% endblock %}
+
+{% block main %}
+    <div class="row align-items-center py-5 mb-4 text-start">
+        <div class="col-lg-6">
+            <h1 class="display-4 fw-bold mb-3 text-dark">Modernize Your B2B Sales and Trade Operations</h1>
+            <p class="lead text-muted mb-4">
+                Empower your clients with a centralized purchasing dashboard. OrderFlow automates live quoting, processes secure integrated transactions, and maintains a transparent ledger for every account.
+            </p>
+            <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+                <a href="/register" class="btn btn-primary btn-lg px-4 me-md-2">Start Free Trial</a>
+                <a href="#contact" class="btn btn-outline-secondary btn-lg px-4">Book a Demo</a>
+            </div>
+        </div>
+        <div class="col-lg-6 mt-5 mt-lg-0 text-center">
+            <div class="border rounded-3 shadow-lg overflow-hidden">
+                <img src="{{ url_for('static', filename='images/dashboard-preview.jpg') }}"
+                    alt="OrderFlow Dashboard Preview"
+                    class="img-fluid w-100"
+                    style="display: block;">
+            </div>
+        </div>
+    </div>
+
+    <div id="features" class="py-5 text-start">
+        <div class="text-center mb-5">
+            <h2 class="fw-bold">Built for scale and reliability</h2>
+            <p class="text-muted">Everything you need to manage your supply chain from a single dashboard.</p>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm p-3">
+                    <div class="card-body">
+                        <div class="mb-3 text-primary fs-3">⚡</div>
+                        <h5 class="card-title fw-bold text-dark mb-3">Instant Price Quoting</h5>
+                        <p class="card-text text-muted">Allow your buyers to look up live wholesale pricing instantly. Eliminate the back-and-forth of phone calls and let clients make purchasing decisions on their own schedule.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm p-3">
+                    <div class="card-body">
+                        <div class="mb-3 text-primary fs-3">💳</div>
+                        <h5 class="card-title fw-bold text-dark mb-3">Client Wallet System</h5>
+                        <p class="card-text text-muted">Streamline purchasing with integrated client accounts. Buyers can securely manage their available funds, ensuring seamless and instant transaction approvals.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm p-3">
+                    <div class="card-body">
+                        <div class="mb-3 text-primary fs-3">📊</div>
+                        <h5 class="card-title fw-bold text-dark mb-3">Transparent Order History</h5>
+                        <p class="card-text text-muted">Give buyers complete visibility into their operations with a centralized ledger. Clients can easily track every past transaction, deposit, and order in one secure place.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <hr class="text-muted my-5">
+
+    <div class="row align-items-center py-5 text-start">
+        <div class="col-lg-6 order-lg-2 mb-5 mb-lg-0 px-lg-5">
+            <h2 class="fw-bold mb-3">Turn your sales data into actionable insights.</h2>
+            <p class="text-muted mb-4">Stop guessing what your clients need. OrderFlow provides real-time visualizations of your top-performing product categories and monthly revenue trends.</p>
+            <ul class="list-unstyled text-muted">
+                <li class="mb-2">✓ Forecast seasonal demand spikes</li>
+                <li class="mb-2">✓ Identify your most profitable B2B accounts</li>
+                <li class="mb-2">✓ Track month-over-month growth seamlessly</li>
+            </ul>
+        </div>
+        <div class="col-lg-6 order-lg-1">
+            <div class="card border-0 shadow-sm p-4">
+                <h6 class="fw-bold text-muted mb-4">Q3 Order Volume by Category</h6>
+
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="text-sm fw-semibold">Raw Materials</span>
+                        <span class="text-sm text-muted">4,200 units</span>
+                    </div>
+                    <div class="progress" style="height: 10px;">
+                        <div class="progress-bar bg-primary" role="progressbar" style="width: 85%"></div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="text-sm fw-semibold">Processed Goods</span>
+                        <span class="text-sm text-muted">2,850 units</span>
+                    </div>
+                    <div class="progress" style="height: 10px;">
+                        <div class="progress-bar" role="progressbar" style="width: 65%; background-color: #3b82f6;"></div>
+                    </div>
+                </div>
+
+                <div class="mb-1">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="text-sm fw-semibold">Packaging Supplies</span>
+                        <span class="text-sm text-muted">1,100 units</span>
+                    </div>
+                    <div class="progress" style="height: 10px;">
+                        <div class="progress-bar" role="progressbar" style="width: 35%; background-color: #93c5fd;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <hr class="text-muted my-5">
+
+    <div class="py-5 text-center">
+        <h2 class="fw-bold mb-5">From setup to first order in minutes</h2>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center mb-3 fw-bold fs-4" style="width: 60px; height: 60px;">1</div>
+                <h5 class="fw-bold">Upload Your Catalog</h5>
+                <p class="text-muted px-3">Import your existing products and establish custom pricing tiers for your different B2B clients.</p>
+            </div>
+            <div class="col-md-4">
+                <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center mb-3 fw-bold fs-4" style="width: 60px; height: 60px;">2</div>
+                <h5 class="fw-bold">Invite Your Buyers</h5>
+                <p class="text-muted px-3">Provide your clients with secure, individual portal access so they can browse and order 24/7.</p>
+            </div>
+            <div class="col-md-4">
+                <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center mb-3 fw-bold fs-4" style="width: 60px; height: 60px;">3</div>
+                <h5 class="fw-bold">Fulfill & Automate</h5>
+                <p class="text-muted px-3">Watch the orders flow into your dashboard. Approve, fulfill, and let the system update your inventory.</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="contact" class="bg-light rounded-3 p-5 mt-5 text-start shadow-sm border">
+        <div class="row align-items-center">
+            <div class="col-lg-6 mb-4 mb-lg-0">
+                <h3 class="fw-bold">Ready to modernize your operations?</h3>
+                <p class="text-muted mb-0">Get in touch with our team to see how OrderFlow can be customized to handle your specific distribution workflow.</p>
+            </div>
+            <div class="col-lg-6">
+                <form action="/" method="post">
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <input type="text" name="first_name" class="form-control" placeholder="First Name" required>
+                        </div>
+                        <div class="col-md-6">
+                            <input type="text" name="company_name" class="form-control" placeholder="Company Name" required>
+                        </div>
+                    </div>
+                    <div class="input-group mb-3">
+                        <input type="email" name="email" class="form-control" placeholder="Work Email" required>
+                        <button class="btn btn-primary px-4 fw-bold" type="submit">Get in Touch</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <footer class="mt-5 pt-4 border-top text-start text-muted" style="font-size: 0.9rem;">
+        <div class="row">
+            <div class="col-md-6 mb-3 mb-md-0">
+                <span class="fw-bold text-dark">OrderFlow</span> &copy; 2026. All rights reserved.
+            </div>
+            <div class="col-md-6 text-md-end">
+                <a href="/privacy_policy" class="text-muted text-decoration-none me-3">Privacy Policy</a>
+                <a href="/terms_of_service" class="text-muted text-decoration-none me-3">Terms of Service</a>
+                <a href="/#contact" class="text-muted text-decoration-none">Support</a>
+            </div>
+        </div>
+    </footer>
+{% endblock %}

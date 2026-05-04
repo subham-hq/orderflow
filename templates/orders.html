@@ -1,0 +1,99 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Order History
+{% endblock %}
+
+{% block main %}
+<div class="container py-4 text-start">
+
+    <div class="d-flex justify-content-between align-items-end mb-4 pb-3">
+        <div>
+            <h2 class="fw-bold text-dark mb-1">Order History</h2>
+            <p class="text-muted mb-0">Track active shipments and review past procurement records.</p>
+        </div>
+        <div>
+            <a href="/catalog" class="btn btn-outline-secondary fw-bold shadow-sm px-4">
+                + New Order
+            </a>
+        </div>
+    </div>
+
+    <ul class="nav nav-pills mb-4 filter-pills">
+        <li class="nav-item">
+            <a class="nav-link active fw-semibold px-4 rounded-pill" aria-current="page" href="#">All Orders</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link text-muted fw-semibold px-4 rounded-pill" href="#">Pending Review</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link text-muted fw-semibold px-4 rounded-pill" href="#">Completed</a>
+        </li>
+    </ul>
+
+    <div class="card border-0 shadow-sm rounded-3 overflow-hidden mb-5">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light text-muted" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                    <tr>
+                        <th class="py-3 px-4 fw-semibold border-bottom-0" style="width: 15%;">Order #</th>
+                        <th class="py-3 px-4 fw-semibold border-bottom-0" style="width: 25%;">Date Placed</th>
+                        <th class="py-3 px-4 fw-semibold border-bottom-0" style="width: 20%;">Total Amount</th>
+                        <th class="py-3 px-4 fw-semibold border-bottom-0" style="width: 20%;">Status</th>
+                        <th class="py-3 px-4 fw-semibold border-bottom-0 text-end" style="width: 20%;">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="border-top-0">
+                    {% for order in orders %}
+                    <tr>
+                        <td class="py-4 px-4 fw-bold text-dark">
+                            {{ order.order_number }}
+                        </td>
+
+                        <td class="py-4 px-4 text-muted" style="font-size: 0.9rem;">
+                            {{ order.created_at }}
+                        </td>
+
+                        <td class="py-4 px-4 fw-bold text-dark">
+                            {{ order.formatted_total_amount | inr }}
+                        </td>
+
+                        <td class="py-4 px-4">
+                            {% if order.status == 'pending' %}
+                                <span class="badge bg-warning text-dark rounded-pill px-3 py-2 text-uppercase d-inline-flex align-items-center" style="font-size: 0.65rem; letter-spacing: 0.5px;">
+                                    <span class="spinner-grow spinner-grow-sm me-2 text-dark" style="width: 0.5rem; height: 0.5rem;" role="status"></span>
+                                    Pending
+                                </span>
+                            {% elif order.status == 'approved' or order.status == 'fulfilled' %}
+                                <span class="badge bg-success rounded-pill px-3 py-2 text-uppercase d-inline-flex align-items-center" style="font-size: 0.65rem; letter-spacing: 0.5px;">
+                                    <span class="rounded-circle bg-white me-2" style="width: 0.35rem; height: 0.35rem;"></span>
+                                    {{ order.status }}
+                                </span>
+                            {% elif order.status == 'rejected' %}
+                                <span class="badge bg-danger rounded-pill px-3 py-2 text-uppercase" style="font-size: 0.65rem; letter-spacing: 0.5px;">Rejected</span>
+                            {% endif %}
+                        </td>
+
+                        <td class="py-4 px-4 text-end">
+                            <a href="/order/{{ order.id }}" class="btn btn-sm btn-light border text-secondary fw-semibold shadow-sm action-btn">
+                                View Details &rarr;
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center py-5 text-muted">
+                            <div class="fs-1 mb-3">📭</div>
+                            <h5 class="fw-bold text-dark">No order history found</h5>
+                            <p class="mb-4">You haven't placed any orders yet. Once you do, they will appear here.</p>
+                            <a href="/catalog" class="btn btn-primary fw-bold px-4 py-2 shadow-sm">Browse Catalog</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

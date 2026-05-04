@@ -1,0 +1,136 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Order {{ order.order_number }}
+{% endblock %}
+
+{% block main %}
+<div class="container py-4 text-start">
+
+    <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
+        <div>
+            <a href="/admin/orders" class="text-decoration-none text-muted fw-semibold mb-2 d-inline-block" style="font-size: 0.85rem;">
+                &larr; Back to Order Queue
+            </a>
+            <h2 class="fw-bold text-dark mb-1">
+                Order <span class="text-primary">#{{ order.order_number }}</span>
+            </h2>
+            <div class="text-muted" style="font-size: 0.85rem;">Placed on {{ order.created_at }}</div>
+        </div>
+
+        <div>
+            {% if order.status == 'pending' %}
+                <span class="badge bg-warning text-dark rounded-pill px-4 py-2 text-uppercase fs-6 shadow-sm"><span class="spinner-grow spinner-grow-sm me-2"></span> Pending Review</span>
+            {% elif order.status == 'approved' %}
+                <span class="badge bg-primary rounded-pill px-4 py-2 text-uppercase fs-6 shadow-sm">Approved (Awaiting Fulfillment)</span>
+            {% elif order.status == 'fulfilled' %}
+                <span class="badge bg-success rounded-pill px-4 py-2 text-uppercase fs-6 shadow-sm">Fulfilled</span>
+            {% elif order.status == 'rejected' %}
+                <span class="badge bg-danger rounded-pill px-4 py-2 text-uppercase fs-6 shadow-sm">Rejected</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row g-4 mb-5">
+
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
+                <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4">
+                    <h6 class="fw-bold text-dark text-uppercase mb-0" style="letter-spacing: 0.5px; font-size: 0.85rem;">📦 Line Items</h6>
+                </div>
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead class="bg-light text-muted" style="font-size: 0.75rem; text-transform: uppercase;">
+                            <tr>
+                                <th class="py-3 px-4 border-bottom-0" style="width: 15%;">SKU</th>
+                                <th class="py-3 px-4 border-bottom-0" style="width: 45%;">Product</th>
+                                <th class="py-3 px-4 border-bottom-0 text-center" style="width: 10%;">Qty</th>
+                                <th class="py-3 px-4 border-bottom-0 text-end" style="width: 15%;">Unit Price</th>
+                                <th class="py-3 px-4 border-bottom-0 text-end" style="width: 15%;">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody class="border-top-0">
+                            {% for item in items %}
+                            <tr>
+                                <td class="py-3 px-4 fw-bold text-secondary" style="font-size: 0.85rem;">{{ item.sku }}</td>
+                                <td class="py-3 px-4 text-dark fw-semibold" style="font-size: 0.9rem;">
+                                    {{ item.name }}
+                                    <div class="text-muted fw-normal" style="font-size: 0.7rem;">{{ item.category }}</div>
+                                </td>
+                                <td class="py-3 px-4 text-center fw-bold text-dark">{{ item.quantity }}</td>
+                                <td class="py-3 px-4 text-end text-muted" style="font-size: 0.85rem;">${{ item.unit_price_formatted | inr }}</td>
+                                <td class="py-3 px-4 text-end fw-bold text-dark">${{ item.line_total_formatted | inr }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot class="bg-light">
+                            <tr>
+                                <td colspan="4" class="py-3 px-4 text-end fw-bold text-muted text-uppercase" style="font-size: 0.8rem;">Grand Total</td>
+                                <td class="py-3 px-4 text-end fw-bold text-dark fs-5">${{ order.total_formatted | inr }}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+            {% if order.notes %}
+            <div class="card border-0 shadow-sm rounded-3 mt-4 p-4 bg-light">
+                <h6 class="fw-bold text-dark text-uppercase mb-2" style="letter-spacing: 0.5px; font-size: 0.8rem;">📝 Client Notes</h6>
+                <p class="text-secondary mb-0" style="font-size: 0.9rem;">{{ order.notes }}</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="col-lg-4">
+
+            <div class="card border-0 shadow-sm rounded-3 p-4 mb-4">
+                <h6 class="fw-bold text-dark text-uppercase mb-3" style="letter-spacing: 0.5px; font-size: 0.85rem;">🏢 Client Details</h6>
+                <div class="mb-3">
+                    <div class="text-muted" style="font-size: 0.75rem; text-transform: uppercase;">Organization</div>
+                    <div class="fw-bold text-dark fs-5">{{ order.client_company_name }}</div>
+                </div>
+                <div>
+                    <div class="text-muted" style="font-size: 0.75rem; text-transform: uppercase;">Purchasing Agent</div>
+                    <div class="fw-semibold text-dark">{{ order.client_first }} {{ order.client_last }}</div>
+                    <a href="mailto:{{ order.client_email }}" class="text-decoration-none text-primary" style="font-size: 0.85rem;">{{ order.client_email }}</a>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm rounded-3 p-4 mb-4 bg-light">
+                <h6 class="fw-bold text-dark text-uppercase mb-3" style="letter-spacing: 0.5px; font-size: 0.85rem;">🛡️ Audit Trail</h6>
+                {% if order.approver_first %}
+                    <div class="text-muted" style="font-size: 0.8rem;">
+                        Reviewed by: <span class="fw-bold text-dark">{{ order.approver_first }} {{ order.approver_last }}</span>
+                    </div>
+                {% else %}
+                    <div class="text-muted fst-italic" style="font-size: 0.8rem;">This order has not been reviewed yet.</div>
+                {% endif %}
+            </div>
+
+            <div class="d-grid gap-2">
+                {% if order.status == 'pending' %}
+                    <form action="/admin/orders/update" method="POST" class="m-0 d-grid">
+                        <input type="hidden" name="order_id" value="{{ order.id }}">
+                        <input type="hidden" name="new_status" value="approved">
+                        <button type="submit" class="btn btn-success btn-lg fw-bold shadow-sm action-btn">✓ Approve Order</button>
+                    </form>
+                    <form action="/admin/orders/update" method="POST" class="m-0 d-grid mt-2">
+                        <input type="hidden" name="order_id" value="{{ order.id }}">
+                        <input type="hidden" name="new_status" value="rejected">
+                        <button type="submit" class="btn btn-outline-danger fw-bold shadow-sm action-btn">✕ Reject Order</button>
+                    </form>
+
+                {% elif order.status == 'approved' %}
+                    <form action="/admin/orders/update" method="POST" class="m-0 d-grid">
+                        <input type="hidden" name="order_id" value="{{ order.id }}">
+                        <input type="hidden" name="new_status" value="fulfilled">
+                        <button type="submit" class="btn btn-dark btn-lg fw-bold shadow-sm action-btn">Mark as Fulfilled</button>
+                    </form>
+                {% endif %}
+            </div>
+
+        </div>
+
+    </div>
+</div>
+{% endblock %}

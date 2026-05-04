@@ -1,0 +1,101 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Account Settings
+{% endblock %}
+
+{% block main %}
+<div class="container py-4 text-start" style="max-width: 900px;">
+
+    <div class="d-flex justify-content-between align-items-end mb-4 pb-3 border-bottom">
+        <div>
+            <h2 class="fw-bold text-dark mb-1">Account Settings</h2>
+            <p class="text-muted mb-0">View your organizational profile and manage your security credentials.</p>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-5">
+
+        <div class="col-md-7">
+            <div class="card border-0 shadow-sm rounded-3 h-100">
+                <div class="card-header bg-white border-bottom-0 pt-4 pb-0 px-4">
+                    <h6 class="fw-bold text-dark text-uppercase mb-0" style="letter-spacing: 0.5px; font-size: 0.85rem;">
+                        <span class="me-2">🏢</span> Organization Profile
+                    </h6>
+                </div>
+                <div class="card-body p-4">
+
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label text-muted fw-semibold" style="font-size: 0.8rem;">Registered Company</label>
+                            <input type="text" class="form-control form-control-lg bg-light text-secondary readonly-input shadow-none" value="{{ company_name }}" readonly>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label text-muted fw-semibold" style="font-size: 0.8rem;">Representative First Name</label>
+                            <input type="text" class="form-control bg-light text-secondary readonly-input shadow-none" value="{{ first_name }}" readonly>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted fw-semibold" style="font-size: 0.8rem;">Representative Last Name</label>
+                            <input type="text" class="form-control bg-light text-secondary readonly-input shadow-none" value="{{ last_name }}" readonly>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label text-muted fw-semibold" style="font-size: 0.8rem;">Primary Email (Login ID)</label>
+                            <input type="email" class="form-control bg-light text-secondary readonly-input shadow-none" value="{{ email }}" readonly>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 p-3 bg-light rounded-3 border">
+                        <div class="d-flex text-muted" style="font-size: 0.8rem;">
+                            <span class="me-2 fs-5">🔒</span>
+                            <p class="mb-0">For compliance and billing accuracy, organizational details cannot be changed directly. To update your company name or representative email, please contact your supplier administrator.</p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-5">
+            <div class="card border-0 shadow-sm rounded-3 h-100">
+                <div class="card-header bg-white border-bottom-0 pt-4 pb-0 px-4">
+                    <h6 class="fw-bold text-dark text-uppercase mb-0" style="letter-spacing: 0.5px; font-size: 0.85rem;">
+                        <span class="me-2">🔑</span> Security
+                    </h6>
+                </div>
+                <div class="card-body p-4 d-flex flex-column">
+
+                    <div class="mb-4">
+                        <label class="form-label text-muted fw-semibold" style="font-size: 0.8rem;">Account Role</label>
+                        <div class="d-flex align-items-center mt-1">
+                            <span class="badge bg-dark text-white rounded-pill px-3 py-2 text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Authorized Client</span>
+                        </div>
+                    </div>
+
+                    <div class="mb-auto">
+                        <label class="form-label text-muted fw-semibold" style="font-size: 0.8rem;">Password Management</label>
+                        <p class="text-secondary" style="font-size: 0.85rem;">Ensure your account is using a long, random password to stay secure.</p>
+
+                        <a href="/change_password" class="btn btn-outline-dark fw-bold px-4 py-2 mt-2 shadow-sm action-btn w-100 text-center">
+                            Change Password &rarr;
+                        </a>
+                    </div>
+
+                    <hr class="text-muted my-4">
+
+                    <div>
+                        <label class="form-label text-muted fw-semibold" style="font-size: 0.8rem;">Session</label>
+                        <p class="text-secondary mb-3" style="font-size: 0.85rem;">Log out of your current session on this device.</p>
+                        <a href="/logout" class="btn btn-light border text-danger fw-semibold px-4 w-100 text-center">
+                            Log Out
+                        </a>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

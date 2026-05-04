@@ -1,0 +1,94 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Edit Product: {{ product.sku }}
+{% endblock %}
+
+{% block main %}
+<div class="container py-4 text-start d-flex justify-content-center">
+
+    <div class="w-100" style="max-width: 800px;">
+        <div class="mb-4">
+            <a href="/admin/products" class="text-decoration-none text-muted fw-semibold mb-2 d-inline-block" style="font-size: 0.85rem;">
+                &larr; Back to Catalog
+            </a>
+            <h2 class="fw-bold text-dark mb-1">Edit Product</h2>
+            <p class="text-muted mb-0">Update specifications and pricing for <span class="fw-bold text-dark">{{ product.sku }}</span>.</p>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-3 p-4 mb-5">
+            <form action="/admin/products/edit/{{ product.id }}" method="POST">
+
+                <div class="row g-4 mb-4">
+                    <div class="col-md-8">
+                        <label for="name" class="form-label text-muted fw-semibold" style="font-size: 0.85rem;">Product Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control form-control-lg bg-light border-0 shadow-none focus-ring-dark"
+                               id="name" name="name" value="{{ product.name }}" required>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="sku" class="form-label text-muted fw-semibold" style="font-size: 0.85rem;">SKU (Unique Code) <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control form-control-lg bg-light border-0 shadow-none focus-ring-dark text-uppercase"
+                               id="sku" name="sku" value="{{ product.sku }}" required>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="category" class="form-label text-muted fw-semibold" style="font-size: 0.85rem;">Category</label>
+                        <select class="form-select form-select-lg bg-light border-0 shadow-none focus-ring-dark" id="category" name="category">
+                            <option value="Feed" {% if product.category == 'Feed' %}selected{% endif %}>Feed</option>
+                            <option value="Supplements" {% if product.category == 'Supplements' %}selected{% endif %}>Supplements</option>
+                            <option value="Equipment" {% if product.category == 'Equipment' %}selected{% endif %}>Equipment</option>
+                            <option value="Raw Materials" {% if product.category == 'Raw Materials' %}selected{% endif %}>Raw Materials</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="base_price" class="form-label text-muted fw-semibold" style="font-size: 0.85rem;">Base Price <span class="text-danger">*</span></label>
+                        <div class="input-group input-group-lg">
+                            <span class="input-group-text bg-light border-0 text-muted fw-bold">$</span>
+                            <input type="number" step="0.01" class="form-control bg-light border-0 shadow-none focus-ring-dark"
+                                   id="base_price" name="base_price" value="{{ product.base_price_formatted }}" required>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="tax_percentage" class="form-label text-muted fw-semibold" style="font-size: 0.85rem;">Tax Rate</label>
+                        <div class="input-group input-group-lg">
+                            <input type="number" step="0.1" class="form-control bg-light border-0 shadow-none focus-ring-dark"
+                                   id="tax_percentage" name="tax_percentage" value="{{ product.tax_percentage }}">
+                            <span class="input-group-text bg-light border-0 text-muted fw-bold">%</span>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <label for="description" class="form-label text-muted fw-semibold" style="font-size: 0.85rem;">Product Description</label>
+                        <textarea class="form-control bg-light border-0 shadow-none focus-ring-dark"
+                                  id="description" name="description" rows="4">{{ product.description }}</textarea>
+                    </div>
+                </div>
+
+                <hr class="text-muted mb-4 opacity-25">
+
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input focus-ring-dark" type="checkbox" role="switch" id="is_active" name="is_active" value="1"
+                               {% if product.is_active == 1 %}checked{% endif %} style="cursor: pointer;">
+                        <label class="form-check-label text-dark fw-semibold" for="is_active" style="font-size: 0.85rem; cursor: pointer;">
+                            Visible in client catalog
+                        </label>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a href="/admin/products" class="btn btn-light border fw-bold shadow-sm px-4" style="font-size: 0.95rem;">
+                            Cancel
+                        </a>
+                        <button type="submit" class="btn btn-dark fw-bold shadow-sm px-5" style="font-size: 0.95rem;">
+                            Save Changes
+                        </button>
+                    </div>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,162 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    System Bulletins
+{% endblock %}
+
+{% block main %}
+<div class="container py-4 text-start">
+
+    <div class="d-flex justify-content-between align-items-end mb-4 pb-3 border-bottom">
+        <div>
+            <h2 class="fw-bold text-dark mb-1">System Bulletins</h2>
+            <p class="text-muted mb-0">Broadcast important announcements, holiday schedules, or pricing updates to your client network.</p>
+        </div>
+    </div>
+
+    <ul class="nav nav-pills mb-4 filter-pills" id="bulletinTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active fw-semibold px-4 rounded-pill" id="broadcasts-tab" data-bs-toggle="tab" data-bs-target="#broadcasts-pane" type="button" role="tab">
+                Broadcast History
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link text-muted fw-semibold px-4 rounded-pill" id="new-bulletin-tab" data-bs-toggle="tab" data-bs-target="#new-bulletin-pane" type="button" role="tab">
+                + New Broadcast
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="bulletinTabsContent">
+
+        <div class="tab-pane fade show active" id="broadcasts-pane" role="tabpanel" tabindex="0">
+            <div class="card border-0 shadow-sm rounded-3 overflow-hidden mb-5">
+                <div class="table-responsive" style="min-height: 400px;">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light text-muted" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                            <tr>
+                                <th class="py-3 px-4 fw-semibold border-bottom-0" style="width: 25%;">Announcement Title</th>
+                                <th class="py-3 px-4 fw-semibold border-bottom-0" style="width: 30%;">Message Snippet</th>
+                                <th class="py-3 px-4 fw-semibold border-bottom-0" style="width: 15%;">Published / Expires</th>
+                                <th class="py-3 px-4 fw-semibold border-bottom-0" style="width: 15%;">Status</th>
+                                <th class="py-3 px-4 fw-semibold border-bottom-0 text-end" style="width: 15%;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="border-top-0">
+                            {% for bulletin in bulletins %}
+                            <tr>
+                                <td class="py-3 px-4">
+                                    <div class="fw-bold text-dark" style="font-size: 0.95rem;">
+                                        <span class="me-2 fs-6">📢</span> {{ bulletin.title }}
+                                    </div>
+                                </td>
+
+                                <td class="py-3 px-4">
+                                    <div class="text-muted text-truncate" style="font-size: 0.85rem; max-width: 300px;">
+                                        {{ bulletin.content | truncate(60) }}
+                                    </div>
+                                </td>
+
+                                <td class="py-3 px-4">
+                                    <div class="text-dark fw-semibold" style="font-size: 0.8rem;">Pub: {{ bulletin.created_at[:10] }}</div>
+                                    <div class="text-muted" style="font-size: 0.75rem;">
+                                        Exp: {% if bulletin.expires_at %}{{ bulletin.expires_at[:10] }}{% else %}Never{% endif %}
+                                    </div>
+                                </td>
+
+                                <td class="py-3 px-4">
+                                    {% if bulletin.is_active == 1 %}
+                                        <span class="badge bg-info bg-opacity-10 text-primary border border-info border-opacity-25 rounded-pill px-3 py-2 text-uppercase d-inline-flex align-items-center" style="font-size: 0.65rem; letter-spacing: 0.5px;">
+                                            <span class="spinner-grow spinner-grow-sm me-2 text-primary" style="width: 0.4rem; height: 0.4rem;"></span> Live
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 rounded-pill px-3 py-2 text-uppercase d-inline-flex align-items-center" style="font-size: 0.65rem; letter-spacing: 0.5px;">
+                                            Expired / Hidden
+                                        </span>
+                                    {% endif %}
+                                </td>
+
+                                <td class="py-3 px-4 text-end">
+                                    <form action="/admin/bulletins/toggle" method="POST" class="m-0">
+                                        <input type="hidden" name="bulletin_id" value="{{ bulletin.id }}">
+                                        {% if bulletin.is_active == 1 %}
+                                            <button type="submit" class="btn btn-sm btn-outline-secondary fw-bold shadow-sm action-btn" title="Remove from client dashboards">Recall</button>
+                                        {% else %}
+                                            <button type="submit" class="btn btn-sm btn-outline-primary fw-bold shadow-sm action-btn" title="Republish to client dashboards">Republish</button>
+                                        {% endif %}
+                                    </form>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center py-5 text-muted">
+                                    <div class="fs-1 mb-3">📭</div>
+                                    <h5 class="fw-bold text-dark">No broadcast history</h5>
+                                    <p class="mb-4">You haven't posted any bulletins yet. Switch tabs to create one.</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="new-bulletin-pane" role="tabpanel" tabindex="0">
+            <div class="card border-0 shadow-sm rounded-3 p-4 mb-5" style="max-width: 800px;">
+                <h5 class="fw-bold text-dark mb-4">Compose Broadcast</h5>
+
+                <form action="/admin/bulletins" method="POST">
+
+                    <div class="row g-4 mb-4">
+                        <div class="col-12">
+                            <label for="title" class="form-label text-muted fw-semibold" style="font-size: 0.85rem;">Headline <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control form-control-lg bg-light border-0 shadow-none focus-ring-dark" id="title" name="title" placeholder="e.g., Holiday Shipping Schedule Update" required>
+                        </div>
+
+                        <div class="col-12">
+                            <label for="content" class="form-label text-muted fw-semibold" style="font-size: 0.85rem;">Message Body <span class="text-danger">*</span></label>
+                            <textarea class="form-control bg-light border-0 shadow-none focus-ring-dark" id="content" name="content" rows="4" placeholder="Type your announcement here. This will be visible on all client dashboards." required></textarea>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="expires_at" class="form-label text-muted fw-semibold" style="font-size: 0.85rem;">Auto-Remove Date (Optional)</label>
+                            <input type="datetime-local" class="form-control form-control-lg bg-light border-0 shadow-none focus-ring-dark" id="expires_at" name="expires_at">
+                            <div class="form-text mt-1" style="font-size: 0.7rem;">Leave blank to keep the bulletin up indefinitely.</div>
+                        </div>
+                    </div>
+
+                    <hr class="text-muted mb-4 opacity-25">
+
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input focus-ring-dark" type="checkbox" role="switch" id="is_active" name="is_active" value="1" checked style="cursor: pointer;">
+                            <label class="form-check-label text-dark fw-semibold" for="is_active" style="font-size: 0.85rem; cursor: pointer;">
+                                Publish to dashboards instantly
+                            </label>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-lg fw-bold shadow-sm px-5" style="font-size: 0.95rem;">
+                            Broadcast Message
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var tabEls = document.querySelectorAll('button[data-bs-toggle="tab"]')
+        tabEls.forEach(function(tabEl) {
+            tabEl.addEventListener('click', function (event) {
+                event.preventDefault()
+                var tab = new bootstrap.Tab(tabEl)
+                tab.show()
+            })
+        })
+    });
+</script>
+{% endblock %}

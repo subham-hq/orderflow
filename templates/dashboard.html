@@ -1,0 +1,122 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Dashboard
+{% endblock %}
+
+{% block main %}
+<div class="container py-4 text-start">
+
+    <div class="d-flex justify-content-between align-items-end mb-4 border-bottom pb-3">
+        <div>
+            <h2 class="fw-bold text-dark mb-1">Welcome back, {{ first_name }}</h2>
+            <p class="text-muted mb-0">Here is your procurement overview for {{ company_name }}.</p>
+        </div>
+        <div>
+            <a href="/catalog" class="btn btn-primary fw-bold px-4 py-2 shadow-sm">
+                + New Order
+            </a>
+        </div>
+    </div>
+
+    {% if bulletin %}
+    <div class="alert alert-info border-0 shadow-sm d-flex align-items-center mb-4 rounded-3" role="alert" style="background-color: #f0f9ff; color: #0369a1; border-left: 4px solid #0284c7 !important;">
+        <div class="me-3 fs-4">📢</div>
+        <div>
+            <h6 class="alert-heading fw-bold mb-1">{{ bulletin.title }}</h6>
+            <p class="mb-0 text-sm">{{ bulletin.content }}</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row g-4 mb-5">
+
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm rounded-3">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="text-muted fw-bold text-uppercase mb-0" style="letter-spacing: 0.5px; font-size: 0.75rem;">Lifetime Spend</h6>
+                        <div class="bg-light rounded p-2 fs-5">📈</div>
+                    </div>
+                    <h3 class="fw-bold text-dark mb-1">{{ lifetime_spend | inr }}</h3>
+                    <span class="text-muted" style="font-size: 0.85rem;">Total account volume</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm rounded-3">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="text-muted fw-bold text-uppercase mb-0" style="letter-spacing: 0.5px; font-size: 0.75rem;">Pending Orders</h6>
+                        <div class="bg-light rounded p-2 fs-5">⏳</div>
+                    </div>
+                    <h3 class="fw-bold text-dark mb-1">{{ pending_count }}</h3>
+                    <a href="/orders" class="text-decoration-none fw-semibold text-primary" style="font-size: 0.85rem;">View active pipeline &rarr;</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm rounded-3">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="text-muted fw-bold text-uppercase mb-0" style="letter-spacing: 0.5px; font-size: 0.75rem;">Total Orders</h6>
+                        <div class="bg-light rounded p-2 fs-5">📦</div>
+                    </div>
+                    <h3 class="fw-bold text-dark mb-1">{{ total_orders }}</h3>
+                    <span class="text-muted" style="font-size: 0.85rem;">Lifetime orders placed</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="fw-bold text-dark mb-0">Recent Activity</h5>
+        <a href="/orders" class="btn btn-sm btn-outline-secondary">View All</a>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light text-muted" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                    <tr>
+                        <th class="py-3 px-4 fw-semibold border-bottom-0">Order #</th>
+                        <th class="py-3 px-4 fw-semibold border-bottom-0">Date</th>
+                        <th class="py-3 px-4 fw-semibold border-bottom-0">Total Amount</th>
+                        <th class="py-3 px-4 fw-semibold border-bottom-0">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="border-top-0">
+                    {% for order in recent_orders %}
+                    <tr>
+                        <td class="py-3 px-4 fw-bold text-dark">{{ order.order_number }}</td>
+                        <td class="py-3 px-4 text-muted" style="font-size: 0.9rem;">{{ order.created_at }}</td>
+                        <td class="py-3 px-4 fw-semibold text-dark">{{ order.formatted_total_amount | inr }}</td>
+                        <td class="py-3 px-4">
+                            {% if order.status == 'pending' %}
+                                <span class="badge bg-warning text-dark rounded-pill px-3 py-2 text-uppercase" style="font-size: 0.65rem; letter-spacing: 0.5px;">Pending</span>
+                            {% elif order.status == 'approved' or order.status == 'fulfilled' %}
+                                <span class="badge bg-success rounded-pill px-3 py-2 text-uppercase" style="font-size: 0.65rem; letter-spacing: 0.5px;">{{ order.status }}</span>
+                            {% elif order.status == 'rejected' %}
+                                <span class="badge bg-danger rounded-pill px-3 py-2 text-uppercase" style="font-size: 0.65rem; letter-spacing: 0.5px;">Rejected</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center py-5 text-muted">
+                            <div class="fs-1 mb-2">📥</div>
+                            <p class="mb-0 fw-semibold">No active orders found.</p>
+                            <p class="text-sm mb-3">When you place an order, it will appear here.</p>
+                            <a href="/catalog" class="btn btn-sm btn-primary fw-semibold">Browse Catalog</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

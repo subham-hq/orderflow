@@ -1,0 +1,58 @@
+{% extends "layout.html" %}
+
+{% block title %}Order Confirmed{% endblock %}
+
+{% block main %}
+<div class="container py-5 text-center">
+
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+
+            <div class="mb-4">
+                <div class="d-inline-flex align-items-center justify-content-center bg-success bg-opacity-10 text-success rounded-circle mb-3" style="width: 80px; height: 80px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" class="bi bi-check-lg" viewBox="0 0 16 16">
+                        <path d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425a.247.247 0 0 1 .02-.022Z"/>
+                    </svg>
+                </div>
+                <h2 class="fw-bold text-dark">Order Successfully Placed!</h2>
+                <p class="text-muted fs-5">Thank you for your business. Your order has been securely transmitted and is pending review.</p>
+            </div>
+
+            <div class="card border-0 shadow-sm rounded-3 p-4 mb-4 text-start bg-light">
+                <h6 class="fw-bold text-dark text-uppercase border-bottom pb-3 mb-3" style="letter-spacing: 0.5px; font-size: 0.85rem;">Order Summary</h6>
+
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted fw-semibold">Order Number</span>
+                    <span class="fw-bold text-dark">{{ order.order_number }}</span>
+                </div>
+
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted fw-semibold">Date Placed</span>
+                    <span class="fw-semibold text-dark">{{ order.created_at }}</span>
+                </div>
+
+                <div class="d-flex justify-content-between mb-2 pb-3 border-bottom">
+                    <span class="text-muted fw-semibold">Current Status</span>
+                    <span class="badge bg-warning text-dark rounded-pill px-3 py-1 shadow-sm"><span class="spinner-grow spinner-grow-sm me-1" style="width: 0.7rem; height: 0.7rem;"></span> Pending</span>
+                </div>
+
+                <div class="d-flex justify-content-between mt-3">
+                    <span class="fw-bold text-dark fs-5">Total Amount</span>
+                    <span class="fw-bold text-primary fs-5">{{ order.total_formatted | inr }}</span>
+                </div>
+            </div>
+
+            <div class="d-grid gap-3 d-sm-flex justify-content-sm-center">
+                <a href="/catalog" class="btn btn-primary btn-lg px-4 fw-bold shadow-sm action-btn">
+                    Place Another Order
+                </a>
+                <a href="/dashboard" class="btn btn-light border btn-lg px-4 fw-bold text-secondary shadow-sm action-btn">
+                    Return to Dashboard
+                </a>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+{% endblock %}

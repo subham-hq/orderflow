@@ -1,0 +1,502 @@
+/*
+AI Assistance Disclosure:
+
+Some UI refinements and styling suggestions were developed with the help of
+AI tools such as ChatGPT. The overall design, layout decisions, and interface
+structure were created by the author.
+*/
+
+.brand-text {
+    font-weight: 600;
+    font-size: 20px;
+    letter-spacing: -0.3px;
+    color: #1e3a8a;
+}
+
+.nav-link {
+    font-weight: 500;
+    font-size: 15px;
+}
+
+
+h1 {
+    font-weight: 700;
+    font-size: 28px;
+}
+
+h2 {
+    font-weight: 600;
+    font-size: 22px;
+}
+
+h3 {
+    font-weight: 600;
+    font-size: 18px;
+}
+
+p {
+    font-weight: 400;
+    font-size: 15px;
+    color: #475569;
+}
+
+
+.navbar {
+    border-bottom: 1px solid #e2e8f0;
+    background-color: white;
+}
+
+/* Refine the font rendering */
+body {
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    color: #0f172a;
+    background-color: #f8fafc;
+}
+
+/* Make primary buttons look more modern */
+.btn-primary {
+    background-color: #0f172a; /* A deep, professional slate/navy */
+    border-color: #0f172a;
+    font-weight: 500;
+}
+
+.btn-primary:hover {
+    background-color: #1e293b;
+    border-color: #1e293b;
+}
+
+/* Custom Hover for the Secondary (Ghost) Button */
+.btn-outline-secondary:hover {
+    background-color: rgba(15, 23, 42, 0.05) !important; /* Very subtle tint */
+    border-color: #0f172a !important;
+    color: #0f172a !important;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+}
+
+/* Custom Hover for the Primary Button */
+.btn-primary {
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    background-color: #1e293b !important; /* Slightly lighter slate */
+    transform: translateY(-2px); /* Subtle lift */
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.2); /* Stronger shadow on hover */
+}
+/* Soften the text colors for a modern feel */
+.text-muted {
+    color: #64748b !important;
+}
+
+.text-dark {
+    color: #0f172a !important;
+}
+
+/* Smooth out the cards */
+.card {
+    transition: transform 0.2s ease-in-out;
+    border-radius: 0.75rem;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+/* Styles specifically for the landing page background */
+body.landing-page-bg {
+    /* Path is relative to the CSS file */
+    background-image: url('../images/network-mesh-wire-digital-technology-background/17973908.jpg');
+    /* Ensure the image covers the entire screen */
+    background-size: cover;
+    /* Center the image */
+    background-position: center;
+    /* Do not repeat the image */
+    background-repeat: no-repeat;
+    /* Fix the background so it doesn't scroll with the page */
+    background-attachment: fixed;
+}
+
+/* Add a semi-transparent white container for readability */
+body.landing-page-bg main {
+    background-color: rgba(255, 255, 255, 0.25); /* Lowered to 0.25 for more transparency */
+    backdrop-filter: blur(12px); /* Increased blur slightly to keep text readable */
+    -webkit-backdrop-filter: blur(12px); /* For Safari support */
+    border-radius: 1rem;
+    padding: 3rem;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+}
+
+/* Make the navbar completely transparent ONLY on the landing page */
+body.landing-page-bg .navbar {
+    background-color: transparent !important;
+    border-bottom: none !important; /* Removes the gray line under the navbar */
+}
+
+/* A smaller, centered glass card specifically for Login/Register */
+.auth-card {
+    max-width: 400px; /* Keep it narrow and focused */
+    margin: 4rem auto; /* Center it vertically and horizontally */
+    background-color: rgba(255, 255, 255, 0.65); /* Frosted glass effect */
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 1rem;
+    padding: 2.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* =========================================
+   DASHBOARD WORKSPACE STYLES
+   ========================================= */
+
+/* 1. The Global Workspace Background */
+/* This overrides any default white background to give it that soft, professional slate color */
+body {
+    background-color: #f8fafc;
+}
+
+/* 2. KPI Card Hover Effect (The "Lift") */
+/* Makes the data cards feel interactive when the mouse moves over them */
+.card.shadow-sm {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card.shadow-sm:hover {
+    transform: translateY(-4px); /* Slight lift */
+    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08) !important; /* Soft, deep shadow */
+}
+
+/* 3. Premium Table Row Hover */
+/* Overrides Bootstrap's default gray hover for a cleaner, modern slate blue tint */
+.table-hover tbody tr {
+    transition: background-color 0.2s ease-in-out;
+    cursor: default; /* Keeps the standard arrow cursor */
+}
+
+.table-hover tbody tr:hover td {
+    background-color: #f1f5f9 !important;
+}
+
+/* 4. Badge Polish */
+/* Ensures the status pills (Pending, Approved) have crisp, perfectly rounded edges */
+.badge.rounded-pill {
+    font-weight: 700;
+    padding: 0.4em 0.8em;
+    border: 1px solid rgba(0,0,0,0.05); /* Adds a microscopic border for sharpness */
+}
+
+/* =========================================
+   CATALOG & ORDER DESK STYLES
+   ========================================= */
+
+/* 1. Clean Number Inputs (Removes the clunky up/down arrows) */
+.qty-input::-webkit-outer-spin-button,
+.qty-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.qty-input[type=number] {
+    -moz-appearance: textfield; /* Fixes arrows in Firefox */
+    transition: all 0.2s ease-in-out;
+    background-color: #f8fafc; /* Subtle slate background when inactive */
+}
+
+/* 2. Premium Input Focus State */
+/* When a client clicks a quantity box, it gets a crisp, dark border instead of the default blue */
+.qty-input:focus {
+    border-color: #0f172a !important; /* Matches your primary dark slate */
+    box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.1) !important; /* Soft dark glow */
+    background-color: #ffffff; /* Turns pure white when typing */
+    transform: scale(1.05); /* Tiny pop-out effect to show it is active */
+    z-index: 10;
+}
+
+/* 3. The Sticky Action Bar Polish */
+/* Adds a modern "frosted glass" blur so the table rows look clean as they scroll underneath */
+.position-sticky.bottom-0 {
+    background-color: rgba(255, 255, 255, 0.85) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-top: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+/* =========================================
+   ORDER HISTORY & LEDGER STYLES
+   ========================================= */
+
+/* 1. Custom SaaS Filter Pills */
+.filter-pills .nav-link {
+    transition: all 0.2s ease;
+    color: #64748b; /* Muted slate */
+    background-color: transparent;
+}
+
+.filter-pills .nav-link:hover {
+    color: #0f172a;
+    background-color: #f1f5f9;
+}
+
+.filter-pills .nav-link.active {
+    background-color: #0f172a !important; /* Dark primary color */
+    color: #ffffff !important;
+    box-shadow: 0 4px 6px rgba(15, 23, 42, 0.15);
+}
+
+/* 2. Universal Action Button Hover */
+.action-btn {
+    transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+    transform: translateY(-2px); /* Just gives the button a nice physical lift */
+}
+
+/* =========================================
+   SETTINGS & PROFILE STYLES
+   ========================================= */
+
+/* 1. Read-Only Input Styling */
+.readonly-input {
+    cursor: not-allowed;
+    border: 1px dashed #cbd5e1 !important; /* Dashed border implies it cannot be edited */
+    opacity: 0.8;
+}
+
+.readonly-input:focus {
+    border-color: #cbd5e1 !important;
+    box-shadow: none !important; /* Removes the blue glow if they try to click it */
+}
+
+/* =========================================
+   AUTHENTICATION & FORM STYLES
+   ========================================= */
+
+/* Custom Input Focus Ring */
+.focus-ring-dark {
+    transition: all 0.2s ease-in-out;
+}
+
+.focus-ring-dark:focus {
+    background-color: #ffffff !important; /* Turns white when typing */
+    border: 2px solid #0f172a !important; /* Crisp dark border */
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08) !important;
+}
+
+/* =========================================
+   ADMIN COMMAND CENTER STYLES
+   ========================================= */
+
+/* 1. Lead Capture List Hover Physics */
+/* Makes the new leads feel clickable and interactive */
+.list-group-item {
+    transition: all 0.2s ease-in-out;
+    border-left: 3px solid transparent; /* Invisible border placeholder */
+}
+
+.list-group-item:hover {
+    background-color: #f8fafc; /* Soft slate background on hover */
+    border-left: 3px solid #0f172a !important; /* Bold dark line snaps in on the left */
+}
+
+/* 2. Quick-Action "Approve" Button Polish */
+/* Gives the tiny table buttons a satisfying, tactile feel when clicked */
+.table .btn-success {
+    transition: all 0.2s ease;
+}
+
+.table .btn-success:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(16, 185, 129, 0.25) !important; /* Soft green glowing shadow */
+    background-color: #059669; /* Slightly darker green */
+}
+
+/* 3. KPI Card Top Borders (Failsafe) */
+/* Ensures the colored borders we added inline don't get overwritten by Bootstrap */
+.card[style*="border-top"] {
+    border-top-left-radius: 0.5rem !important;
+    border-top-right-radius: 0.5rem !important;
+}
+
+/* =========================================
+   ADMIN ORDER MANAGEMENT STYLES
+   ========================================= */
+
+/* Action Button Physics */
+.admin-action-btn {
+    transition: all 0.2s ease;
+}
+
+.admin-action-btn:hover {
+    transform: translateY(-2px); /* Lifts the button slightly toward the mouse */
+}
+
+/* Red Notification Bubble on Filter Pills */
+.filter-pills .badge.bg-danger {
+    font-size: 0.65rem;
+    padding: 0.35em 0.6em;
+    vertical-align: text-top;
+    box-shadow: 0 2px 4px rgba(220, 38, 38, 0.3); /* Gives the alert a glowing effect */
+}
+
+/* =========================================
+   PRODUCT MANAGEMENT & FORM STYLES
+   ========================================= */
+
+/* 1. Input Group Polish (For the $ and % symbols) */
+.input-group-text {
+    background-color: #f1f5f9 !important; /* Slightly darker than the input to create a distinct box */
+}
+
+/* Ensures the focus ring applies to the whole group seamlessly */
+.input-group:focus-within {
+    border-radius: 0.375rem;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08) !important;
+}
+.input-group:focus-within .form-control {
+    background-color: #ffffff !important;
+}
+
+/* 2. Form Switch (The "Publish Immediately" Toggle) */
+.form-check-input:checked {
+    background-color: #0f172a; /* Changes the default blue toggle to your dark slate */
+    border-color: #0f172a;
+}
+
+.form-check-input {
+    width: 2.5em !important;
+    height: 1.25em !important;
+    margin-top: 0.1em;
+}
+
+/* 3. Status Badge Translucent Backgrounds */
+.bg-opacity-10 {
+    background-color: rgba(var(--bs-success-rgb), 0.1) !important;
+}
+
+/* =========================================
+   CLIENT DIRECTORY (CRM) STYLES
+   ========================================= */
+
+/* 1. Subtle Email Links */
+.email-link {
+    transition: color 0.2s ease;
+}
+.email-link:hover {
+    color: #0f172a !important; /* Turns dark slate when hovered */
+    text-decoration: underline !important;
+}
+
+/* 2. Premium Pricing Button */
+.pricing-btn {
+    background-color: #1e293b; /* A slightly softer black/slate */
+    border-color: #1e293b;
+    transition: all 0.2s ease;
+}
+
+.pricing-btn:hover {
+    background-color: #0f172a;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2) !important;
+}
+
+/* 3. Status Badge Red Alert Overrides */
+/* Ensures the 'Suspended' badge looks appropriately alarming but clean */
+.bg-danger.bg-opacity-10 {
+    background-color: rgba(220, 38, 38, 0.1) !important;
+}
+
+/* =========================================
+   BULLETIN & BROADCAST STYLES
+   ========================================= */
+
+/* 1. Live Broadcast Pulsing Dot */
+.bg-info.bg-opacity-10 {
+    background-color: rgba(14, 165, 233, 0.1) !important; /* Soft sky blue */
+}
+
+/* 2. Customizing the HTML5 Date Picker */
+input[type="datetime-local"] {
+    color: #475569; /* Slate text */
+    text-transform: uppercase;
+    font-size: 0.85rem !important;
+    font-weight: 600;
+}
+
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 0.2s ease;
+}
+
+input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+}
+
+/* =========================================
+   ADMIN SETTINGS POLISH
+   ========================================= */
+
+/* 1. Admin Authority Badge Glow */
+/* Gives the blue 'System Administrator' badge a soft, authoritative aura */
+.badge.bg-primary {
+    box-shadow: 0 0 12px rgba(13, 110, 253, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* 2. Security Icon Pop */
+/* Makes the little shield icon in the disclaimer stand out */
+.card-body .fs-5 {
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+    display: inline-block;
+}
+
+/* =========================================
+   ADMIN SECURITY POLISH
+   ========================================= */
+
+/* Adds a subtle, secure "glow" to the admin shield icon */
+.bg-primary.bg-opacity-10.text-primary {
+    border: 1px solid rgba(13, 110, 253, 0.2);
+    box-shadow: 0 0 15px rgba(13, 110, 253, 0.15);
+}
+
+/* Enhances the primary blue button hover for admin actions */
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(13, 110, 253, 0.25) !important;
+}
+
+/* =========================================
+   EDIT PRODUCT PAGE POLISH
+   ========================================= */
+
+/* 1. Back Link Motion */
+/* Makes the "Back to Catalog" link slide slightly to the left when hovered */
+a.text-muted[href="/admin/products"] {
+    transition: all 0.2s ease-in-out;
+    display: inline-block;
+}
+
+a.text-muted[href="/admin/products"]:hover {
+    color: #0f172a !important; /* Darkens to your primary slate */
+    transform: translateX(-4px); /* Physically points back */
+}
+
+/* 2. Deep Focus Mode */
+/* When the admin clicks inside ANY input on the edit form, the whole card shadow deepens */
+.card:focus-within {
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08) !important;
+    transition: box-shadow 0.3s ease;
+}
+
+/* Add padding to the top of anchor links so the navbar doesn't cover them */
+#features {
+    scroll-margin-top: 80px;
+}
+
+#contact {
+    scroll-margin-top: 80px;
+}

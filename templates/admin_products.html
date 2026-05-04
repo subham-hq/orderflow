@@ -1,0 +1,239 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Catalog & Pricing
+{% endblock %}
+
+{% block main %}
+<div class="container py-4 text-start">
+
+    <div class="d-flex justify-content-between align-items-end mb-4 pb-3 border-bottom">
+        <div>
+            <h2 class="fw-bold text-dark mb-1">Catalog & Pricing</h2>
+            <p class="text-muted mb-0">Manage your master inventory, update wholesale pricing, and add new SKUs.</p>
+        </div>
+        <div class="w-25">
+            <input type="text" class="form-control form-control-sm shadow-sm focus-ring-dark" id="productSearch" placeholder="Search SKU or Product Name...">
+        </div>
+    </div>
+
+    <ul class="nav nav-pills mb-4 filter-pills" id="catalogTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active fw-semibold px-4 rounded-pill" id="inventory-tab" data-bs-toggle="tab" data-bs-target="#inventory-pane" type="button" role="tab">
+                Live Inventory
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link text-muted fw-semibold px-4 rounded-pill" id="add-product-tab" data-bs-toggle="tab" data-bs-target="#add-product-pane" type="button" role="tab">
+                + Add New Product
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="catalogTabsContent">
+
+        <div class="tab-pane fade show active" id="inventory-pane" role="tabpanel" tabindex="0">
+            <div class="card border-0 shadow-sm rounded-3 overflow-hidden mb-5">
+                <div class="table-responsive" style="min-height: 400px;">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light text-muted" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                            <tr>
+                                <th class="py-3 px-4 fw-semibold border-bottom-0" style="width: 12%;">SKU</th>
+                                <th class="py-3 px-4 fw-semibold border-bottom-0" style="width: 30%;">Product Details</th>
+                                <th class="py-3 px-4 fw-semibold border-bottom-0" style="width: 15%;">Category</th>
+                                <th class="py-3 px-4 fw-semibold border-bottom-0" style="width: 15%;">Base Price</th>
+                                <th class="py-3 px-4 fw-semibold border-bottom-0" style="width: 13%;">Status</th>
+                                <th class="py-3 px-4 fw-semibold border-bottom-0 text-end" style="width: 15%;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="border-top-0">
+                            {% for product in products %}
+                            <tr>
+                                <td class="py-3 px-4 fw-bold text-dark" style="font-size: 0.85rem;">
+                                    {{ product.sku }}
+                                </td>
+
+                                <td class="py-3 px-4">
+                                    <div class="fw-bold text-dark" style="font-size: 0.95rem;">{{ product.name }}</div>
+                                    <div class="text-muted text-truncate" style="font-size: 0.75rem; max-width: 250px;">
+                                        {{ product.description }}
+                                    </div>
+                                </td>
+
+                                <td class="py-3 px-4">
+                                    <span class="badge bg-light text-secondary border px-2 py-1" style="font-size: 0.7rem;">
+                                        {{ product.category }}
+                                    </span>
+                                </td>
+
+                                <td class="py-3 px-4 fw-bold text-dark" style="font-size: 0.9rem;">
+                                    {{ product.base_price_formatted | inr }}
+                                    {% if product.tax_percentage > 0 %}
+                                        <div class="text-muted" style="font-size: 0.65rem;">+{{ product.tax_percentage }}% tax</div>
+                                    {% endif %}
+                                </td>
+
+                                <td class="py-3 px-4">
+                                    {% if product.is_active == 1 %}
+                                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-3 py-2 text-uppercase d-inline-flex align-items-center" style="font-size: 0.65rem; letter-spacing: 0.5px;">
+                                            <span class="rounded-circle bg-success me-2" style="width: 0.35rem; height: 0.35rem;"></span> Active
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 rounded-pill px-3 py-2 text-uppercase d-inline-flex align-items-center" style="font-size: 0.65rem; letter-spacing: 0.5px;">
+                                            <span class="rounded-circle bg-secondary me-2" style="width: 0.35rem; height: 0.35rem;"></span> Hidden
+                                        </span>
+                                    {% endif %}
+                                </td>
+
+                                <td class="py-3 px-4 text-end">
+                                    <a href="/admin/products/edit/{{ product.id }}" class="btn btn-sm btn-light border text-secondary fw-semibold shadow-sm action-btn me-1">
+                                        Edit
+                                    </a>
+
+                                    <form action="/admin/products/toggle" method="POST" class="d-inline">
+                                        <input type="hidden" name="product_id" value="{{ product.id }}">
+                                        {% if product.is_active == 1 %}
+                                            <button type="submit" class="btn btn-sm btn-outline-danger fw-bold shadow-sm action-btn" title="Hide from clients">Hide</button>
+                                        {% else %}
+                                            <button type="submit" class="btn btn-sm btn-outline-success fw-bold shadow-sm action-btn" title="Show to clients">Show</button>
+                                        {% endif %}
+                                    </form>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center py-5 text-muted">
+                                    <div class="fs-1 mb-3">📦</div>
+                                    <h5 class="fw-bold text-dark">Your catalog is empty</h5>
+                                    <p class="mb-4">Switch to the "Add New Product" tab to create your first item.</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="add-product-pane" role="tabpanel" tabindex="0">
+            <div class="card border-0 shadow-sm rounded-3 p-4 mb-5" style="max-width: 800px;">
+                <h5 class="fw-bold text-dark mb-4">Create New Product</h5>
+
+                <form action="/admin/products" method="POST">
+
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-8">
+                            <label for="name" class="form-label text-muted fw-semibold" style="font-size: 0.85rem;">Product Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control form-control-lg bg-light border-0 shadow-none focus-ring-dark" id="name" name="name" placeholder="e.g., Premium Cotton Fabric" required>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label for="sku" class="form-label text-muted fw-semibold" style="font-size: 0.85rem;">SKU (Unique Code) <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control form-control-lg bg-light border-0 shadow-none focus-ring-dark text-uppercase" id="sku" name="sku" placeholder="e.g., PRD-001" required>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label for="category" class="form-label text-muted fw-semibold" style="font-size: 0.85rem;">Category</label>
+                            <select class="form-select form-select-lg bg-light border-0 shadow-none focus-ring-dark" id="category" name="category">
+                                <option value="" selected disabled>Select...</option>
+                                <option value="Raw Materials">Raw Materials</option>
+                                <option value="Components & Parts">Components & Parts</option>
+                                <option value="Finished Goods">Finished Goods</option>
+                                <option value="Packaging Materials">Packaging Materials</option>
+                                <option value="Industrial Supplies">Industrial Supplies</option>
+                                <option value="Tools & Equipment">Tools & Equipment</option>
+                                <option value="Electronics & Electrical">Electronics & Electrical</option>
+                                <option value="Office & Business Supplies">Office & Business Supplies</option>
+                                <option value="Textiles & Fabrics">Textiles & Fabrics</option>
+                                <option value="Food & Agricultural Products">Food & Agricultural Products</option>
+                                <option value="Chemicals & Additives">Chemicals & Additives</option>
+                                <option value="Construction Materials">Construction Materials</option>
+                                <option value="Automotive Parts">Automotive Parts</option>
+                                <option value="Medical & Laboratory Supplies">Medical & Laboratory Supplies</option>
+                                <option value="Consumer Goods">Consumer Goods</option>
+                                <option value="Others">Others</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label for="base_price" class="form-label text-muted fw-semibold" style="font-size: 0.85rem;">Base Price <span class="text-danger">*</span></label>
+                            <div class="input-group input-group-lg">
+                                <span class="input-group-text bg-light border-0 text-muted fw-bold">र</span>
+                                <input type="number" step="0.01" class="form-control bg-light border-0 shadow-none focus-ring-dark" id="base_price" name="base_price" placeholder="0.00" required>
+                            </div>
+                            <div class="form-text mt-1" style="font-size: 0.7rem;">Price per unit</div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label for="tax_percentage" class="form-label text-muted fw-semibold" style="font-size: 0.85rem;">Tax Rate</label>
+                            <div class="input-group input-group-lg">
+                                <input type="number" step="0.1" class="form-control bg-light border-0 shadow-none focus-ring-dark" id="tax_percentage" name="tax_percentage" placeholder="0.0" value="0">
+                                <span class="input-group-text bg-light border-0 text-muted fw-bold">%</span>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <label for="description" class="form-label text-muted fw-semibold" style="font-size: 0.85rem;">Product Description</label>
+                            <textarea class="form-control bg-light border-0 shadow-none focus-ring-dark" id="description" name="description" rows="3" placeholder="Enter detailed specifications, weight, or contents..."></textarea>
+                        </div>
+                    </div>
+
+                    <hr class="text-muted mb-4 opacity-25">
+
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input focus-ring-dark" type="checkbox" role="switch" id="is_active" name="is_active" value="1" checked style="cursor: pointer;">
+                            <label class="form-check-label text-dark fw-semibold" for="is_active" style="font-size: 0.85rem; cursor: pointer;">
+                                Publish to client catalog immediately
+                            </label>
+                        </div>
+                        <button type="submit" class="btn btn-dark btn-lg fw-bold shadow-sm px-5" style="font-size: 0.95rem;">
+                            Save Product
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var tabEls = document.querySelectorAll('button[data-bs-toggle="tab"]')
+        tabEls.forEach(function(tabEl) {
+            tabEl.addEventListener('click', function (event) {
+                event.preventDefault()
+                var tab = new bootstrap.Tab(tabEl)
+                tab.show()
+            })
+        })
+    });
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // 1. Initialize all standard tab clicking functionality
+        var tabEls = document.querySelectorAll('button[data-bs-toggle="tab"]');
+        tabEls.forEach(function(tabEl) {
+            tabEl.addEventListener('click', function (event) {
+                event.preventDefault();
+                var tab = new bootstrap.Tab(tabEl);
+                tab.show();
+            });
+        });
+
+        // 2. The Magic Trick: Check if the URL has the secret hash
+        if (window.location.hash === '#add-product') {
+            // Find the "Add New Product" tab button by its ID
+            var targetTab = document.querySelector('#add-product-tab');
+            if (targetTab) {
+                // Tell Bootstrap to show this specific tab instantly
+                var tab = new bootstrap.Tab(targetTab);
+                tab.show();
+            }
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Log In
+{% endblock %}
+
+{% block body_class %}landing-page-bg{% endblock %}
+
+{% block main %}
+    <div class="auth-card text-start">
+
+        <div class="text-center mb-4">
+            <div class="mb-3 text-primary fs-1">🔒</div>
+            <h2 class="fw-bold text-dark">Welcome Back</h2>
+            <p class="text-muted">Log in to your OrderFlow dashboard.</p>
+        </div>
+
+        <form action="/login" method="post">
+            <div class="mb-3">
+                <label for="email" class="form-label fw-semibold text-dark">Email</label>
+                <input autocomplete="off" autofocus class="form-control form-control-lg bg-light" id="email" name="email" placeholder="Enter your work email" type="text" required>
+            </div>
+
+            <div class="mb-4">
+                <label for="password" class="form-label fw-semibold text-dark">Password</label>
+                <input class="form-control form-control-lg bg-light" id="password" name="password" placeholder="Enter your password" type="password" required>
+            </div>
+
+            <button class="btn btn-primary btn-lg w-100 fw-bold" type="submit">Log In</button>
+        </form>
+
+        <div class="text-center mt-4">
+            <p class="text-muted mb-0" style="font-size: 0.9rem;">
+                Don't have a client account? <a href="/register" class="text-decoration-none fw-bold text-primary">Register here</a>
+            </p>
+        </div>
+
+    </div>
+{% endblock %}

@@ -1,0 +1,134 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Manage Orders
+{% endblock %}
+
+{% block main %}
+<div class="container py-4 text-start">
+
+    <div class="d-flex justify-content-between align-items-end mb-4 pb-3">
+        <div>
+            <h2 class="fw-bold text-dark mb-1">Order Management</h2>
+            <p class="text-muted mb-0">Review, process, and fulfill client purchase orders across your network.</p>
+        </div>
+        <div class="w-25">
+            <form action="/admin/orders" method="GET" class="d-flex">
+                <input type="text" name="q" class="form-control form-control-sm shadow-sm focus-ring-dark" placeholder="Search Order # or Client...">
+                <button class="btn btn-dark btn-sm ms-2 fw-bold shadow-sm" type="submit">Search</button>
+            </form>
+        </div>
+    </div>
+
+    <ul class="nav nav-pills mb-4 filter-pills">
+        <li class="nav-item">
+            <a class="nav-link {% if current_filter == 'all' or not current_filter %}active{% endif %} fw-semibold px-4 rounded-pill" href="/admin/orders?status=all">All Orders</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if current_filter == 'pending' %}active{% endif %} fw-semibold px-4 rounded-pill" href="/admin/orders?status=pending">
+                Pending Review
+                {% if pending_count and pending_count > 0 %}
+                <span class="badge bg-danger ms-1 rounded-pill">{{ pending_count }}</span>
+                {% endif %}
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if current_filter == 'approved' %}active{% endif %} fw-semibold px-4 rounded-pill" href="/admin/orders?status=approved">Awaiting Fulfillment</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if current_filter == 'fulfilled' %}active{% endif %} text-muted fw-semibold px-4 rounded-pill" href="/admin/orders?status=fulfilled">Completed</a>
+        </li>
+    </ul>
+
+    <div class="card border-0 shadow-sm rounded-3 overflow-hidden mb-5">
+        <div class="table-responsive" style="min-height: 400px;">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light text-muted" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                    <tr>
+                        <th class="py-3 px-4 fw-semibold border-bottom-0" style="width: 12%;">Order #</th>
+                        <th class="py-3 px-4 fw-semibold border-bottom-0" style="width: 22%;">Client</th>
+                        <th class="py-3 px-4 fw-semibold border-bottom-0" style="width: 15%;">Date</th>
+                        <th class="py-3 px-4 fw-semibold border-bottom-0" style="width: 15%;">Total</th>
+                        <th class="py-3 px-4 fw-semibold border-bottom-0" style="width: 15%;">Status</th>
+                        <th class="py-3 px-4 fw-semibold border-bottom-0 text-end" style="width: 21%;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="border-top-0">
+                    {% for order in orders %}
+                    <tr>
+                        <td class="py-3 px-4 fw-bold text-dark" style="font-size: 0.9rem;">
+                            {{ order.order_number }}
+                        </td>
+
+                        <td class="py-3 px-4">
+                            <div class="fw-bold text-dark" style="font-size: 0.9rem;">{{ order.company_name }}</div>
+                            <div class="text-muted" style="font-size: 0.75rem;">Placed by: {{ order.user_first_name }}</div>
+                        </td>
+
+                        <td class="py-3 px-4 text-muted" style="font-size: 0.85rem;">
+                            {{ order.created_at }}
+                        </td>
+
+                        <td class="py-3 px-4 fw-bold text-dark" style="font-size: 0.9rem;">
+                            {{ order.formatted_total_amount | inr }}
+                        </td>
+
+                        <td class="py-3 px-4">
+                            {% if order.status == 'pending' %}
+                                <span class="badge bg-warning text-dark rounded-pill px-3 py-2 text-uppercase d-inline-flex align-items-center" style="font-size: 0.65rem; letter-spacing: 0.5px;">
+                                    <span class="spinner-grow spinner-grow-sm me-2 text-dark" style="width: 0.5rem; height: 0.5rem;"></span> Pending
+                                </span>
+                            {% elif order.status == 'approved' %}
+                                <span class="badge bg-primary rounded-pill px-3 py-2 text-uppercase" style="font-size: 0.65rem; letter-spacing: 0.5px;">Approved</span>
+                            {% elif order.status == 'fulfilled' %}
+                                <span class="badge bg-success rounded-pill px-3 py-2 text-uppercase" style="font-size: 0.65rem; letter-spacing: 0.5px;">Fulfilled</span>
+                            {% elif order.status == 'rejected' %}
+                                <span class="badge bg-danger rounded-pill px-3 py-2 text-uppercase" style="font-size: 0.65rem; letter-spacing: 0.5px;">Rejected</span>
+                            {% endif %}
+                        </td>
+
+                        <td class="py-3 px-4 text-end">
+                            <div class="d-flex justify-content-end gap-2">
+
+                                {% if order.status == 'pending' %}
+                                    <form action="/admin/orders/update" method="POST" class="m-0">
+                                        <input type="hidden" name="order_id" value="{{ order.id }}">
+                                        <input type="hidden" name="new_status" value="approved">
+                                        <button type="submit" class="btn btn-sm btn-success fw-bold shadow-sm admin-action-btn" title="Approve Order">✓ Approve</button>
+                                    </form>
+                                    <form action="/admin/orders/update" method="POST" class="m-0">
+                                        <input type="hidden" name="order_id" value="{{ order.id }}">
+                                        <input type="hidden" name="new_status" value="rejected">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger fw-bold shadow-sm admin-action-btn" title="Reject Order">✕</button>
+                                    </form>
+
+                                {% elif order.status == 'approved' %}
+                                    <form action="/admin/orders/update" method="POST" class="m-0">
+                                        <input type="hidden" name="order_id" value="{{ order.id }}">
+                                        <input type="hidden" name="new_status" value="fulfilled">
+                                        <button type="submit" class="btn btn-sm btn-dark fw-bold shadow-sm admin-action-btn">Mark Fulfilled</button>
+                                    </form>
+                                {% endif %}
+
+                                <a href="/admin/orders/{{ order.id }}" class="btn btn-sm btn-light border text-secondary fw-semibold shadow-sm action-btn">
+                                    Details
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5 text-muted">
+                            <div class="fs-1 mb-3">📋</div>
+                            <h5 class="fw-bold text-dark">No orders found</h5>
+                            <p class="mb-0">There are no orders matching this view.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

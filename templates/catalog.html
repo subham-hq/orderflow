@@ -1,0 +1,124 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Order Products
+{% endblock %}
+
+{% block main %}
+<div class="container py-4 text-start">
+
+    <div class="d-flex justify-content-between align-items-end mb-4 border-bottom pb-3">
+        <div>
+            <h2 class="fw-bold text-dark mb-1">Product Catalog</h2>
+            <p class="text-muted mb-0">Enter quantities for the items you wish to order. Your custom contracted rates are applied automatically.</p>
+        </div>
+        <div class="w-25">
+            <input type="text" class="form-control form-control-sm shadow-sm" id="productSearch" placeholder="Search by SKU or Name...">
+        </div>
+    </div>
+
+    <form action="/order" method="POST" id="orderForm">
+
+        <div class="card border-0 shadow-sm rounded-3 overflow-hidden mb-5">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="catalogTable">
+                    <thead class="bg-light text-muted" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                        <tr>
+                            <th class="py-3 px-4 fw-semibold border-bottom-0" style="width: 15%;">SKU</th>
+                            <th class="py-3 px-4 fw-semibold border-bottom-0" style="width: 40%;">Product Detail</th>
+                            <th class="py-3 px-4 fw-semibold border-bottom-0 text-end" style="width: 15%;">Unit Price</th>
+                            <th class="py-3 px-4 fw-semibold border-bottom-0" style="width: 15%;">Category</th>
+                            <th class="py-3 px-4 fw-semibold border-bottom-0 text-center" style="width: 15%;">Order Qty</th>
+                        </tr>
+                    </thead>
+                    <tbody class="border-top-0">
+                        {% for product in products %}
+                        <tr>
+                            <td class="py-3 px-4 fw-bold text-secondary" style="font-size: 0.85rem;">
+                                {{ product.sku }}
+                            </td>
+
+                            <td class="py-3 px-4">
+                                <div class="fw-bold text-dark">{{ product.name }}</div>
+                                {% if product.description %}
+                                    <div class="text-muted mt-1" style="font-size: 0.8rem;">{{ product.description }}</div>
+                                {% endif %}
+                            </td>
+
+                            <td class="py-3 px-4 fw-semibold text-dark text-end">
+                                {{ product.base_price_formatted | inr }}
+                            </td>
+
+                            <td class="py-3 px-4">
+                                <span class="badge bg-light text-secondary border px-2 py-1" style="font-size: 0.7rem;">
+                                    {{ product.category }}
+                                </span>
+                            </td>
+
+                            <td class="py-3 px-4 text-center">
+                                <input type="number"
+                                    name="qty_{{ product.id }}"
+                                    class="form-control form-control-sm text-center fw-bold shadow-none border-secondary qty-input"
+                                    min="0"
+                                    placeholder="0"
+                                    style="max-width: 80px; margin: 0 auto;">
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center py-5 text-muted">
+                                <div class="fs-1 mb-2">📦</div>
+                                <p class="mb-0 fw-semibold">No products available at this time.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="position-sticky bottom-0 bg-white border-top p-3 shadow-lg rounded-top-3 d-flex justify-content-between align-items-center" style="z-index: 1000;">
+            <div>
+                <span class="text-muted fw-bold me-2" style="font-size: 0.85rem; text-transform: uppercase;">Total Items Selected:</span>
+                <span id="totalItems" class="fs-5 fw-bold text-dark">0</span>
+            </div>
+            <button type="submit" class="btn btn-primary fw-bold px-5 py-2 shadow-sm" id="submitOrderBtn">
+                Submit Purchase Order
+            </button>
+        </div>
+
+    </form>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const qtyInputs = document.querySelectorAll('.qty-input');
+        const totalItemsDisplay = document.getElementById('totalItems');
+        const submitBtn = document.getElementById('submitOrderBtn');
+
+        function updateTotal() {
+            let total = 0;
+            qtyInputs.forEach(input => {
+                const val = parseInt(input.value) || 0;
+                total += val;
+            });
+            totalItemsDisplay.textContent = total;
+
+            // Disable button if nothing is selected
+            if (total === 0) {
+                submitBtn.disabled = true;
+                submitBtn.classList.replace('btn-primary', 'btn-secondary');
+            } else {
+                submitBtn.disabled = false;
+                submitBtn.classList.replace('btn-secondary', 'btn-primary');
+            }
+        }
+
+        // Run on page load and whenever a number changes
+        qtyInputs.forEach(input => {
+            input.addEventListener('input', updateTotal);
+        });
+        updateTotal(); // Initialize
+    });
+</script>
+{% endblock %}

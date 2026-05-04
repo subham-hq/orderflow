@@ -1,0 +1,129 @@
+{% extends "layout.html" %}
+
+{% block title %}Order {{ order.order_number }}{% endblock %}
+
+{% block main %}
+<div class="container py-4 text-start">
+
+    <div class="mb-4 pb-3 border-bottom d-flex flex-column flex-md-row justify-content-md-between align-items-md-end gap-3">
+        <div>
+            <a href="/orders" class="text-decoration-none text-muted fw-semibold mb-2 d-inline-block action-btn" style="font-size: 0.9rem;">
+                &larr; Back to Order History
+            </a>
+            <h2 class="fw-bold text-dark mb-1">Order {{ order.order_number }}</h2>
+            <p class="text-muted mb-0">Placed on {{ order.created_at }}</p>
+        </div>
+
+        <div>
+            {% if order.status == 'pending' %}
+                <span class="badge bg-warning text-dark rounded-pill px-4 py-2 text-uppercase d-inline-flex align-items-center shadow-sm" style="letter-spacing: 0.5px;">
+                    <span class="spinner-grow spinner-grow-sm me-2 text-dark" style="width: 0.6rem; height: 0.6rem;" role="status"></span>
+                    Pending Review
+                </span>
+            {% elif order.status == 'approved' or order.status == 'fulfilled' %}
+                <span class="badge bg-success rounded-pill px-4 py-2 text-uppercase d-inline-flex align-items-center shadow-sm" style="letter-spacing: 0.5px;">
+                    <span class="rounded-circle bg-white me-2" style="width: 0.5rem; height: 0.5rem;"></span>
+                    {{ order.status }}
+                </span>
+            {% elif order.status == 'rejected' %}
+                <span class="badge bg-danger rounded-pill px-4 py-2 text-uppercase shadow-sm" style="letter-spacing: 0.5px;">
+                    Rejected
+                </span>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row g-4">
+
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-3 overflow-hidden mb-4">
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead class="bg-light text-muted" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                            <tr>
+                                <th class="py-3 px-4 border-bottom-0" style="width: 50%;">Product Detail</th>
+                                <th class="py-3 px-4 border-bottom-0 text-center" style="width: 15%;">Qty</th>
+                                <th class="py-3 px-4 border-bottom-0 text-end" style="width: 15%;">Unit Price</th>
+                                <th class="py-3 px-4 border-bottom-0 text-end" style="width: 20%;">Line Total</th>
+                            </tr>
+                        </thead>
+                        <tbody class="border-top-0">
+                            {% for item in items %}
+                            <tr>
+                                <td class="py-3 px-4 text-dark">
+                                    <div class="fw-bold">{{ item.name }}</div>
+                                    <div class="text-muted" style="font-size: 0.75rem;">SKU: {{ item.sku }}</div>
+                                </td>
+                                <td class="py-3 px-4 text-center fw-bold text-dark bg-light" style="width: 60px;">
+                                    {{ item.quantity }}
+                                </td>
+                                <td class="py-3 px-4 text-end text-muted fw-semibold">
+                                    {{ item.unit_price_formatted | inr }}
+                                </td>
+                                <td class="py-3 px-4 text-end fw-bold text-dark">
+                                    {{ item.line_total_formatted | inr }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {% if order.notes %}
+            <div class="card border-0 shadow-sm rounded-3 p-4 bg-light mb-4">
+                <h6 class="fw-bold text-dark text-uppercase mb-2" style="letter-spacing: 0.5px; font-size: 0.85rem;">📝 Order Instructions / PO Notes</h6>
+                <p class="text-muted mb-0" style="white-space: pre-wrap; font-size: 0.95rem;">{{ order.notes }}</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-3 p-4 position-sticky" style="top: 2rem;">
+                <h6 class="fw-bold text-dark text-uppercase mb-4" style="letter-spacing: 0.5px; font-size: 0.85rem;">Financial Summary</h6>
+
+                <div class="d-flex justify-content-between mb-3">
+                    <span class="text-muted fw-semibold">Subtotal</span>
+                    <span class="fw-bold text-dark">{{ order.total_formatted | inr }}</span>
+                </div>
+
+                <div class="d-flex justify-content-between mb-3 pb-3 border-bottom">
+                    <span class="text-muted fw-semibold">Tax / VAT</span>
+                    <span class="text-muted fst-italic" style="font-size: 0.85rem;">Included</span>
+                </div>
+
+                <div class="d-flex justify-content-between mb-4">
+                    <span class="fw-bold text-dark fs-5">Grand Total</span>
+                    <span class="fw-bold text-primary fs-5">{{ order.total_formatted | inr }}</span>
+                </div>
+
+                <div class="d-grid gap-2">
+                    <button onclick="window.print()" class="btn btn-primary fw-bold shadow-sm action-btn d-flex justify-content-center align-items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-printer me-2" viewBox="0 0 16 16">
+                            <path d="M2.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1z"/>
+                            <path d="M5 1a2 2 0 0 0-2 2v2H2a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1v1a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-1h1a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1V3a2 2 0 0 0-2-2H5zM4 3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2H4V3zm1 5a2 2 0 0 0-2 2v1H2a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v-1a2 2 0 0 0-2-2H5zm7 2v3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1z"/>
+                        </svg>
+                        Print Details
+                    </button>
+                    <a href="/catalog" class="btn btn-light border text-secondary fw-semibold mt-2 shadow-sm action-btn">
+                        Reorder Items
+                    </a>
+                </div>
+
+                <div class="mt-4 text-center">
+                    <p class="text-muted" style="font-size: 0.75rem;">Need to make changes? <a href="#" class="text-decoration-none">Contact Support</a></p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<style>
+    @media print {
+        nav, header, footer, .action-btn, .btn { display: none !important; }
+        .card { box-shadow: none !important; border: 1px solid #dee2e6 !important; }
+        .bg-light { background-color: #f8f9fa !important; -webkit-print-color-adjust: exact; }
+    }
+</style>
+{% endblock %}
