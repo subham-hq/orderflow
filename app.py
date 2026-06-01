@@ -47,6 +47,7 @@ course material independently.
 """
 
 import os
+from flask_wtf.csrf import CSRFProtect
 from datetime import datetime
 import random
 from cs50 import SQL
@@ -180,6 +181,10 @@ from helpers import admin_required, client_required, inr
 # ==================================================
 # Create the main Flask application instance.
 app = Flask(__name__)
+# The secret key is mandatory for CSRF to function
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "my_local_dev_secret_key")
+
+csrf = CSRFProtect(app)
 
 # Custom filter
 app.jinja_env.filters["inr"] = inr
@@ -189,8 +194,12 @@ app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
 Session(app)
 
-# Configure CS50 Library to use SQLite database
-db = SQL("sqlite:///orderflow.db")
+# Get the absolute directory of the current file
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+db_path = os.path.join(BASE_DIR, "orderflow.db")
+
+# Initialize database with the absolute path
+db = SQL(f"sqlite:///{db_path}")
 
 # --------------------------------------------------
 # SECURITY MIDDLEWARE
