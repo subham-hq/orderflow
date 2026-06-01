@@ -104,6 +104,7 @@
                                 <td class="py-3 px-4 fw-bold text-dark">{{ order.formatted_total_amount | inr }}</td>
                                 <td class="py-3 px-4 text-center">
                                     <form action="/admin/orders/update" method="POST" class="d-inline">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                         <input type="hidden" name="order_id" value="{{ order.id }}">
                                         <input type="hidden" name="new_status" value="approved">
                                         <button type="submit" class="btn btn-sm btn-success fw-bold shadow-sm px-3 py-1" style="font-size: 0.75rem;">Approve</button>

@@ -145,6 +145,7 @@
             </div>
             <div class="col-lg-6">
                 <form action="/" method="post">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <div class="row g-2 mb-3">
                         <div class="col-md-6">
                             <input type="text" name="first_name" class="form-control" placeholder="First Name" required>

@@ -18,6 +18,7 @@
     </div>
 
     <form action="/order" method="POST" id="orderForm">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
 
         <div class="card border-0 shadow-sm rounded-3 overflow-hidden mb-5">
             <div class="table-responsive">

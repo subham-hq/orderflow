@@ -91,6 +91,7 @@
                                     </a>
 
                                     <form action="/admin/products/toggle" method="POST" class="d-inline">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                         <input type="hidden" name="product_id" value="{{ product.id }}">
                                         {% if product.is_active == 1 %}
                                             <button type="submit" class="btn btn-sm btn-outline-danger fw-bold shadow-sm action-btn" title="Hide from clients">Hide</button>
@@ -120,6 +121,7 @@
                 <h5 class="fw-bold text-dark mb-4">Create New Product</h5>
 
                 <form action="/admin/products" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
 
                     <div class="row g-4 mb-4">
                         <div class="col-md-8">

@@ -78,6 +78,7 @@
 
                                 <td class="py-3 px-4 text-end">
                                     <form action="/admin/bulletins/toggle" method="POST" class="m-0">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                         <input type="hidden" name="bulletin_id" value="{{ bulletin.id }}">
                                         {% if bulletin.is_active == 1 %}
                                             <button type="submit" class="btn btn-sm btn-outline-secondary fw-bold shadow-sm action-btn" title="Remove from client dashboards">Recall</button>
@@ -107,6 +108,7 @@
                 <h5 class="fw-bold text-dark mb-4">Compose Broadcast</h5>
 
                 <form action="/admin/bulletins" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
 
                     <div class="row g-4 mb-4">
                         <div class="col-12">

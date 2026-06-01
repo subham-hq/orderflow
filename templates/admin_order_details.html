@@ -110,11 +110,13 @@
             <div class="d-grid gap-2">
                 {% if order.status == 'pending' %}
                     <form action="/admin/orders/update" method="POST" class="m-0 d-grid">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <input type="hidden" name="order_id" value="{{ order.id }}">
                         <input type="hidden" name="new_status" value="approved">
                         <button type="submit" class="btn btn-success btn-lg fw-bold shadow-sm action-btn">✓ Approve Order</button>
                     </form>
                     <form action="/admin/orders/update" method="POST" class="m-0 d-grid mt-2">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <input type="hidden" name="order_id" value="{{ order.id }}">
                         <input type="hidden" name="new_status" value="rejected">
                         <button type="submit" class="btn btn-outline-danger fw-bold shadow-sm action-btn">✕ Reject Order</button>
@@ -122,6 +124,7 @@
 
                 {% elif order.status == 'approved' %}
                     <form action="/admin/orders/update" method="POST" class="m-0 d-grid">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <input type="hidden" name="order_id" value="{{ order.id }}">
                         <input type="hidden" name="new_status" value="fulfilled">
                         <button type="submit" class="btn btn-dark btn-lg fw-bold shadow-sm action-btn">Mark as Fulfilled</button>

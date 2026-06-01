@@ -16,6 +16,7 @@
         </div>
 
         <form action="/register" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <div class="mb-3">
                 <label for="first_name" class="form-label fw-semibold text-dark">First Name</label>
                 <input autocomplete="off" autofocus class="form-control form-control-lg bg-light" id="first_name" name="first_name" placeholder="Enter your first name" type="text" required>

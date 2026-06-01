@@ -11,6 +11,7 @@
     </div>
 
     <form action="/order/submit" method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
 
         {% for item in items %}
             <input type="hidden" name="qty_{{ item.id }}" value="{{ item.quantity }}">

@@ -14,6 +14,7 @@
         </div>
         <div class="w-25">
             <form action="/admin/orders" method="GET" class="d-flex">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <input type="text" name="q" class="form-control form-control-sm shadow-sm focus-ring-dark" placeholder="Search Order # or Client...">
                 <button class="btn btn-dark btn-sm ms-2 fw-bold shadow-sm" type="submit">Search</button>
             </form>
@@ -92,11 +93,13 @@
 
                                 {% if order.status == 'pending' %}
                                     <form action="/admin/orders/update" method="POST" class="m-0">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                         <input type="hidden" name="order_id" value="{{ order.id }}">
                                         <input type="hidden" name="new_status" value="approved">
                                         <button type="submit" class="btn btn-sm btn-success fw-bold shadow-sm admin-action-btn" title="Approve Order">✓ Approve</button>
                                     </form>
                                     <form action="/admin/orders/update" method="POST" class="m-0">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                         <input type="hidden" name="order_id" value="{{ order.id }}">
                                         <input type="hidden" name="new_status" value="rejected">
                                         <button type="submit" class="btn btn-sm btn-outline-danger fw-bold shadow-sm admin-action-btn" title="Reject Order">✕</button>
@@ -104,6 +107,7 @@
 
                                 {% elif order.status == 'approved' %}
                                     <form action="/admin/orders/update" method="POST" class="m-0">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                         <input type="hidden" name="order_id" value="{{ order.id }}">
                                         <input type="hidden" name="new_status" value="fulfilled">
                                         <button type="submit" class="btn btn-sm btn-dark fw-bold shadow-sm admin-action-btn">Mark Fulfilled</button>

@@ -82,6 +82,7 @@
                                     <div class="d-flex justify-content-end gap-2">
 
                                         <form action="/admin/clients/toggle" method="POST" class="m-0">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                             <input type="hidden" name="user_id" value="{{ client.id }}">
                                             {% if client.is_active == 1 %}
                                                 <button type="submit" class="btn btn-sm btn-outline-warning fw-bold shadow-sm action-btn" title="Suspend Login Access">Suspend</button>
@@ -91,6 +92,7 @@
                                         </form>
 
                                         <form action="/admin/clients/delete" method="POST" class="m-0" onsubmit="return confirm('Are you sure you want to permanently delete this client? This cannot be undone.');">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                             <input type="hidden" name="client_id" value="{{ client.id }}">
                                             <button type="submit" class="btn btn-sm btn-danger fw-bold shadow-sm action-btn" title="Permanently Delete Account">Delete</button>
                                         </form>
@@ -123,6 +125,7 @@
                 </div>
 
                 <form action="/admin/clients" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
 
                     <div class="row g-4 mb-4">
                         <div class="col-12">

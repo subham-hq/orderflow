@@ -16,6 +16,7 @@
         </div>
 
         <form action="/login" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <div class="mb-3">
                 <label for="email" class="form-label fw-semibold text-dark">Email</label>
                 <input autocomplete="off" autofocus class="form-control form-control-lg bg-light" id="email" name="email" placeholder="Enter your work email" type="text" required>
