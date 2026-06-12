@@ -46,6 +46,7 @@ minor refinement, and not as substitutes for understanding or completing the
 course material independently.
 """
 
+
 import os
 from flask_wtf.csrf import CSRFProtect
 from datetime import datetime
