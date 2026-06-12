@@ -110,31 +110,30 @@ flask run
 ```bash
 http://127.0.0.1:5000
 ```
-
-Database Setup
+### Database Setup
 
 OrderFlow currently uses SQLite for local development.
 
 If a database file is not already present, initialize the database according to the project setup instructions and ensure all required tables are created before starting the application.
 
-Configuration
+### Configuration
 
 Review any configuration values used by the application, including:
 
-* Secret keys
-* Database paths
-* Environment-specific settings
-* Security-related configuration
+- Secret keys
+- Database paths
+- Environment-specific settings
+- Security-related configuration
 
 Store sensitive values outside of source control whenever possible.
 
-Running the Application
+### Running the Application
 
 Start the Flask development server and verify that:
 
-* Authentication works correctly
-* User roles load as expected
-* Product, client, and order workflows operate normally
+- Authentication works correctly
+- User roles load as expected
+- Product, client, and order workflows operate normally
 
 ### Recommended Development Workflow
 
