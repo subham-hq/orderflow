@@ -127,13 +127,13 @@ Review any configuration values used by the application, including:
 
 Store sensitive values outside of source control whenever possible.
 
-Running the Application
+### Running the Application
 
 Start the Flask development server and verify that:
 
-* Authentication works correctly
-* User roles load as expected
-* Product, client, and order workflows operate normally
+- Authentication works correctly
+- User roles load as expected
+- Product, client, and order workflows operate normally
 
 ### Recommended Development Workflow
 
