@@ -69,6 +69,7 @@ Each company maintains its own dataset (users, products, orders), enforced via c
 
 📁 Project Structure
 
+```
 orderflow/
 │
 ├── app.py              # Main application logic
@@ -78,6 +79,7 @@ orderflow/
 │
 ├── templates/          # HTML templates (UI)
 ├── static/             # CSS, images, assets
+```
 ⸻
 
 ⚙️ How to Run Locally
