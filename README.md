@@ -135,3 +135,12 @@ Start the Flask development server and verify that:
 * Authentication works correctly
 * User roles load as expected
 * Product, client, and order workflows operate normally
+
+### Recommended Development Workflow
+
+- Create a dedicated branch for each feature or bug fix.
+- Keep pull requests focused on a single logical change.
+- Test functionality locally before opening a pull request.
+- Update documentation when introducing significant features.
+
+This approach helps maintain a clean project history and simplifies future collaboration.
