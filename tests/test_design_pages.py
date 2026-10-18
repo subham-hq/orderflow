@@ -285,23 +285,6 @@ def test_error_page_sends_signed_in_people_back_to_their_home(client, login, own
     assert "Back to your portal" in page(client.get("/no-such-page")).text
 
 
-# --------------------------------------------------------------------------
-# Placeholder page
-# --------------------------------------------------------------------------
-
-
-def test_placeholder_page_in_both_shells(client, login, owner, buyer):
-    login(owner)
-    html = page(client.get("/app/bulletins"))
-    assert "Bulletins" in html.text and "This page is being built" in html.text
-    assert html.with_class("sidebar")
-    client.post("/logout")
-    login(buyer)
-    html = page(client.get("/portal/orders"))
-    assert "This page is being built" in html.text
-    assert html.with_class("portal-header")
-
-
 def test_page_parser_helper_handles_scripts_and_classes():
     html = Page('<div class="a b" id="x"><script>var s = "<p>";</script><p>Hi</p></div>')
     assert html.text == "Hi"

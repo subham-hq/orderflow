@@ -242,18 +242,28 @@ def test_portal_header_shows_the_supplier(client, login, buyer):
 
 
 @pytest.mark.parametrize(
-    ("cart", "shown"),
+    ("quantities", "shown"),
     [
-        ({"1": 40, "3": 24, "8": 5}, "69"),
-        ({"1": 1}, "1"),
-        ({"1": 2500}, "999+"),
-        ({}, None),
+        ([40, 24, 5], "69"),
+        ([1], "1"),
+        ([2500], "999+"),
+        ([], None),
         (None, None),
-        (["1", "2"], None),
-        ({"1": "many"}, None),
+        ("list", None),
+        ("text", None),
     ],
 )
-def test_portal_cart_count(client, login, buyer, cart, shown):
+def test_portal_cart_count(client, login, company, buyer, quantities, shown):
+    # The portal drops products that don't exist from the cart, so use real ones
+    products = [factories.make_product(company) for _ in range(3)]
+    if quantities == "list":
+        cart = [str(p.id) for p in products[:2]]
+    elif quantities == "text":
+        cart = {str(products[0].id): "many"}
+    elif quantities is None:
+        cart = None
+    else:
+        cart = {str(p.id): qty for p, qty in zip(products, quantities, strict=False)}
     login(buyer)
     with client.session_transaction() as session:
         session["cart"] = cart
