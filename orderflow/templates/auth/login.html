@@ -1,0 +1,18 @@
+{% extends "layouts/auth.html" %}
+{% from "macros/ui.html" import field, button %}
+{% block title %}Sign in{% endblock %}
+{% block content %}
+<h1 class="auth__title">Welcome back</h1>
+<p class="auth__lead">Sign in to manage orders or place a new one.</p>
+<form method="post" class="stack" novalidate>
+  {{ form.hidden_tag() }}
+  {{ field(form.email, autocomplete="email", autofocus=True) }}
+  {{ field(form.password, autocomplete="current-password") }}
+  <div class="split">
+    {{ field(form.remember) }}
+    <a class="text-link" href="{{ url_for('auth.forgot_password') }}">Forgot password?</a>
+  </div>
+  {{ button("Sign in", class="btn--block") }}
+</form>
+<p class="auth__switch">New to {{ APP_NAME }}? <a class="text-link" href="{{ url_for('auth.signup') }}">Create a free account</a></p>
+{% endblock %}

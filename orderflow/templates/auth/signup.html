@@ -1,0 +1,21 @@
+{% extends "layouts/auth.html" %}
+{% from "macros/ui.html" import field, button %}
+{% block title %}Create your account{% endblock %}
+{% block content %}
+<h1 class="auth__title">Start taking orders online</h1>
+<p class="auth__lead">Create a workspace for your business. You can invite your clients once your catalog is ready.</p>
+<form method="post" class="stack" novalidate>
+  {{ form.hidden_tag() }}
+  <div class="grid grid--2">
+    {{ field(form.first_name, autocomplete="given-name", autofocus=True) }}
+    {{ field(form.last_name, autocomplete="family-name") }}
+  </div>
+  {{ field(form.company_name, autocomplete="organization") }}
+  {{ field(form.email, autocomplete="email", hint="We'll send a link to confirm it.") }}
+  {{ field(form.password, autocomplete="new-password", hint=password_hint) }}
+  {{ field(form.accept_terms) }}
+  {{ button("Create account", class="btn--block") }}
+</form>
+<p class="auth__switch">Already have an account? <a class="text-link" href="{{ url_for('auth.login') }}">Sign in</a></p>
+<p class="auth__fine muted">Buying from a supplier that uses {{ APP_NAME }}? Ask them to invite you; you don't need to sign up here.</p>
+{% endblock %}
