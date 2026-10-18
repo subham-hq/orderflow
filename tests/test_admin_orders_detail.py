@@ -198,8 +198,8 @@ def test_detail_runs_a_fixed_number_of_queries(client, login, owner, company, bu
         get(client, f"/app/orders/{order.number}")
     finally:
         event.remove(db.engine, "before_cursor_execute", record)
-    # user, company, order + client + deciders, items, events + actors
-    assert len(statements) <= 6
+    # user, company, order + client + deciders, items, events + actors, sidebar pending count
+    assert len(statements) <= 7
 
 
 @pytest.mark.parametrize("path", ["ORD-999999", "ord-000001", "%00", "x" * 40, "ORD-000001%20"])

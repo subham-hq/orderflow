@@ -372,8 +372,8 @@ def test_list_runs_a_fixed_number_of_queries(client, login, owner, many):
         get(client, "/app/orders")
     finally:
         event.remove(db.engine, "before_cursor_execute", record)
-    # user, company, tab counts, page count, page rows, line counts
-    assert len(statements) <= 6
+    # user, company, tab counts, page count, page rows, line counts, sidebar pending count
+    assert len(statements) <= 7
 
 
 # Access ------------------------------------------------------------------------------
