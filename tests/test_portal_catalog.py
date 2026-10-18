@@ -45,6 +45,21 @@ def product_names(page):
     return [html.unescape(name) for name in re.findall(r'class="product-card__name"[^>]*>([^<]+)</h2>', page)]
 
 
+CHIP = re.compile(
+    r'<a class="chip(?: is-active)?" href="(?P<href>[^"]*)"(?P<current> aria-current="page")?>\s*'
+    r'<span class="chip__label">(?P<label>[^<]*)</span>\s*'
+    r'<span class="chip__count">(?P<count>[\d,]+)<span class="visually-hidden"> products?</span></span>'
+)
+
+
+def category_chips(page):
+    """The category chips as (label, count, link, is current)."""
+    return [
+        (html.unescape(m["label"]), int(m["count"].replace(",", "")), html.unescape(m["href"]), bool(m["current"]))
+        for m in CHIP.finditer(page)
+    ]
+
+
 def get(client, **params):
     response = client.get("/portal/catalog", query_string=params)
     assert response.status_code == 200
@@ -114,15 +129,20 @@ def test_categories_list_only_those_with_active_products(shopper, catalog, other
     factories.make_product(company, name="Blank category", category="   ")
     db.session.commit()
     page = get(shopper)
-    options = re.findall(r'<option value="([^"]*)"', page)
-    assert options == ["", "Fasteners", "Packaging"]
-    assert "data-autosubmit" in page
+    assert category_chips(page) == [
+        ("All", 5, "/portal/catalog", True),
+        ("Fasteners", 1, "/portal/catalog?category=Fasteners", False),
+        ("Packaging", 2, "/portal/catalog?category=Packaging", False),
+    ]
+    assert "Rival things" not in page and "Discontinued" not in page
 
 
 def test_category_filter(shopper, catalog):
     page = get(shopper, category="Packaging")
     assert product_names(page) == ["bopp tape", "Corrugated carton"]
-    assert '<option value="Packaging" selected>' in page
+    assert [chip for chip in category_chips(page) if chip[3]] == [
+        ("Packaging", 2, "/portal/catalog?category=Packaging", True)
+    ]
     assert "2 products in Packaging" in page
     assert "Clear filters" in page
 
@@ -138,7 +158,9 @@ def test_an_unknown_category_shows_no_products_and_says_which(shopper, catalog):
     page = get(shopper, category="Discontinued")
     assert product_names(page) == []
     assert "No products in Discontinued right now" in page
-    assert '<option value="Discontinued" selected>' in page  # the filter on screen matches the results
+    # The filter on screen matches the results
+    assert category_chips(page)[-1] == ("Discontinued", 0, "/portal/catalog?category=Discontinued", True)
+    assert [chip[0] for chip in category_chips(page) if chip[3]] == ["Discontinued"]
 
 
 def test_long_or_odd_parameters_never_break_the_page(shopper, catalog):
@@ -202,3 +224,69 @@ def test_search_and_category_text_is_escaped_when_shown_back(shopper, catalog):
     page = get(shopper, q="<i>x</i>", category='"><script>alert(1)</script>')
     assert "<i>x</i>" not in page and "<script>alert(1)</script>" not in page
     assert "&lt;i&gt;x&lt;/i&gt;" in page
+
+
+# Category chips
+
+
+def test_category_chips_are_links_that_work_without_javascript(shopper, catalog):
+    page = get(shopper)
+    assert "<select" not in page and "data-autosubmit" not in page
+    assert '<nav aria-label="Categories">' in page and '<ul class="chips">' in page
+    for label, count, href, _current in category_chips(page):
+        listed = product_names(shopper.get(href).get_data(as_text=True))
+        assert len(listed) == count, label
+
+
+def test_chip_counts_follow_the_search_and_keep_it(shopper, catalog):
+    page = get(shopper, q="tape")
+    assert category_chips(page) == [
+        ("All", 1, "/portal/catalog?q=tape", True),
+        ("Fasteners", 0, "/portal/catalog?q=tape&category=Fasteners", False),
+        ("Packaging", 1, "/portal/catalog?q=tape&category=Packaging", False),
+    ]
+    within = get(shopper, q="tape", category="Packaging")
+    assert product_names(within) == ["bopp tape"]
+    assert category_chips(within)[0] == ("All", 1, "/portal/catalog?q=tape", False)
+
+
+def test_searching_keeps_the_category_picked(shopper, catalog):
+    page = get(shopper, category="Packaging")
+    form = page[page.index('role="search"') :]
+    form = form[: form.index("</form>")]
+    assert '<input type="hidden" name="category" value="Packaging">' in form
+    assert 'name="category"' not in get(shopper).split('role="search"')[1].split("</form>")[0]
+
+
+def test_one_product_is_read_as_one_product(shopper, catalog):
+    page = get(shopper)
+    assert '<span class="chip__count">1<span class="visually-hidden"> product</span></span>' in page
+    assert '<span class="chip__count">2<span class="visually-hidden"> products</span></span>' in page
+
+
+def test_no_chips_when_no_product_has_a_category(shopper, company):
+    factories.make_product(company, name="Loose item")
+    page = get(shopper)
+    assert category_chips(page) == []
+    assert 'class="chips"' not in page
+
+
+@pytest.mark.parametrize("name", ["Tea & Coffee", "50% off", "Bolts/Nuts", "Fasteners #2", "मसाले"])
+def test_categories_with_any_characters_link_to_themselves(shopper, company, name):
+    factories.make_product(company, name="Item", category=name)
+    page = get(shopper)
+    (_label, count, href, _current) = [chip for chip in category_chips(page) if chip[0] == name][0]
+    assert count == 1
+    listed = shopper.get(href).get_data(as_text=True)
+    assert product_names(listed) == ["Item"]
+    assert [chip[0] for chip in category_chips(listed) if chip[3]] == [name]
+
+
+def test_a_long_category_name_wraps_inside_its_chip():
+    from tests.test_design_system import CSS
+
+    chip = CSS[CSS.index("\n.chip {") :]
+    assert "max-width: 100%;" in chip[: chip.index("}")]
+    label = CSS[CSS.index("\n.chip__label {") :]
+    label = label[: label.index("}")]
+    assert "white-space: normal;" in label and "overflow-wrap: anywhere;" in label and "min-width: 0;" in label

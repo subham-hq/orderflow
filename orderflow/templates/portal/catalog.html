@@ -19,31 +19,40 @@
   ) }}
 </div>
 {% else %}
-<form method="get" action="{{ url_for('portal.catalog') }}" class="toolbar" role="search">
-  <div class="search">
-    <label class="visually-hidden" for="catalog-search">Search products</label>
-    {{ icon('search') }}
-    <input class="input" type="search" id="catalog-search" name="q" value="{{ q }}" placeholder="Search by name, SKU or description" maxlength="100" autocomplete="off">
-  </div>
-  {% if categories or category %}
-  <div class="field">
-    <label class="visually-hidden" for="catalog-category">Category</label>
-    <select class="select" id="catalog-category" name="category" data-autosubmit>
-      <option value="">All categories</option>
-      {% for name in categories %}
-      <option value="{{ name }}"{% if name == category %} selected{% endif %}>{{ name }}</option>
+<div class="stack stack--sm">
+  <form method="get" action="{{ url_for('portal.catalog') }}" class="toolbar" role="search">
+    {# Searching keeps the category picked below #}
+    {% if category %}<input type="hidden" name="category" value="{{ category }}">{% endif %}
+    <div class="search">
+      <label class="visually-hidden" for="catalog-search">Search products{% if category %} in {{ category }}{% endif %}</label>
+      {{ icon('search') }}
+      <input class="input" type="search" id="catalog-search" name="q" value="{{ q }}" placeholder="Search by name, SKU or description" maxlength="100" autocomplete="off">
+    </div>
+    {{ button("Search", variant="secondary", icon_name="search") }}
+    {% if q or category %}
+    <a class="text-link" href="{{ url_for('portal.catalog') }}">Clear filters</a>
+    {% endif %}
+  </form>
+
+  {% if category_chips %}
+  {# Plain links, so picking a category works without JavaScript. They keep the search. #}
+  <nav aria-label="Categories">
+    <ul class="chips">
+      {% for name, count in category_chips %}
+      {% set args = {'q': q} if q else {} %}
+      {% if name %}{% set _ = args.update({'category': name}) %}{% endif %}
+      {% set current = (name or '') == category %}
+      <li>
+        <a class="chip{% if current %} is-active{% endif %}" href="{{ url_for('portal.catalog', **args) }}"{% if current %} aria-current="page"{% endif %}>
+          <span class="chip__label">{{ name or "All" }}</span>
+          <span class="chip__count">{{ "{:,}".format(count) }}<span class="visually-hidden"> {{ "product" if count == 1 else "products" }}</span></span>
+        </a>
+      </li>
       {% endfor %}
-      {% if category and category not in categories %}
-      <option value="{{ category }}" selected>{{ category }}</option>
-      {% endif %}
-    </select>
-  </div>
+    </ul>
+  </nav>
   {% endif %}
-  {{ button("Search", variant="secondary", icon_name="search") }}
-  {% if q or category %}
-  <a class="text-link" href="{{ url_for('portal.catalog') }}">Clear filters</a>
-  {% endif %}
-</form>
+</div>
 
 {% if page.items %}
 <p class="results-count muted">

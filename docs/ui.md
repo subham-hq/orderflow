@@ -123,9 +123,11 @@ Components:
   control in a toolbar), `toolbar__spacer`; `search` (put
   `{{ icon('search') }}` and an `input` inside); `tabs` / `tab` /
   `is-active` (status filters) with `tab__count`; `chips` / `chip` /
-  `chip__count` (pill filters such as catalog categories; mark the current
-  one with `is-active` or `aria-current="page"`). Put status tabs above the
-  search and filters, as on the orders list.
+  `chip__label` / `chip__count` (pill filters such as the catalog's
+  categories: a `<ul class="chips">` of links in a labelled `<nav>`, so they
+  work without JavaScript; mark the current one with `is-active` and
+  `aria-current="page"`). Put status tabs above the search and filters, as
+  on the orders list; put filter chips under the search, as in the catalog.
 - `badge`, `badge--<status>`, `badge--<tone>`, `badge__dot`
 - `alert`, `alert--success|info|warning|danger`, `alert__text`,
   `alert__title`, `alert__close`; `flashes` (stack of flash alerts)

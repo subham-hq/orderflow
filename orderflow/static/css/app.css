@@ -3361,6 +3361,7 @@ a.pagination__link:hover {
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
+  max-width: 100%;
   padding: 0.3125rem 0.75rem;
   border: 1px solid var(--line);
   border-radius: var(--radius-pill);
@@ -3387,7 +3388,15 @@ a.pagination__link:hover {
   color: var(--primary-text);
 }
 
+/* A long category name wraps inside its chip instead of running off a phone screen */
+.chip__label {
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
 .chip__count {
+  flex: none;
   font-weight: 500;
   color: var(--muted);
   font-variant-numeric: tabular-nums;

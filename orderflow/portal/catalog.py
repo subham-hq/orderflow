@@ -19,6 +19,20 @@ def orderable():
     return [Product.company_id == current_user.company_id, Product.is_active.is_(True)]
 
 
+def search_conditions(q):
+    """Conditions for products whose name, SKU or description contains q (none when q is empty)."""
+    if not q:
+        return []
+    pattern = like_pattern(q)
+    return [
+        or_(
+            Product.name.ilike(pattern, escape="\\"),
+            Product.sku.ilike(pattern, escape="\\"),
+            Product.description.ilike(pattern, escape="\\"),
+        )
+    ]
+
+
 def category_names():
     """Categories that have at least one orderable product, A to Z."""
     names = db.session.scalars(
@@ -27,22 +41,34 @@ def category_names():
     return sorted({name for name in names if name and name.strip()}, key=str.lower)
 
 
+def category_chips(category, conditions):
+    """The category filter as [(category, products it lists)], starting with (None, all of them).
+
+    Counts follow the search, so each number matches what its chip lists. A
+    category asked for in the URL that has nothing orderable is still shown
+    (with 0), so the filter on screen always matches the results.
+    """
+    counts = dict(
+        db.session.execute(
+            db.select(Product.category, func.count(Product.id))
+            .where(*orderable(), *conditions)
+            .group_by(Product.category)
+        ).all()
+    )
+    names = category_names()
+    if category and category not in names:
+        names.append(category)
+    return [(None, sum(counts.values()))] + [(name, counts.get(name, 0)) for name in names]
+
+
 @bp.route("/catalog")
 @client_required
 def catalog():
     q = search_arg("q")
     category = search_arg("category", max_length=80)
 
-    select = db.select(Product).where(*orderable())
-    if q:
-        pattern = like_pattern(q)
-        select = select.where(
-            or_(
-                Product.name.ilike(pattern, escape="\\"),
-                Product.sku.ilike(pattern, escape="\\"),
-                Product.description.ilike(pattern, escape="\\"),
-            )
-        )
+    matching = search_conditions(q)
+    select = db.select(Product).where(*orderable(), *matching)
     if category:
         select = select.where(Product.category == category)
     select = select.order_by(func.lower(Product.name), Product.id)
@@ -50,13 +76,15 @@ def catalog():
 
     # Tell an empty catalog apart from a search with no results
     catalog_is_empty = page.total == 0 and db.session.scalar(db.select(func.count(Product.id)).where(*orderable())) == 0
+    chips = category_chips(category, matching)
     cart = cart_service.get_cart()
     return render_template(
         "portal/catalog.html",
         page=page,
         q=q,
         category=category,
-        categories=category_names(),
+        # Only worth showing when there is a category to pick, or one is picked
+        category_chips=chips if len(chips) > 1 else [],
         catalog_is_empty=catalog_is_empty,
         in_cart=cart_service.quantities_by_product(cart),
         cart_items=sum(cart.values()),
