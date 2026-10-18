@@ -736,6 +736,13 @@ summary {
   text-align: right;
 }
 
+/* Keep the line breaks people typed (notes, bulletins, reasons) */
+.text-pre-line,
+.order-note {
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
 .nowrap {
   white-space: nowrap;
 }
@@ -2133,6 +2140,14 @@ a.stat--info:hover {
   transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
 }
 
+.product-card__body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0.375rem;
+  min-width: 0;
+}
+
 .product-card:hover {
   border-color: var(--line-strong);
 }
@@ -2190,6 +2205,7 @@ a.stat--info:hover {
 }
 
 .product-card__actions,
+.product-card__form,
 .product-card form {
   display: flex;
   flex-wrap: wrap;
@@ -2200,6 +2216,7 @@ a.stat--info:hover {
 }
 
 .product-card__actions .btn,
+.product-card__form .btn,
 .product-card form .btn {
   flex: 1 1 7rem;
 }

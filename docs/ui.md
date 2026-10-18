@@ -116,7 +116,8 @@ Components:
 - `product-grid`, `product-card` (catalog), with `product-card__category`,
   `product-card__name`, `product-card__sku`, `product-card__description`,
   `product-card__price`, `product-card__tax`, `product-card__in-cart`,
-  `product-card__actions`
+  `product-card__actions`, `product-card__body` (the details, which grow so
+  every card's form lines up), `product-card__form`
 - `summary` (order totals box), `summary__row`, `summary__total`
 - `invoice` (printable invoice page; prints cleanly with `@media print`),
   `no-print` (hidden when printing)
@@ -134,7 +135,8 @@ Components:
 
 Text: `muted`, `faint`, `lead`, `mono` (SKUs, order numbers), `money`,
 `visually-hidden`, `text-right`, `eyebrow`, `prose` (long-form text such as
-the legal pages).
+the legal pages), `text-pre-line` and `order-note` (keep the line breaks
+people typed, for notes, bulletins and reasons).
 
 Shell classes (used by the layouts, not by pages): `brand`, `brand__mark`,
 `brand__name`, `brand__monogram`, `brand__text`, `brand__sub`, `nav-link`,
