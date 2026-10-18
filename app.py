@@ -740,20 +740,30 @@ def submit_order():
         return redirect("/catalog")
 
     # Generate a human-readable order reference number.
+    # Order numbers are unique across all companies, so the 6-digit suffix
+    # allows 900,000 orders per day, and the number of attempts is capped
+    # so the request can never loop forever.
     date_str = datetime.now().strftime('%Y%m%d')
-    while True:
-        random_suffix = random.randint(1000, 9999)
-        order_number = f"ORD-{date_str}-{random_suffix}"
+    order_number = None
+    for attempt in range(10):
+        random_suffix = random.randint(100000, 999999)
+        candidate = f"ORD-{date_str}-{random_suffix}"
 
         existing = db.execute(
-            "SELECT id FROM orders WHERE order_number = ?", order_number
+            "SELECT id FROM orders WHERE order_number = ?", candidate
         )
 
         if not existing:
+            order_number = candidate
             break
 
+    # No free order number found (extremely unlikely)
+    if order_number is None:
+        flash("We couldn't generate an order number. Please try again.", "danger")
+        return redirect("/catalog")
+
     # Format: ORD-YYYYMMDD-RANDOM
-    # Example: ORD-20260304-4821
+    # Example: ORD-20260304-482193
     # This allows easy tracking by administrators and clients.
 
     # Insert master order record (default status: pending)
