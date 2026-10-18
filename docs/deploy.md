@@ -81,7 +81,12 @@ service.
 ## Operating the service
 
 - **Logs:** the service's **Logs** tab shows requests and errors. Email
-  delivery problems are logged with the message "Could not send".
+  delivery problems are logged with the message "Could not send". The
+  request log (set in `bin/start.sh`) leaves out query strings and the
+  Referer header, and shows `[token]` in place of the secret part of links
+  from emails (password resets, invitations and email confirmations), so
+  nobody reading the logs can use a link meant for someone else. Render's
+  own HTTP request logs, on plans that have them, still record full paths.
 - **Backups:** paid Render Postgres plans take daily backups; check your
   plan's retention in the database's **Backups** tab.
 - **Scaling:** `WEB_CONCURRENCY` sets the number of gunicorn workers. Sign-in
