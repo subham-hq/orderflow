@@ -364,10 +364,8 @@ def test_resend_is_refused_while_suspended(client, signed_in, invited, mail):
 
 
 def test_resend_when_mail_fails(client, signed_in, invited, monkeypatch):
-    from orderflow.admin import clients as views
-
     before = invited.invite_sent_at
-    monkeypatch.setattr(views, "send_invite_email", lambda user: False)
+    monkeypatch.setattr(client_service, "send_invite_email", lambda user: False)
     response = client.post(f"/app/clients/{invited.id}/resend-invite", follow_redirects=True)
     assert "We couldn&#39;t send the invitation" in text(response)
     assert get_user(invited.id).invite_sent_at == before

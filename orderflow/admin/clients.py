@@ -244,24 +244,9 @@ def client_status(user_id):
 @staff_required
 def client_resend_invite(user_id):
     user = _get_client_or_404(user_id)
-    back = _back_to(user)
-    if user.has_accepted_invite:
-        flash(f"{user.full_name} has already accepted their invitation and can sign in.", "info")
-    elif not user.active:
-        flash(f"{user.full_name} is suspended. Reactivate them before sending a new invitation.", "warning")
-    elif client_accounts.invite_recently_sent(user):
-        flash(
-            f"We sent an invitation to {user.email} less than a minute ago. Give it a few minutes to arrive, "
-            "and ask them to check their spam folder.",
-            "info",
-        )
-    elif send_invite_email(user):
-        db.session.commit()
-        flash(f"Sent a new invitation to {user.email}.", "success")
-    else:
-        db.session.rollback()
-        flash(f"We couldn't send the invitation to {user.email} just now. Please try again in a few minutes.", "danger")
-    return redirect(back)
+    category, message = client_accounts.resend_invitation(user)
+    flash(message, category)
+    return redirect(_back_to(user))
 
 
 @bp.route("/clients/<int:user_id>/delete", methods=["POST"])

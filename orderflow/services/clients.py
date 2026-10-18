@@ -14,6 +14,7 @@ from sqlalchemy.exc import IntegrityError
 from ..extensions import db
 from ..models import CLIENT, REVENUE_STATUSES, Order, User
 from ..timeutil import as_utc, utcnow
+from .accounts import send_invite_email
 
 ACTIVE = "active"
 INVITED = "invited"
@@ -127,6 +128,24 @@ def invite_recently_sent(user, now=None):
         return False
     now = now or utcnow()
     return now - as_utc(user.invite_sent_at) < INVITE_RESEND_COOLDOWN
+
+
+def resend_invitation(user):
+    """Email a fresh invitation when it makes sense. Returns (flash category, message)."""
+    if user.has_accepted_invite:
+        return "info", f"{user.full_name} has already accepted their invitation and can sign in."
+    if not user.active:
+        return "warning", f"{user.full_name} is suspended. Reactivate them before sending a new invitation."
+    if invite_recently_sent(user):
+        return "info", (
+            f"We sent an invitation to {user.email} less than a minute ago. Give it a few minutes to arrive, "
+            "and ask them to check their spam folder."
+        )
+    if send_invite_email(user):
+        db.session.commit()
+        return "success", f"Sent a new invitation to {user.email}."
+    db.session.rollback()
+    return "danger", f"We couldn't send the invitation to {user.email} just now. Please try again in a few minutes."
 
 
 def delete_client(user):
