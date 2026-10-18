@@ -35,9 +35,16 @@ def _email_key():
     return normalize_email(request.form.get("email")) or "anonymous"
 
 
-def _start_session(user, remember=False):
-    """Sign the user in with a fresh session."""
+def _start_session(user, remember=False, keep_cart=False):
+    """Sign the user in with a fresh session.
+
+    keep_cart carries a client's cart over when the same person signs in again
+    (after changing their password); a sign-in never inherits someone else's.
+    """
+    cart = session.get("cart") if keep_cart else None
     session.clear()
+    if cart:
+        session["cart"] = cart
     login_user(user, remember=remember)
     user.last_login_at = utcnow()
     db.session.commit()
@@ -242,7 +249,7 @@ def change_password():
             user.set_password(form.password.data)
             user.end_all_sessions()  # sign out every other device
             db.session.commit()
-            _start_session(user)
+            _start_session(user, keep_cart=True)
             flash("Password updated. You've been signed out on your other devices.", "success")
             return redirect(home_url_for(user))
     return render_template("auth/change_password.html", form=form, password_hint=PASSWORD_HINT)

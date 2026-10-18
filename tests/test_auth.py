@@ -192,3 +192,31 @@ def test_resend_verification(client, mail):
     client.post("/signup", data=SIGNUP)
     client.post("/verify/resend")
     assert len(mail) == 2
+
+
+def test_changing_password_keeps_the_clients_cart(client, login, company, buyer):
+    product = factories.make_product(company)
+    login(buyer)
+    with client.session_transaction() as session:
+        session["cart"] = {str(product.id): 3}
+    client.post(
+        "/account/password",
+        data={
+            "current_password": factories.PASSWORD,
+            "password": "a different password",
+            "confirm": "a different password",
+        },
+    )
+    with client.session_transaction() as session:
+        assert session["cart"] == {str(product.id): 3}
+
+
+def test_signing_in_never_inherits_a_previous_cart(client, login, company, buyer, owner):
+    login(buyer)
+    with client.session_transaction() as session:
+        session["cart"] = {"1": 5}
+    client.post("/login", data={"email": owner.email, "password": factories.PASSWORD})
+    client.post("/logout")
+    login(owner)
+    with client.session_transaction() as session:
+        assert "cart" not in session
