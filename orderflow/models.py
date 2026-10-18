@@ -47,6 +47,10 @@ ORDER_STATUSES = (PENDING, APPROVED, REJECTED, FULFILLED, CANCELLED)
 # Orders that count as revenue
 REVENUE_STATUSES = (APPROVED, FULFILLED)
 
+# Largest id an INTEGER primary key can hold. Postgres rejects a bigger
+# number in a query (instead of finding no row), so check ids from URLs first.
+MAX_ID = 2_147_483_647
+
 # Which status changes are allowed, and who may make them
 STAFF_TRANSITIONS = {
     PENDING: (APPROVED, REJECTED),

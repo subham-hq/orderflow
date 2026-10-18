@@ -13,6 +13,7 @@ from flask import abort, flash, redirect, request, url_for
 from flask_login import current_user
 
 from .extensions import db
+from .models import MAX_ID
 
 
 def home_url_for(user):
@@ -57,6 +58,8 @@ def get_company_object_or_404(model, object_id):
         object_id = int(object_id)
     except (TypeError, ValueError):
         abort(404)
+    if not 1 <= object_id <= MAX_ID:
+        abort(404)  # no row can have this id, and Postgres would raise an error for it
     obj = db.session.get(model, object_id)
     if obj is None or obj.company_id != current_user.company_id:
         abort(404)
