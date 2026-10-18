@@ -3,8 +3,10 @@
 Backends (MAIL_BACKEND):
   console  print the message to the log (local development)
   memory   keep messages in app.extensions["mail_outbox"] (tests)
-  resend   send through the Resend HTTP API (production)
-  smtp     send through any SMTP server
+  resend   send through the Resend HTTP API (production); a timeout, a
+           rate limit (429) or a server error (5xx) is tried once more
+  smtp     send through any SMTP server: STARTTLS (SMTP_USE_TLS, port 587)
+           or TLS from the start (SMTP_USE_SSL, on by default for port 465)
 
 Each email has an HTML template and a plain-text template under
 templates/emails/<name>.html and <name>.txt.
@@ -12,6 +14,9 @@ templates/emails/<name>.html and <name>.txt.
 
 import logging
 import smtplib
+import ssl
+import time
+import uuid
 from dataclasses import dataclass, field
 from email.message import EmailMessage
 from email.utils import parseaddr
@@ -22,6 +27,13 @@ from flask import current_app, render_template
 log = logging.getLogger(__name__)
 
 RESEND_URL = "https://api.resend.com/emails"
+# Seconds to connect, then seconds to wait for Resend's answer
+RESEND_TIMEOUT = (5, 10)
+# The longest pause before the second try. Sending happens while the person
+# waits for the page, so honour Retry-After only up to this.
+RESEND_MAX_RETRY_WAIT = 2.0
+# Port for SMTP over TLS from the start ("implicit TLS")
+SMTPS_PORT = 465
 
 
 @dataclass
@@ -60,14 +72,37 @@ def _send_resend(message):
     }
     if message.reply_to:
         payload["reply_to"] = message.reply_to
-    response = requests.post(
-        RESEND_URL,
-        json=payload,
-        headers={"Authorization": f"Bearer {api_key}"},
-        timeout=10,
-    )
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        # The same key on both tries, so Resend sends the email only once even
+        # if the first try reached it before timing out
+        "Idempotency-Key": str(uuid.uuid4()),
+    }
+    for attempt in (1, 2):
+        try:
+            response = requests.post(RESEND_URL, json=payload, headers=headers, timeout=RESEND_TIMEOUT)
+        except (requests.ConnectionError, requests.Timeout):
+            if attempt == 2:
+                raise
+            log.warning("Resend didn't answer; trying %r once more", message.subject)
+            time.sleep(1)
+            continue
+        if attempt == 1 and (response.status_code == 429 or response.status_code >= 500):
+            log.warning("Resend returned %s; trying %r once more", response.status_code, message.subject)
+            time.sleep(_retry_wait(response))
+            continue
+        break
     if response.status_code >= 300:
         raise RuntimeError(f"Resend returned {response.status_code}: {response.text[:300]}")
+
+
+def _retry_wait(response):
+    """Seconds to pause before trying again: Retry-After when given, capped so the page isn't held up."""
+    try:
+        wait = float(response.headers.get("Retry-After", 1))
+    except (TypeError, ValueError):  # an HTTP date rather than seconds
+        wait = 1.0
+    return min(max(wait, 0.0), RESEND_MAX_RETRY_WAIT)
 
 
 def _send_smtp(message):
@@ -80,9 +115,19 @@ def _send_smtp(message):
         email["Reply-To"] = message.reply_to
     email.set_content(message.text)
     email.add_alternative(message.html, subtype="html")
-    with smtplib.SMTP(config["SMTP_HOST"], config["SMTP_PORT"], timeout=15) as server:
-        if config["SMTP_USE_TLS"]:
-            server.starttls()
+
+    # Verify the server's certificate; smtplib doesn't unless given a context
+    context = ssl.create_default_context()
+    use_ssl = config.get("SMTP_USE_SSL")
+    if use_ssl is None:
+        use_ssl = config["SMTP_PORT"] == SMTPS_PORT
+    if use_ssl:
+        connection = smtplib.SMTP_SSL(config["SMTP_HOST"], config["SMTP_PORT"], timeout=15, context=context)
+    else:
+        connection = smtplib.SMTP(config["SMTP_HOST"], config["SMTP_PORT"], timeout=15)
+    with connection as server:
+        if not use_ssl and config["SMTP_USE_TLS"]:
+            server.starttls(context=context)
         if config.get("SMTP_USERNAME"):
             server.login(config["SMTP_USERNAME"], config["SMTP_PASSWORD"])
         server.send_message(email)

@@ -97,7 +97,10 @@ class Config:
     SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
     SMTP_USERNAME = os.environ.get("SMTP_USERNAME")
     SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD")
+    # STARTTLS after connecting (the usual, on port 587)...
     SMTP_USE_TLS = _bool("SMTP_USE_TLS", True)
+    # ...or TLS from the start (implicit TLS). Unset means on for port 465 only.
+    SMTP_USE_SSL = _bool("SMTP_USE_SSL", None)
 
     # Where landing-page enquiries are sent, and the contact shown in the legal pages
     CONTACT_EMAIL = os.environ.get("CONTACT_EMAIL")

@@ -85,6 +85,11 @@ service.
 
 ## Operating the service
 
+- **Email:** if Resend times out, is rate limiting or has a server error,
+  each email is tried once more after a short pause; an email that still
+  can't be sent is logged with the message "Could not send". To use another
+  provider over SMTP instead, set `MAIL_BACKEND=smtp` and the `SMTP_*`
+  values in `.env.example`; port 465 connects with TLS from the start.
 - **Logs:** the service's **Logs** tab shows requests and errors. Email
   delivery problems are logged with the message "Could not send". The
   request log (set in `bin/start.sh`) leaves out query strings and the
