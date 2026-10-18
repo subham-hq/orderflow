@@ -1,16 +1,17 @@
-"""Client accounts: invite, edit, suspend or reactivate, resend invites, delete."""
+"""Client accounts: list, invite, edit, suspend or reactivate, resend invites, delete."""
 
 from flask import abort, flash, redirect, render_template, request, url_for
 from flask_login import current_user
+from sqlalchemy import func, or_
 from sqlalchemy.exc import IntegrityError
 
 from ..extensions import db
 from ..models import CLIENT, User
-from ..permissions import get_company_object_or_404, safe_next_url, staff_required
+from ..permissions import company_select, get_company_object_or_404, safe_next_url, staff_required
 from ..services import clients as client_accounts
 from ..services.accounts import AccountError, email_taken, find_user_by_email, invite_user, send_invite_email
 from . import bp
-from .forms import ClientForm
+from .forms import ClientForm, like_pattern, page_number, paginate, search_text
 
 EMAIL_TAKEN = "Someone with this email already has an OrderFlow account."
 
@@ -53,7 +54,42 @@ def _back_to(user):
 @bp.route("/clients")
 @staff_required
 def clients():
-    return render_template("placeholder.html", title="Clients", layout="layouts/app.html")
+    q = search_text(request.args.get("q"))
+    status = request.args.get("status", "")
+    if status not in client_accounts.ACCOUNT_STATUSES:
+        status = ""
+
+    filtered = company_select(User).where(User.role == CLIENT)
+    if q:
+        pattern = like_pattern(q)
+        full_name = User.first_name + " " + func.coalesce(User.last_name, "")
+        filtered = filtered.where(
+            or_(
+                full_name.ilike(pattern, escape="\\"),
+                User.email.ilike(pattern, escape="\\"),
+                User.buyer_company.ilike(pattern, escape="\\"),
+            )
+        )
+    counts = client_accounts.status_counts(filtered)
+    filtered = client_accounts.where_status(filtered, status)
+    ordered = filtered.order_by(
+        func.lower(func.coalesce(User.buyer_company, User.first_name)), func.lower(User.first_name), User.id
+    )
+    page = paginate(ordered, page_number(request.args.get("page")))
+
+    total_clients = db.session.scalar(
+        db.select(func.count(User.id)).where(User.company_id == current_user.company_id, User.role == CLIENT)
+    )
+    return render_template(
+        "admin/clients.html",
+        page=page,
+        q=q,
+        status=status,
+        counts=counts,
+        order_counts=client_accounts.order_counts(current_user.company_id, [user.id for user in page.items]),
+        total_clients=total_clients,
+        filtering=bool(q or status),
+    )
 
 
 # Invite ----------------------------------------------------------------------
