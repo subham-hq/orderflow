@@ -11,6 +11,7 @@ from ..models import (
     CANCELLED,
     CLIENT_TRANSITIONS,
     FULFILLED,
+    OWNER,
     PENDING,
     REJECTED,
     STAFF_TRANSITIONS,
@@ -19,6 +20,7 @@ from ..models import (
     OrderEvent,
     OrderItem,
     Product,
+    User,
 )
 from ..money import MAX_QUANTITY, gst_amount
 from ..timeutil import utcnow
@@ -243,12 +245,30 @@ def transition_order(order, user, to_status, message=None):
     return order
 
 
+def supplier_reply_to(company):
+    """Where a client's reply to an order email goes: the supplier's support email, else its owner.
+
+    Order emails are sent from the platform's address (MAIL_FROM), so without
+    this a client's "Why was this rejected?" would reach the platform, not
+    the supplier.
+    """
+    if company.support_email:
+        return company.support_email
+    return db.session.scalar(
+        db.select(User.email)
+        .where(User.company_id == company.id, User.role == OWNER, User.active.is_(True))
+        .order_by(User.id)
+        .limit(1)
+    )
+
+
 def _notify_new_order(order):
     client = order.client
     send_email(
         client.email,
         f"We received your order {order.number}",
         "order_placed_client",
+        reply_to=supplier_reply_to(order.company),
         order=order,
         link=external_url("portal.order_detail", number=order.number),
     )
@@ -258,6 +278,7 @@ def _notify_new_order(order):
             recipients,
             f"New order {order.number} from {client.buyer_company or client.full_name}",
             "order_placed_staff",
+            reply_to=client.email,  # staff can answer the client straight from the email
             order=order,
             link=external_url("admin.order_detail", number=order.number),
         )
@@ -269,6 +290,7 @@ def _notify_status_change(order, actor, to_status, message):
             order.client.email,
             f"Order {order.number} {TRANSITION_VERBS[to_status]}",
             "order_status_client",
+            reply_to=supplier_reply_to(order.company),
             order=order,
             to_status=to_status,
             status_label=STATUS_LABELS[to_status],
@@ -282,6 +304,7 @@ def _notify_status_change(order, actor, to_status, message):
                 recipients,
                 f"Order {order.number} was cancelled by the client",
                 "order_cancelled_staff",
+                reply_to=order.client.email,
                 order=order,
                 link=external_url("admin.order_detail", number=order.number),
             )

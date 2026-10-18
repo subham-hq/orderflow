@@ -126,3 +126,30 @@ def test_rejection_records_reason_and_client_can_cancel_pending(app, company, ow
     transition_order(cancelled, buyer, CANCELLED)
     assert rejected.rejection_reason == "Out of stock until Monday"
     assert cancelled.status == CANCELLED and cancelled.cancelled_at is not None
+
+
+def test_client_replies_reach_the_supplier_and_staff_replies_reach_the_client(
+    app, company, owner, admin, buyer, catalog, mail
+):
+    app.config["MAIL_REPLY_TO"] = "support@orderflow.test"  # the platform's own address
+    company.support_email = "orders@kaveri.example"
+    db.session.commit()
+
+    order, _ = place(buyer, {catalog["carton"].id: 1})
+    to_client, to_staff = mail[-2], mail[-1]
+    assert to_client.to == [buyer.email] and to_client.reply_to == "orders@kaveri.example"
+    assert set(to_staff.to) == {owner.email, admin.email} and to_staff.reply_to == buyer.email
+
+    transition_order(order, owner, REJECTED, "Out of stock until Monday")
+    assert mail[-1].to == [buyer.email] and mail[-1].reply_to == "orders@kaveri.example"
+
+    second, _ = place(buyer, {catalog["carton"].id: 1})
+    transition_order(second, buyer, CANCELLED)
+    assert set(mail[-1].to) == {owner.email, admin.email} and mail[-1].reply_to == buyer.email
+
+
+def test_without_a_support_email_client_replies_go_to_the_owner(company, owner, admin, buyer, catalog, mail):
+    order, _ = place(buyer, {catalog["carton"].id: 1})
+    assert mail[-2].reply_to == owner.email
+    transition_order(order, admin, APPROVED)
+    assert mail[-1].to == [buyer.email] and mail[-1].reply_to == owner.email
