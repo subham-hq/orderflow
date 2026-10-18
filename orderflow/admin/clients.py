@@ -1,4 +1,4 @@
-"""Client account pages: details, edit, suspend or reactivate, resend invites, delete."""
+"""Client accounts: invite, edit, suspend or reactivate, resend invites, delete."""
 
 from flask import abort, flash, redirect, render_template, request, url_for
 from flask_login import current_user
@@ -8,7 +8,7 @@ from ..extensions import db
 from ..models import CLIENT, User
 from ..permissions import get_company_object_or_404, safe_next_url, staff_required
 from ..services import clients as client_accounts
-from ..services.accounts import email_taken, find_user_by_email, send_invite_email
+from ..services.accounts import AccountError, email_taken, find_user_by_email, invite_user, send_invite_email
 from . import bp
 from .forms import ClientForm
 
@@ -54,6 +54,41 @@ def _back_to(user):
 @staff_required
 def clients():
     return render_template("placeholder.html", title="Clients", layout="layouts/app.html")
+
+
+# Invite ----------------------------------------------------------------------
+
+
+@bp.route("/clients/invite", methods=["GET", "POST"])
+@staff_required
+def client_invite():
+    form = ClientForm()
+    if form.validate_on_submit():
+        try:
+            user = invite_user(
+                current_user.company,
+                current_user._get_current_object(),
+                form.email.data,
+                CLIENT,
+                form.first_name.data,
+                last_name=form.last_name.data,
+                buyer_company=form.buyer_company.data,
+                phone=form.phone.data,
+            )
+        except AccountError as error:
+            form.email.errors.append(_email_problem(form.email.data, str(error)))
+        except IntegrityError:
+            # The same email was registered a moment ago in another request
+            db.session.rollback()
+            form.email.errors.append(EMAIL_TAKEN)
+        else:
+            flash(
+                f"Invitation sent to {user.email}. {user.first_name} will show as Invited until they "
+                "accept it and set a password.",
+                "success",
+            )
+            return redirect(url_for("admin.client_detail", user_id=user.id))
+    return render_template("admin/client_form.html", form=form, client=None)
 
 
 # Detail and edit -------------------------------------------------------------
