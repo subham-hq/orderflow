@@ -1,4 +1,5 @@
-from flask import flash, redirect, render_template, request, session, url_for
+from flask import flash, g, redirect, render_template, request, session, url_for
+from flask_limiter.util import get_remote_address
 from flask_login import current_user, login_required, login_user, logout_user
 from werkzeug.security import check_password_hash, generate_password_hash
 
@@ -33,6 +34,16 @@ _DUMMY_HASH = generate_password_hash("not-a-real-password")
 
 def _email_key():
     return normalize_email(request.form.get("email")) or "anonymous"
+
+
+def _sign_in_key():
+    # One count per account *and* client address, so wrong guesses sent from
+    # somewhere else can never lock the real person out of their account.
+    return f"{_email_key()}|{get_remote_address()}"
+
+
+def _sign_in_failed(response):
+    return g.get("sign_in_failed", False)
 
 
 def _start_session(user, remember=False, keep_cart=False):
@@ -77,7 +88,8 @@ def signup():
 
 @bp.route("/login", methods=["GET", "POST"])
 @limiter.limit("10 per minute", methods=["POST"])
-@limiter.limit("10 per 15 minutes", methods=["POST"], key_func=_email_key)
+# Only wrong passwords count, so signing in normally never uses this up
+@limiter.limit("10 per 15 minutes", methods=["POST"], key_func=_sign_in_key, deduct_when=_sign_in_failed)
 def login():
     if current_user.is_authenticated:
         return redirect(home_url_for(current_user))
@@ -92,6 +104,7 @@ def login():
             password_ok = user.check_password(form.password.data)
 
         if not password_ok:
+            g.sign_in_failed = True
             form.password.errors.append("That email and password don't match. Check them and try again.")
         elif not user.active:
             form.email.errors.append("This account has been suspended. Contact your supplier or account owner.")
