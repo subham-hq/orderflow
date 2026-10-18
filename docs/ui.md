@@ -47,16 +47,24 @@ everything looks.
 | `status_badge(status)` | Order status pill |
 | `badge(label, tone)` | Generic pill (`neutral`, `success`, `warning`, `danger`, `info`) |
 | `money(paise)` | Formatted rupees with tabular figures |
-| `page_header(title, subtitle, eyebrow)` | Page title; use `{% call page_header(...) %}actions{% endcall %}` for buttons |
+| `page_header(title, subtitle, eyebrow, badge)` | Page title; use `{% call page_header(...) %}actions{% endcall %}` for buttons. `badge` is shown beside the title, e.g. `badge=status_badge(order.status)` |
 | `empty_state(title, text, action_url, action_label, icon_name)` | Nothing-here-yet panel |
 | `stat(label, value, hint, tone, href)` | Metric tile (`tone`: `warning`, `success`, `danger`, `info`) |
 | `pagination(page, endpoint)` | Previous / next links for a SQLAlchemy pagination object |
 | `flashes()` | Flash messages (layouts already include it) |
 | `csrf()` | Hidden CSRF input |
 
-Button variants: `primary`, `secondary`, `ghost`, `danger`, and `accent`
-(marigold, for dark brand panels). Sizes: `sm`, `lg`. Add `btn--block` for a
-full-width button.
+Button variants: `primary`, `secondary`, `ghost`, `danger`, `danger-soft`
+and `accent` (marigold, for dark brand panels). Sizes: `sm`, `lg`. Add
+`btn--block` for a full-width button.
+
+Button hierarchy: a view has at most one `primary` button, for the thing
+people came to do (approve, place the order, save). Put it in the page
+header's actions or at the end of the form. A destructive action that isn't
+the main one (reject, cancel, delete, withdraw) uses `danger-soft`, an
+outlined red button, so it never outshouts the primary; solid `danger` is
+for the confirm button in the dialog. `post_button(..., variant="danger-soft",
+confirm=...)` still confirms with a red button.
 
 Icons in `icons.svg`: `dashboard`, `orders`, `box`, `users`, `team`,
 `megaphone`, `settings`, `logout`, `menu`, `home`, `cart`, `chevron-left`,
@@ -68,10 +76,16 @@ Icons in `icons.svg`: `dashboard`, `orders`, `box`, `users`, `team`,
 
 ## CSS classes
 
-Layout: `container` (`container--narrow`), `section`, `stack` (vertical
+Layout: `container` (`container--narrow`), `section` (a padded band on the
+public site, never inside the workspace or portal), `stack` (vertical
 rhythm; `stack--xs`, `stack--sm`, `stack--lg`, `stack--xl`), `cluster`
 (wrapping row; `cluster--end`), `split` (space-between row), `grid` with
 `grid--2`, `grid--3`, `grid--4`, `sidebar-layout` (main + aside).
+
+In the workspace and the portal, the blocks a page puts in its content block
+(page header, tabs, toolbar, cards, alerts) are spaced for you, so a page
+doesn't need an outer `stack`. Fields side by side in a `grid` line up row by row
+(labels, hints, inputs, errors), so their inputs stay level.
 
 Components:
 
@@ -88,22 +102,41 @@ Components:
   figures), `nowrap`, `table__primary` (main text), `table__secondary`
   (muted second line); rows: `is-muted`. Tables with four or more columns
   keep a minimum width and scroll sideways on phones.
+- `table--stack` turns a list table into stacked rows below 640px, so
+  amounts, statuses and quantities stay in view on phones. Each layout
+  places cells by column position, so pair it with the class for that
+  table's columns: `table--orders` (order, client, placed, items, total,
+  status), `table--client-orders` (order, placed, items, total, status),
+  `table--lines` (item, qty, unit price, GST, amount; the order lines),
+  `table--cart` (item, unit price, quantity, GST, amount, remove),
+  `table--products` (product, category, unit, price, GST, status, actions),
+  `table--clients` (client, email, status, orders, last sign-in, actions)
+  and `table--team` (name, role, status, last sign-in, actions). Keep the
+  columns in that order. In a `text-right` actions cell, wrap buttons in a
+  `cluster` and they line up on the right.
+- `results-count` ("24 orders" above a list), `section-label` (a small
+  heading for a group of cards), `back-link` (the "All orders" link above
+  a page header, with `{{ icon('chevron-left') }}`)
 - `toolbar` (filters and search above a list), `toolbar__field` (a labelled
   control in a toolbar), `toolbar__spacer`; `search` (put
   `{{ icon('search') }}` and an `input` inside); `tabs` / `tab` /
   `is-active` (status filters) with `tab__count`; `chips` / `chip` /
   `chip__count` (pill filters such as catalog categories; mark the current
-  one with `is-active` or `aria-current="page"`)
+  one with `is-active` or `aria-current="page"`). Put status tabs above the
+  search and filters, as on the orders list.
 - `badge`, `badge--<status>`, `badge--<tone>`, `badge__dot`
 - `alert`, `alert--success|info|warning|danger`, `alert__text`,
   `alert__title`, `alert__close`; `flashes` (stack of flash alerts)
-- `kv` (definition list of label/value pairs), `kv__row`, `kv__label`,
-  `kv__value`, `kv--compact`
+- `kv` (definition list of label/value pairs; every row shares one label
+  column, and in a narrow card each label sits above its value), `kv__row`,
+  `kv__label`, `kv__value`, `kv--compact`
 - `timeline`, `timeline__item`, `timeline__item--<status>` (dot colour),
   `timeline__item--next` (hollow dot for a step still to come),
   `timeline__dot`, `timeline__body`, `timeline__title`, `timeline__meta`,
   `timeline__note`, `timeline--compact`
-- `stat`, `stat__label`, `stat__value`, `stat__hint`, `stat--warning|success|danger|info`
+- `stat`, `stat__label`, `stat__value`, `stat__hint`, `stat--warning|success|danger|info`;
+  add `stat-grid` to a `grid` of short metrics to show them two to a row on
+  phones
 - `chart`, `chart__svg`, `chart__bar` (`chart__bar--current`,
   `chart__bar--accent`, `chart__bar--empty`), `chart__label`
   (`chart__label--x`, `chart__label--y`, `chart__label--strong`),
@@ -115,22 +148,29 @@ Components:
   `stepper__button`, `stepper__input`
 - `product-grid`, `product-card` (catalog), with `product-card__category`,
   `product-card__name`, `product-card__sku`, `product-card__description`,
-  `product-card__price`, `product-card__tax`, `product-card__in-cart`,
-  `product-card__actions`, `product-card__body` (the details, which grow so
-  every card's form lines up), `product-card__form`
-- `summary` (order totals box), `summary__row`, `summary__total`
+  `product-card__price` (with `product-card__unit` for "per box"),
+  `product-card__tax`, `product-card__in-cart`, `product-card__actions`,
+  `product-card__body` (the details, which grow so every card's form lines
+  up; put the in-cart note inside it), `product-card__form`
+- `summary` (order totals box), `summary__row`, `summary__total`;
+  `cart-summary` (the cart's totals card, kept in view beside the items on
+  wide screens), `cart-summary__note`
+- `bulletin` (a supplier announcement in the portal), `bulletin__icon`,
+  `bulletin__body`, `bulletin__meta`
 - `invoice` (printable invoice page; prints cleanly with `@media print`),
-  `no-print` (hidden when printing)
+  `invoice__notes`, `no-print` (hidden when printing)
 - `empty-state`, `empty-state__icon`, `empty-state__title`,
   `empty-state__text`, `empty-state--compact` (inside a card)
 - `page-header`, `page-header__eyebrow`, `page-header__title`,
-  `page-header__subtitle`, `page-header__actions`
+  `page-header__title-row` (title plus a badge), `page-header__subtitle`,
+  `page-header__actions`
 - `pagination`, `avatar` (`avatar--sm`, `avatar--lg`), `text-link`
 - `queue`, `queue__item`, `queue__link`, `queue__main`, `queue__amount`
   (a list of orders that need attention)
 - `checklist__list`, `checklist__item` (`is-done`), `checklist__marker`,
   `checklist__body`, `checklist__title`, `checklist__text`,
-  `checklist__progress` (setup steps)
+  `checklist__progress`, `checklist__status` and `checklist__meter` (an
+  SVG `meter` showing how much is done) (setup steps)
 - `weave` (indigo brand panel with a woven texture)
 
 Text: `muted`, `faint`, `lead`, `mono` (SKUs, order numbers), `money`,

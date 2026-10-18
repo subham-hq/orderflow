@@ -1,5 +1,7 @@
 """The shells every page lives in: base, marketing, auth, workspace and portal."""
 
+import re
+
 import pytest
 from flask import render_template_string
 from flask_login import login_user
@@ -296,3 +298,80 @@ def test_portal_active_cart_link_is_marked(app, buyer):
     html = render_as(app, buyer, source, active_nav="cart")
     cart = html.with_class("cart-link")[0]
     assert cart["aria-current"] == "page" and "is-active" in cart["class"]
+
+
+# --------------------------------------------------------------------------
+# Page header and list layouts shared by the workspace and the portal
+# --------------------------------------------------------------------------
+
+
+def test_page_header_shows_a_badge_beside_the_title(app, owner):
+    source = (
+        '{% from "macros/ui.html" import page_header, status_badge %}'
+        '{{ page_header("ORD-000019", "Placed today", badge=status_badge("pending")) }}'
+        '{{ page_header("Orders") }}'
+    )
+    raw = render_raw(app, owner, source)
+    html = Page(raw)
+    rows = html.with_class("page-header__title-row")
+    assert len(rows) == 1
+    assert '<h1 class="page-header__title">ORD-000019</h1>' in raw
+    assert '<h1 class="page-header__title">Orders</h1>' in raw
+    row = raw[raw.index("page-header__title-row") :]
+    assert row.index("ORD-000019") < row.index("badge--pending") < row.index("Placed today")
+
+
+# The phone layouts in app.css place cells by column position, so each
+# stacked table must keep the columns in this order (see docs/ui.md).
+STACKED_COLUMNS = {
+    "table--orders": ["Order", "Client", "Placed", "Items", "Total", "Status"],
+    "table--client-orders": ["Order", "Placed", "Items", "Total", "Status"],
+    "table--lines": ["Item", "Qty", "Unit price", "GST", "Amount"],
+    "table--cart": ["Item", "Unit price", "Quantity", "GST", "Amount", "Remove"],
+    "table--products": ["Product", "Category", "Unit", "Price", "GST", "Status", "Actions"],
+    "table--clients": ["Client", "Email", "Status", "Orders", "Last sign-in", "Actions"],
+    "table--team": ["Name", "Role", "Status", "Last sign-in", "Actions"],
+}
+
+
+def stacked_tables(body):
+    """{layout class: [column headings]} for every stacked table on a page."""
+
+    found = {}
+    for match in re.finditer(r'<table class="([^"]*\btable--stack\b[^"]*)">(.*?)</thead>', body, re.S):
+        layout = [name for name in match.group(1).split() if name in STACKED_COLUMNS]
+        assert len(layout) == 1, match.group(1)
+        headings = re.findall(r"<th[^>]*>(.*?)</th>", match.group(2), re.S)
+        found[layout[0]] = [re.sub(r"<[^>]+>", "", h).strip() for h in headings]
+    return found
+
+
+def test_stacked_tables_keep_the_column_order_their_phone_layout_expects(client, login, company, owner, buyer):
+    from orderflow.services.orders import place_order
+
+    product = factories.make_product(company, sku="CTN-1", name="Carton", category="Packaging")
+    order, _ = place_order(buyer, {product.id: 3})
+    db.session.commit()
+
+    seen = {}
+    login(owner)
+    for path in ("/app/orders", f"/app/orders/{order.number}", "/app/products", "/app/clients", "/app/team"):
+        seen.update(stacked_tables(client.get(path).get_data(as_text=True)))
+    client.post("/logout")
+    login(buyer)
+    with client.session_transaction() as session:
+        session["cart"] = {str(product.id): 2}
+    for path in ("/portal/", "/portal/orders", f"/portal/orders/{order.number}", "/portal/cart"):
+        seen.update(stacked_tables(client.get(path).get_data(as_text=True)))
+
+    assert set(seen) == set(STACKED_COLUMNS)
+    for layout, columns in STACKED_COLUMNS.items():
+        assert seen[layout] == columns, layout
+
+
+def test_every_stacked_layout_has_phone_rules():
+    from tests.test_design_system import CSS
+
+    phone = CSS[CSS.index("@media screen and (max-width: 639px) {\n  .table-wrap > .table--stack") :]
+    for layout in STACKED_COLUMNS:
+        assert f".{layout} td:nth-child(" in phone, layout

@@ -228,7 +228,7 @@ def test_every_icon_listed_in_the_docs_exists():
 
 STATUSES = ("pending", "approved", "fulfilled", "rejected", "cancelled")
 TONES = ("success", "info", "warning", "danger", "neutral")
-VARIANTS = ("primary", "secondary", "ghost", "danger", "accent")
+VARIANTS = ("primary", "secondary", "ghost", "danger", "danger-soft", "accent")
 
 
 def documented_classes():
@@ -429,3 +429,46 @@ def test_documented_macros_exist_with_their_parameters():
     assert "hint=None" in macros["field"]
     assert macros["stat"].startswith("label, value, hint=None, tone=None, href=None")
     assert macros["empty_state"].startswith("title, text=None, action_url=None, action_label=None, icon_name=")
+    assert "badge=None" in macros["page_header"]
+
+
+# --------------------------------------------------------------------------
+# Button hierarchy and layout conventions
+# --------------------------------------------------------------------------
+
+
+def test_every_button_variant_is_documented_and_styled():
+    listed = re.search(r"Button variants:(.*?)\n\n", DOCS, re.S).group(1)
+    assert set(re.findall(r"`([\w-]+)`", listed)) >= set(VARIANTS)
+    for variant in VARIANTS:
+        assert f".btn--{variant} {{" in CSS, variant
+
+
+def test_soft_danger_buttons_still_confirm_with_a_red_button():
+    assert "/^danger/.test(variant" in JS
+
+
+def test_pages_use_soft_danger_for_destructive_buttons():
+    """Solid red is kept for the confirm dialog; on pages it would outshout the primary action."""
+    offenders = []
+    for path in PAGE_TEMPLATES:
+        for match in re.finditer(r'(?<![\w-])variant="danger"', path.read_text()):
+            offenders.append(f"{rel(path)}: {match.group(0)}")
+    assert not offenders, offenders
+
+
+def test_workspace_and_portal_pages_dont_use_the_public_section_band():
+    """`section` adds the landing page's big padding; app pages are spaced by their layout."""
+    offenders = []
+    for path in PAGE_TEMPLATES:
+        if rel(path).split("/")[0] not in ("admin", "portal", "shared", "auth"):
+            continue
+        for classes in re.findall(r'class="([^"]*)"', path.read_text()):
+            if "section" in classes.split():
+                offenders.append(f"{rel(path)}: {classes}")
+    assert not offenders, offenders
+
+
+def test_app_content_is_spaced_by_the_layout():
+    flow = CSS[CSS.index(".main,\n.portal-main > .container {") :]
+    assert "gap: var(--space-6);" in flow[: flow.index("}")]
