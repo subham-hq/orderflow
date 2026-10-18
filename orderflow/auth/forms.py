@@ -22,12 +22,56 @@ class StrongPassword:
 PASSWORD_HINT = f"At least {MIN_PASSWORD_LENGTH} characters. A short phrase works well."
 
 
+def _email(label, what):
+    return EmailField(
+        label,
+        filters=[_strip],
+        validators=[
+            DataRequired(f"Enter {what}."),
+            Length(max=254, message="Keep the email address to 254 characters or fewer."),
+            Email("Enter a valid email address, like name@business.in."),
+        ],
+    )
+
+
+def _new_password():
+    return PasswordField("New password", validators=[DataRequired("Choose a new password."), StrongPassword()])
+
+
+def _confirm_password():
+    return PasswordField(
+        "Confirm new password",
+        validators=[
+            DataRequired("Enter the new password again."),
+            EqualTo("password", message="The passwords don't match."),
+        ],
+    )
+
+
 class SignupForm(FlaskForm):
-    first_name = StringField("First name", filters=[_strip], validators=[DataRequired(), Length(max=80)])
-    last_name = StringField("Last name", filters=[_strip], validators=[Optional(), Length(max=80)])
-    company_name = StringField("Company name", filters=[_strip], validators=[DataRequired(), Length(max=120)])
-    email = EmailField("Work email", filters=[_strip], validators=[DataRequired(), Email(), Length(max=254)])
-    password = PasswordField("Password", validators=[DataRequired(), StrongPassword()])
+    first_name = StringField(
+        "First name",
+        filters=[_strip],
+        validators=[
+            DataRequired("Enter your first name."),
+            Length(max=80, message="Keep your first name to 80 characters or fewer."),
+        ],
+    )
+    last_name = StringField(
+        "Last name",
+        filters=[_strip],
+        validators=[Optional(), Length(max=80, message="Keep your last name to 80 characters or fewer.")],
+    )
+    company_name = StringField(
+        "Company name",
+        filters=[_strip],
+        validators=[
+            DataRequired("Enter your company name."),
+            Length(max=120, message="Keep the company name to 120 characters or fewer."),
+        ],
+    )
+    email = _email("Work email", "your work email address")
+    password = PasswordField("Password", validators=[DataRequired("Choose a password."), StrongPassword()])
     accept_terms = BooleanField(
         "I agree to the Terms of Service and Privacy Policy",
         validators=[DataRequired(message="Please accept the terms to continue.")],
@@ -35,25 +79,33 @@ class SignupForm(FlaskForm):
 
 
 class LoginForm(FlaskForm):
-    email = EmailField("Email", filters=[_strip], validators=[DataRequired(), Email(), Length(max=254)])
-    password = PasswordField("Password", validators=[DataRequired(), Length(max=128)])
+    email = _email("Email", "the email address you sign in with")
+    password = PasswordField(
+        "Password",
+        validators=[
+            DataRequired("Enter your password."),
+            Length(max=128, message="Passwords here are 128 characters or fewer. Check it and try again."),
+        ],
+    )
     remember = BooleanField("Keep me signed in on this device")
 
 
 class ForgotPasswordForm(FlaskForm):
-    email = EmailField("Email", filters=[_strip], validators=[DataRequired(), Email(), Length(max=254)])
+    email = _email("Email", "the email address you sign in with")
 
 
 class SetPasswordForm(FlaskForm):
-    password = PasswordField("New password", validators=[DataRequired(), StrongPassword()])
-    confirm = PasswordField(
-        "Confirm new password", validators=[DataRequired(), EqualTo("password", message="The passwords don't match.")]
-    )
+    password = _new_password()
+    confirm = _confirm_password()
 
 
 class ChangePasswordForm(FlaskForm):
-    current_password = PasswordField("Current password", validators=[DataRequired(), Length(max=128)])
-    password = PasswordField("New password", validators=[DataRequired(), StrongPassword()])
-    confirm = PasswordField(
-        "Confirm new password", validators=[DataRequired(), EqualTo("password", message="The passwords don't match.")]
+    current_password = PasswordField(
+        "Current password",
+        validators=[
+            DataRequired("Enter your current password."),
+            Length(max=128, message="That isn't your current password."),
+        ],
     )
+    password = _new_password()
+    confirm = _confirm_password()
