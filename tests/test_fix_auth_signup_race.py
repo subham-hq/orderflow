@@ -48,3 +48,5 @@ def test_parallel_signups_for_one_email_never_fail(app):
 
     assert sorted(statuses) == [200] * (attempts - 1) + [302]
     assert db.session.scalar(db.select(db.func.count(Company.id))) == 1
+    db.session.remove()
+    db.engine.dispose()  # the threads opened extra connections; close them now

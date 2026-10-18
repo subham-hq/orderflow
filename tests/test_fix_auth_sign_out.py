@@ -124,3 +124,4 @@ def test_an_idle_session_cannot_send_another_confirmation_email(clock):
         finally:
             db.session.remove()
             db.drop_all()
+            db.engine.dispose()  # close its connections now, not when garbage collected

@@ -20,6 +20,7 @@ def limited_app():
         yield app
         db.session.remove()
         db.drop_all()
+        db.engine.dispose()  # close its connections now, not when garbage collected
 
 
 def forgot(app, email, address):
