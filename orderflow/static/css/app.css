@@ -1408,6 +1408,13 @@ a.table__primary:hover,
   vertical-align: middle;
 }
 
+.badge--neutral {
+  --badge-bg: var(--neutral-bg);
+  --badge-fg: var(--neutral-fg);
+  --badge-dot: var(--neutral-fg);
+  --badge-line: var(--neutral-line);
+}
+
 .badge__dot {
   flex: none;
   width: 0.4375rem;
@@ -1483,7 +1490,8 @@ a.table__primary:hover,
    Alerts and flash messages
    -------------------------------------------------------------------------- */
 
-.alert {
+.alert,
+.alert--info {
   --alert-bg: var(--info-bg);
   --alert-fg: var(--info-fg);
   --alert-icon: var(--info-icon);
@@ -1947,6 +1955,14 @@ a.stat--info:hover {
   font-family: var(--font-sans);
   font-size: 11px;
   font-variant-numeric: tabular-nums;
+}
+
+.chart__label--x {
+  letter-spacing: 0.01em;
+}
+
+.chart__label--y {
+  font-size: 10px;
 }
 
 .chart__label--strong {
@@ -2885,6 +2901,11 @@ a.pagination__link:hover {
   text-decoration: none;
   cursor: pointer;
   transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+
+.nav-link--button {
+  font: inherit;
+  font-size: 0.9375rem;
 }
 
 .nav-link:hover {

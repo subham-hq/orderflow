@@ -103,7 +103,7 @@ Components:
   `timeline__item--next` (hollow dot for a step still to come),
   `timeline__dot`, `timeline__body`, `timeline__title`, `timeline__meta`,
   `timeline__note`, `timeline--compact`
-- `stat`, `stat__label`, `stat__value`, `stat__hint`, `stat--<tone>`
+- `stat`, `stat__label`, `stat__value`, `stat__hint`, `stat--warning|success|danger|info`
 - `chart`, `chart__svg`, `chart__bar` (`chart__bar--current`,
   `chart__bar--accent`, `chart__bar--empty`), `chart__label`
   (`chart__label--x`, `chart__label--y`, `chart__label--strong`),
