@@ -39,6 +39,9 @@ def create_app(config_name=None, **overrides):
     logging.basicConfig(level=app.config["LOG_LEVEL"], format="%(asctime)s %(levelname)s %(name)s: %(message)s")
     _warn_about_production_settings(app)
 
+    from .auth import sessions
+
+    sessions.init_app(app)  # first, so an idle session ends before anything reads it
     db.init_app(app)
     migrate.init_app(app, db, render_as_batch=True, compare_type=True)
     csrf.init_app(app)

@@ -98,3 +98,29 @@ def test_the_idle_timeout_can_be_configured():
     app = create_app("testing", SESSION_IDLE_TIMEOUT=sessions.IDLE_TIMEOUT / 12)
     assert app.config["SESSION_IDLE_TIMEOUT"].total_seconds() == HOUR
     assert create_app("testing").config["SESSION_IDLE_TIMEOUT"] == sessions.IDLE_TIMEOUT
+
+
+def test_an_idle_session_cannot_send_another_confirmation_email(clock):
+    # With rate limits on, as in production: that limit is keyed on current_user
+    from orderflow import create_app
+    from orderflow.extensions import db, limiter
+    from orderflow.mail import outbox
+    from tests.conftest import FreshContextClient
+
+    app = create_app("testing", RATELIMIT_ENABLED=True)
+    app.test_client_class = FreshContextClient
+    with app.app_context():
+        db.create_all()
+        limiter.reset()
+        try:
+            newcomer = factories.make_owner(email="new@kaveri.example", verified=False)
+            client = app.test_client()
+            client.post("/login", data={"email": newcomer.email, "password": factories.PASSWORD})
+            outbox().clear()
+            clock(13 * HOUR)
+            response = client.post("/verify/resend")
+            assert response.headers["Location"].startswith("/login")
+            assert outbox() == []
+        finally:
+            db.session.remove()
+            db.drop_all()

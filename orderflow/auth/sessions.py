@@ -20,8 +20,6 @@ from datetime import timedelta
 from flask import current_app, g, request, session
 from flask_login import logout_user
 
-from . import bp
-
 IDLE_TIMEOUT = timedelta(hours=12)
 
 # When the session was last used, in seconds since the epoch. It's written
@@ -50,12 +48,13 @@ def end():
     logout_user()
 
 
-@bp.record_once
-def _default_settings(state):
-    state.app.config.setdefault("SESSION_IDLE_TIMEOUT", IDLE_TIMEOUT)
+def init_app(app):
+    app.config.setdefault("SESSION_IDLE_TIMEOUT", IDLE_TIMEOUT)
+    # create_app() calls this before setting up the extensions, so this runs
+    # before any other hook could load the user from an idle session.
+    app.before_request(end_idle_session)
 
 
-@bp.before_app_request
 def end_idle_session():
     """Sign out a session that hasn't been used for SESSION_IDLE_TIMEOUT."""
     if request.endpoint == "static" or "_user_id" not in session:
