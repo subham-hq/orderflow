@@ -6,7 +6,10 @@
 {% block content %}
 <a class="back-link" href="{{ url_for('portal.orders') }}">{{ icon('chevron-left') }}<span>All orders</span></a>
 {% call page_header("Order " ~ order.number, "Placed " ~ (order.placed_at | datetime), eyebrow=supplier, badge=status_badge(order.status)) %}
+  {# As on the staff side: a rejected or cancelled order has no valid proforma invoice #}
+  {% if order.status not in ('rejected', 'cancelled') %}
   {{ link_button("Proforma invoice", url_for('portal.invoice', number=order.number), variant="ghost", icon_name="receipt") }}
+  {% endif %}
   {{ post_button(url_for('portal.order_reorder', number=order.number), "Reorder", variant="secondary", icon_name="rotate") }}
   {% if can_cancel %}
   {{ post_button(

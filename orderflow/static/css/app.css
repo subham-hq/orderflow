@@ -6404,6 +6404,18 @@ a.pagination__link:hover {
     break-inside: avoid;
   }
 
+  /* "Not valid" must survive printing without background colours */
+  .invoice__void {
+    border: 2px solid #000000;
+    background: #ffffff;
+    color: #000000;
+    break-inside: avoid;
+  }
+
+  .invoice__void > .icon {
+    color: #000000;
+  }
+
   /* Long product names get the room; figures wrap between their parts */
   .table--lines td:first-child {
     min-width: 9rem;

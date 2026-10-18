@@ -160,7 +160,9 @@ Components:
 - `bulletin` (a supplier announcement in the portal), `bulletin__icon`,
   `bulletin__body`, `bulletin__meta`
 - `invoice` (printable invoice page; prints cleanly with `@media print`),
-  `invoice__notes`, `no-print` (hidden when printing)
+  `invoice__notes`, `invoice__void` (the "Not valid" alert on the invoice of
+  a rejected or cancelled order; it prints in black and white), `no-print`
+  (hidden when printing)
 - `empty-state`, `empty-state__icon`, `empty-state__title`,
   `empty-state__text`, `empty-state--compact` (inside a card)
 - `page-header`, `page-header__eyebrow`, `page-header__title`,
