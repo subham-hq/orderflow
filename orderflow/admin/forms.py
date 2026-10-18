@@ -11,8 +11,8 @@ import re
 
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileAllowed, FileField, FileRequired
-from wtforms import BooleanField, SelectField, StringField, TextAreaField
-from wtforms.validators import DataRequired, Length, Optional, StopValidation
+from wtforms import BooleanField, EmailField, SelectField, StringField, TextAreaField
+from wtforms.validators import DataRequired, Email, Length, Optional, StopValidation, ValidationError
 
 from .. import money
 from ..extensions import db
@@ -22,6 +22,7 @@ PER_PAGE = 25
 SEARCH_MAX_LENGTH = 100
 
 _CURRENCY_PREFIX = re.compile(r"^(?:₹|rs\.?|inr)\s*", re.IGNORECASE)
+_PHONE_CHARS = re.compile(r"[0-9+()\-. ]+")
 
 
 # Filters -------------------------------------------------------------------
@@ -41,6 +42,11 @@ def strip_text(value):
     if not isinstance(value, str):
         return value
     return value.replace("\r\n", "\n").replace("\r", "\n").strip()
+
+
+def lower(value):
+    """Emails: trimmed and lower-cased, like services.accounts.normalize_email."""
+    return value.strip().lower() if isinstance(value, str) else value
 
 
 def price_text(value):
@@ -87,6 +93,40 @@ class GstRate:
             listed = ", ".join(labels[:-1]) + f" or {labels[-1]}" if len(labels) > 1 else labels[0]
             raise StopValidation(f"Choose one of these GST rates: {listed}.")
         field.parsed = money.parse_gst_rate(field.data)
+
+
+class Phone:
+    """A phone number in any common format, with 6 to 15 digits."""
+
+    def __call__(self, form, field):
+        value = field.data or ""
+        if not value:
+            return
+        digits = sum(char.isdigit() for char in value)
+        if not _PHONE_CHARS.fullmatch(value) or not 6 <= digits <= 15:
+            raise ValidationError("Enter a phone number using digits, spaces and + - ( ), like +91 98450 12345.")
+
+
+def _email_validators(required=True, what="an email address"):
+    validators = [DataRequired(f"Enter {what}.")] if required else [Optional()]
+    return validators + [
+        Length(max=254, message="Keep the email address to 254 characters or fewer."),
+        Email("Enter a valid email address, like name@business.in."),
+    ]
+
+
+def _first_name(what="their"):
+    return StringField(
+        "First name", filters=[squash], validators=[DataRequired(f"Enter {what} first name."), _length(80, "the name")]
+    )
+
+
+def _last_name():
+    return StringField("Last name", filters=[squash], validators=[Optional(), _length(80, "the name")])
+
+
+def _phone():
+    return StringField("Phone", filters=[squash], validators=[Optional(), _length(32, "the phone number"), Phone()])
 
 
 # Catalog -------------------------------------------------------------------
@@ -162,6 +202,23 @@ class ProductImportForm(FlaskForm):
             FileAllowed(["csv"], "Upload a file that ends in .csv. In Excel, use File > Save As > CSV UTF-8."),
         ],
     )
+
+
+# Clients ---------------------------------------------------------------------
+
+
+class ClientForm(FlaskForm):
+    """Invite a client, or edit one (the view removes email once they've joined)."""
+
+    first_name = _first_name()
+    last_name = _last_name()
+    buyer_company = StringField(
+        "Business name",
+        filters=[squash],
+        validators=[DataRequired("Enter the name of the business they buy for."), _length(160, "the business name")],
+    )
+    email = EmailField("Email", filters=[lower], validators=_email_validators(what="their email address"))
+    phone = _phone()
 
 
 # List helpers ----------------------------------------------------------------

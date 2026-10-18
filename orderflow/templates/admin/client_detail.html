@@ -1,0 +1,109 @@
+{% extends "layouts/app.html" %}
+{% from "macros/ui.html" import link_button, post_button, page_header, status_badge, money, empty_state %}
+{% from "admin/clients_macros.html" import account_badge, last_sign_in %}
+{% set active_nav = "clients" %}
+{% set display = client.full_name ~ (" (" ~ client.buyer_company ~ ")" if client.buyer_company else "") %}
+{% block title %}{{ client.buyer_company or client.full_name }}{% endblock %}
+{% block topbar_title %}Clients{% endblock %}
+{% block content %}
+{% call page_header(client.buyer_company or client.full_name, client.full_name if client.buyer_company else client.email, eyebrow="Client") %}
+  {{ account_badge(client) }}
+  {{ link_button("Edit details", url_for('admin.client_edit', user_id=client.id), variant="secondary", icon_name="edit") }}
+{% endcall %}
+
+{% if status == "invited" %}
+<div class="alert alert--info">
+  <p class="alert__text">{{ client.first_name }} hasn't accepted their invitation yet{% if client.invite_sent_at %}. We last sent it {{ client.invite_sent_at | timeago }}{% endif %}. They can't sign in until they set a password.</p>
+</div>
+{% elif status == "suspended" %}
+<div class="alert alert--warning">
+  <p class="alert__text">This account is suspended. {{ client.first_name }} can't sign in or place orders until you reactivate it.</p>
+</div>
+{% endif %}
+
+<div class="sidebar-layout">
+  <div class="stack">
+    <div class="card">
+      <div class="card__header"><h2 class="card__title">Details</h2></div>
+      <div class="card__body">
+        <dl class="kv">
+          <div class="kv__row"><dt class="kv__label">Business</dt><dd class="kv__value">{{ client.buyer_company or "Not set" }}</dd></div>
+          <div class="kv__row"><dt class="kv__label">Contact</dt><dd class="kv__value">{{ client.full_name }}</dd></div>
+          <div class="kv__row"><dt class="kv__label">Email</dt><dd class="kv__value"><a class="text-link" href="mailto:{{ client.email }}">{{ client.email }}</a></dd></div>
+          <div class="kv__row"><dt class="kv__label">Phone</dt><dd class="kv__value">{% if client.phone %}<a class="text-link" href="tel:{{ client.phone | replace(' ', '') }}">{{ client.phone }}</a>{% else %}<span class="muted">Not added</span>{% endif %}</dd></div>
+          <div class="kv__row"><dt class="kv__label">Last sign-in</dt><dd class="kv__value">{{ last_sign_in(client) }}</dd></div>
+          <div class="kv__row"><dt class="kv__label">Added</dt><dd class="kv__value">{{ client.created_at | date }}{% if client.invited_by %} by {{ client.invited_by.full_name }}{% endif %}</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="card card--flush">
+      <div class="card__header"><h2 class="card__title">Recent orders</h2></div>
+      {% if orders %}
+      <div class="table-wrap">
+        <table class="table">
+          <caption class="visually-hidden">Most recent orders from {{ display }}</caption>
+          <thead>
+            <tr>
+              <th scope="col">Order</th>
+              <th scope="col">Placed</th>
+              <th scope="col">Status</th>
+              <th scope="col" class="num">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for order in orders %}
+            <tr>
+              <td><a class="text-link mono" href="{{ url_for('admin.order_detail', number=order.number) }}">{{ order.number }}</a></td>
+              <td class="nowrap">{{ order.placed_at | datetime }}</td>
+              <td>{{ status_badge(order.status) }}</td>
+              <td class="num">{{ money(order.total_paise) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if order_count > orders | length %}
+      <div class="card__footer muted">Showing the latest {{ orders | length }} of {{ "{:,}".format(order_count) }} orders.</div>
+      {% endif %}
+      {% else %}
+      <div class="card__body">
+        {{ empty_state("No orders yet", "When " ~ client.first_name ~ " places an order in their portal, it will show up here.", icon_name="orders") }}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <aside class="stack" aria-label="Account">
+    <div class="card">
+      <div class="card__header"><h2 class="card__title">Orders</h2></div>
+      <div class="card__body">
+        <dl class="kv">
+          <div class="kv__row"><dt class="kv__label">Orders placed</dt><dd class="kv__value">{{ "{:,}".format(order_count) }}</dd></div>
+          <div class="kv__row"><dt class="kv__label">Approved and fulfilled</dt><dd class="kv__value">{{ money(ordered_total) }}</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card__header"><h2 class="card__title">Account</h2></div>
+      <div class="card__body stack">
+        {% if status == "invited" %}
+        {{ post_button(url_for('admin.client_resend_invite', user_id=client.id), "Resend invitation", variant="secondary", icon_name="send") }}
+        {% endif %}
+        {% if client.active %}
+        <p class="muted">Suspending signs {{ client.first_name }} out straight away and stops them ordering. You can reactivate them later.</p>
+        {{ post_button(url_for('admin.client_status', user_id=client.id), "Suspend account", variant="secondary", icon_name="ban", fields={"active": 0}, confirm="Suspend " ~ display ~ "? They'll be signed out and won't be able to sign in or order until you reactivate them.", confirm_label="Suspend") }}
+        {% else %}
+        {{ post_button(url_for('admin.client_status', user_id=client.id), "Reactivate account", variant="primary", icon_name="rotate", fields={"active": 1}) }}
+        {% endif %}
+        {% if order_count == 0 %}
+        {{ post_button(url_for('admin.client_delete', user_id=client.id), "Delete client", variant="danger", icon_name="trash", confirm="Delete " ~ display ~ " for good? This can't be undone.", confirm_label="Delete client") }}
+        {% else %}
+        <p class="muted">Clients with orders can't be deleted, so their order history stays complete. Suspend the account instead.</p>
+        {% endif %}
+      </div>
+    </div>
+  </aside>
+</div>
+{% endblock %}
