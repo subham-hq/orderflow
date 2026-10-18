@@ -1,0 +1,9 @@
+New enquiry from the {{ app_name }} website
+
+Name: {{ lead.name }}
+Email: {{ lead.email }}
+{% if lead.company %}Company: {{ lead.company }}
+{% endif %}
+{% if lead.message %}
+{{ lead.message }}
+{% endif %}

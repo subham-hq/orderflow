@@ -1,0 +1,11 @@
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0;border-collapse:collapse;font-size:14px;">
+  {% for item in order.items %}
+  <tr>
+    <td style="padding:8px 0;border-bottom:1px solid #eceef6;">{{ item.name }}<br><span style="font-size:12px;color:#6b7194;">{{ item.sku }} · {{ item.quantity }} × {{ item.unit_price_paise | inr }}</span></td>
+    <td align="right" style="padding:8px 0;border-bottom:1px solid #eceef6;white-space:nowrap;">{{ item.line_subtotal_paise | inr }}</td>
+  </tr>
+  {% endfor %}
+  <tr><td style="padding:8px 0 2px;color:#6b7194;">Subtotal</td><td align="right" style="padding:8px 0 2px;">{{ order.subtotal_paise | inr }}</td></tr>
+  <tr><td style="padding:2px 0;color:#6b7194;">GST</td><td align="right" style="padding:2px 0;">{{ order.tax_paise | inr }}</td></tr>
+  <tr><td style="padding:8px 0 0;font-weight:700;">Total</td><td align="right" style="padding:8px 0 0;font-weight:700;">{{ order.total_paise | inr }}</td></tr>
+</table>

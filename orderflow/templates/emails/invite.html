@@ -1,0 +1,9 @@
+{% extends "emails/_layout.html" %}
+{% block content %}
+<h1 style="margin:0 0 12px;font-size:22px;line-height:1.3;">{% if user.is_client %}{{ user.company.name }} invited you to order online{% else %}Join {{ user.company.name }} on {{ app_name }}{% endif %}</h1>
+<p style="margin:0;font-size:15px;line-height:1.6;">Hi {{ user.first_name }},
+{% if user.is_client %}{{ inviter_name }} at {{ user.company.name }} has set up an account for {{ user.buyer_company or 'you' }}. You can browse their catalog, place purchase orders and track them in one place.
+{% else %}{{ inviter_name }} invited you to help manage orders for {{ user.company.name }}.{% endif %}</p>
+{% with label="Accept invitation" %}{% include "emails/_button.html" %}{% endwith %}
+<p style="margin:16px 0 0;font-size:13px;color:#6b7194;">You'll choose a password when you open the link. It works for 7 days.</p>
+{% endblock %}
