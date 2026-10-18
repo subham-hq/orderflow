@@ -2,7 +2,6 @@
 
 from datetime import timedelta
 
-from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 
 from ..extensions import db
@@ -108,10 +107,11 @@ def _based_on_email(password, email):
 
 
 def find_user_by_email(email):
+    """The user with this address, ignoring case. Emails are stored normalised (see User)."""
     email = normalize_email(email)
     if not email:
         return None
-    return db.session.scalar(db.select(User).where(func.lower(User.email) == email))
+    return db.session.scalar(db.select(User).where(User.email == email))
 
 
 def email_taken(email):

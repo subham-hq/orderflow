@@ -23,7 +23,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
 )
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from .extensions import db
@@ -112,6 +112,12 @@ class User(UserMixin, db.Model):
 
     company: Mapped[Company] = relationship(back_populates="users")
     invited_by: Mapped["User | None"] = relationship(remote_side=[id])
+
+    @validates("email")
+    def _normalize_email(self, key, value):
+        # Always stored trimmed and in lower case, so sign-in can look the
+        # address up exactly (using the unique index) and still ignore case.
+        return value.strip().lower() if isinstance(value, str) else value
 
     # Flask-Login
     def get_id(self):
