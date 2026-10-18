@@ -27,4 +27,4 @@ def portal_context():
     return {"MAX_QUANTITY": MAX_QUANTITY}
 
 
-from . import cart, orders, routes  # noqa: E402,F401
+from . import cart, catalog, orders, routes  # noqa: E402,F401

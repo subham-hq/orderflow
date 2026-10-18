@@ -16,12 +16,6 @@ def home():
     return _placeholder("Home")
 
 
-@bp.route("/catalog")
-@client_required
-def catalog():
-    return _placeholder("Catalog")
-
-
 @bp.route("/account")
 @client_required
 def account():
