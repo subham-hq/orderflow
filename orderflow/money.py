@@ -114,16 +114,30 @@ def format_inr(paise, symbol=True, decimals=True):
     return f"{sign}{'₹' if symbol else ''}{text}"
 
 
+_COMPACT_UNITS = ((Decimal(10_000_000), "Cr"), (Decimal(100_000), "L"), (Decimal(1000), "K"))
+
+
+def _compact_unit(rupees):
+    """The (size, suffix) unit for an amount: 1 crore and up is Cr, and so on down to plain rupees."""
+    return next(((size, suffix) for size, suffix in _COMPACT_UNITS if rupees >= size), (Decimal(1), ""))
+
+
 def format_inr_compact(paise):
-    """Short form for charts and stat tiles: ₹4.2K, ₹3.1L, ₹1.2Cr."""
-    rupees = Decimal(int(paise or 0)) / 100
-    sign = "-" if rupees < 0 else ""
-    rupees = abs(rupees)
-    for size, suffix in ((Decimal(10_000_000), "Cr"), (Decimal(100_000), "L"), (Decimal(1000), "K")):
-        if rupees >= size:
-            value = (rupees / size).quantize(Decimal("0.1"), rounding=ROUND_HALF_UP)
-            return f"{sign}₹{format(value.normalize(), 'f')}{suffix}"
-    return f"{sign}₹{int(rupees.quantize(Decimal(1), rounding=ROUND_HALF_UP))}"
+    """Short form for charts and stat tiles: ₹999, ₹4.2K, ₹3.1L, ₹1.3Cr, ₹2,56,000Cr."""
+    rupees = abs(Decimal(int(paise or 0)) / 100)
+    sign = "-" if paise and int(paise) < 0 else ""
+
+    # Round in the unit the amount falls in, then choose the unit again, so
+    # ₹99,950 rounds up to ₹1L rather than showing as ₹100K
+    size, suffix = _compact_unit(rupees)
+    step = Decimal("0.1") if suffix else Decimal(1)
+    rupees = (rupees / size).quantize(step, rounding=ROUND_HALF_UP) * size
+    size, suffix = _compact_unit(rupees)
+
+    value = format((rupees / size).normalize(), "f")
+    whole, _, fraction = value.partition(".")
+    text = _group_indian(whole) + (f".{fraction}" if fraction else "")
+    return f"{sign}₹{text}{suffix}"
 
 
 def paise_input_value(paise):

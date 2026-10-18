@@ -140,6 +140,27 @@ def test_format_inr_compact():
     assert format_inr_compact(1_25_00_00_000) == "₹1.3Cr"
 
 
+@pytest.mark.parametrize(
+    "paise, text",
+    [
+        (0, "₹0"),
+        (None, "₹0"),
+        (99_949, "₹999"),
+        (99_950, "₹1K"),  # ₹999.50 was "₹1000"
+        (99_94_999, "₹99.9K"),
+        (99_95_000, "₹1L"),  # ₹99,950 was "₹100K"
+        (99_94_99_999, "₹99.9L"),
+        (99_95_00_000, "₹1Cr"),  # ₹99,95,000 was "₹100L"
+        (99_99_999_00, "₹1Cr"),
+        (-99_95_000, "-₹1L"),
+        (12_34_50_00_00_000, "₹1,234.5Cr"),
+        (2_56_000_00_00_000_00, "₹2,56,000Cr"),  # large values are grouped too
+    ],
+)
+def test_format_inr_compact_rounds_before_choosing_the_unit(paise, text):
+    assert format_inr_compact(paise) == text
+
+
 def test_rate_and_input_helpers():
     assert rate_label(1800) == "18%"
     assert rate_label(25) == "0.25%"
