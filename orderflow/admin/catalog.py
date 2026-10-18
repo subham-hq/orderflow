@@ -261,23 +261,25 @@ def _plan_import(rows, columns):
         product = existing.get(sku) if sku else None
 
         formdata = _row_formdata(row.values, product, columns)
-        active = None
+        row_errors = []
         if "active" in columns:
             try:
                 active = catalog.parse_active(row.values.get("active"))
             except catalog.CatalogError as error:
-                errors.append((row.number, "active", str(error)))
-                continue
-        if active is not None:
-            formdata.pop("is_active", None)
-            if active:
-                formdata["is_active"] = "y"
+                row_errors.append((row.number, "active", str(error)))
+            else:
+                if active is not None:
+                    formdata.pop("is_active", None)
+                    if active:
+                        formdata["is_active"] = "y"
 
         form = ProductForm(formdata=formdata, meta={"csrf": False})
         form.gst_rate.choices = catalog.gst_choices(product.gst_rate_bp if product else None)
         if not form.validate():
             for name, messages in form.errors.items():
-                errors.append((row.number, _CSV_COLUMN_FOR_FIELD.get(name, name), messages[0]))
+                row_errors.append((row.number, _CSV_COLUMN_FOR_FIELD.get(name, name), messages[0]))
+        if row_errors:
+            errors.extend(row_errors)
             continue
 
         if sku in seen:

@@ -98,6 +98,12 @@ def test_any_invalid_row_means_nothing_is_imported(client, signed_in, company):
     assert product.name == "Keep me" and product.price_paise == 500
 
 
+def test_every_problem_in_a_row_is_listed(client, signed_in):
+    body = text(upload(client, HEADER + "A-1,,abc,18,,,,maybe\n"))
+    assert "Use yes or no." in body and "Enter the product name." in body and "Enter a number" in body
+    assert "Fix the 3 problems below" in body
+
+
 def test_each_problem_names_its_row_and_column(client, signed_in):
     content = HEADER + "A-1,,10,18,,,,\nA-2,Ok,10,7,,,,\n"
     body = text(upload(client, content))
