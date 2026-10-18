@@ -47,7 +47,7 @@ def test_order_detail_shows_lines_totals_notes_and_history(shopper, buyer, catal
     assert "₹42.50" in page and "₹76.50" in page and "(18%)" in page
     assert "₹3,325.00" in page and "₹221.50" in page and "₹3,546.50" in page
     assert '<p class="text-pre-line">PO 4512\nDeliver to gate 2</p>' in page
-    assert "Order placed by Ananya" in page
+    assert "Order placed by you" in page  # the viewer is the client who placed it
     assert "hasn&#39;t reviewed this order yet" in page
     assert f'action="/portal/orders/{order.number}/cancel"' in page
     assert "data-confirm=" in page

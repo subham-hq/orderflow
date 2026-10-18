@@ -154,7 +154,10 @@ def test_cancelled_order_shows_who_cancelled_it_and_the_note(client, login, owne
     page = get(client, f"/app/orders/{order.number}")
     assert f"<strong>Cancelled</strong> by {admin.full_name} on" in page
     assert '<p class="order-note">Supplier shut down.</p>' in page
-    assert "Cancelled by " + admin.full_name in page  # timeline
+    assert "Cancelled by you" in page  # timeline, seen by the admin who did it
+    client.post("/logout")
+    login(owner)
+    assert "Cancelled by " + admin.full_name in get(client, f"/app/orders/{order.number}")
 
 
 def test_missing_details_read_naturally(client, login, owner, company, carton):
