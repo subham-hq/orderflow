@@ -206,3 +206,8 @@ def check_settings(app):
             )
         if uri.startswith("sqlite"):
             log.warning("The database is SQLite. On Render its file is deleted on every deploy; use Postgres.")
+        if not config.get("CONTACT_EMAIL"):
+            log.warning(
+                "CONTACT_EMAIL is not set, so nobody is emailed about contact-form enquiries. They are saved "
+                "and logged; list them with `flask leads`."
+            )

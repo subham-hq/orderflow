@@ -39,7 +39,7 @@ Your sender address must be on the verified domain, for example
    | `APP_BASE_URL` | `https://example.com` | Links inside emails. No trailing slash. |
    | `RESEND_API_KEY` | `re_…` | Sending email |
    | `MAIL_FROM` | `OrderFlow <orders@example.com>` | Sender shown on every email |
-   | `CONTACT_EMAIL` | `hello@example.com` | Receives landing-page enquiries; shown in the legal pages |
+   | `CONTACT_EMAIL` | `hello@example.com` | Receives landing-page enquiries; shown in the legal pages. Without it nobody is emailed about enquiries (see **Enquiries** below) |
    | `LEGAL_NAME` | `Example Technologies Pvt Ltd` | The business named in the Privacy Policy and Terms |
 
    `SECRET_KEY` is generated for you, `DATABASE_URL` is connected to the
@@ -85,6 +85,13 @@ service.
 
 ## Operating the service
 
+- **Enquiries:** each message sent through the landing page's contact form
+  is saved, logged ("Contact enquiry 12 from …") and emailed to
+  `CONTACT_EMAIL`, with Reply-To set to the visitor. If `CONTACT_EMAIL` isn't
+  set, or the email can't be sent, the log says so; the app also warns at
+  start-up when `CONTACT_EMAIL` is missing. To read them in full, run
+  `flask leads` (add `--limit 50` for more) from the web service's **Shell**
+  tab.
 - **Email:** if Resend times out, is rate limiting or has a server error,
   each email is tried once more after a short pause; an email that still
   can't be sent is logged with the message "Could not send". To use another

@@ -13,9 +13,15 @@ from ..services.accounts import clean, normalize_email
 from . import bp
 
 
+def one_line(value):
+    """Collapse runs of whitespace, line breaks included, so a name can't start a new line in a log or subject."""
+    return " ".join(value.split()) if isinstance(value, str) else value
+
+
 class ContactForm(FlaskForm):
     name = StringField(
         "Your name",
+        filters=[one_line],
         validators=[
             DataRequired("Enter your name."),
             Length(max=120, message="Keep your name to 120 characters or fewer."),
@@ -31,6 +37,7 @@ class ContactForm(FlaskForm):
     )
     company = StringField(
         "Company",
+        filters=[one_line],
         validators=[Optional(), Length(max=160, message="Keep the company name to 160 characters or fewer.")],
     )
     message = TextAreaField(
@@ -62,14 +69,14 @@ def contact():
     db.session.add(lead)
     db.session.commit()
 
-    if current_app.config.get("CONTACT_EMAIL"):
-        send_email(
-            current_app.config["CONTACT_EMAIL"],
-            f"New enquiry from {lead.name}",
-            "lead",
-            lead=lead,
-            reply_to=lead.email,
-        )
+    # Log every enquiry, so one is never only in a table nobody looks at
+    log = current_app.logger
+    log.info("Contact enquiry %s from %s <%s> (%s)", lead.id, lead.name, lead.email, lead.company or "no company")
+    inbox = current_app.config.get("CONTACT_EMAIL")
+    if not inbox:
+        log.warning("Contact enquiry %s wasn't emailed: CONTACT_EMAIL is not set. See it with `flask leads`.", lead.id)
+    elif not send_email(inbox, f"New enquiry from {lead.name}", "lead", lead=lead, reply_to=lead.email):
+        log.warning("Contact enquiry %s was saved but couldn't be emailed. See it with `flask leads`.", lead.id)
     flash("Thanks! We'll reply to you by email within one working day.", "success")
     return redirect(url_for("public.index", _anchor="contact"))
 

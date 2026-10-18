@@ -1,4 +1,4 @@
-"""Command-line tools: `flask seed-demo`."""
+"""Command-line tools: `flask seed-demo` and `flask leads`."""
 
 import random
 from datetime import timedelta
@@ -6,9 +6,9 @@ from datetime import timedelta
 import click
 
 from .extensions import db
-from .models import ADMIN, CLIENT, OWNER, Bulletin, Company, Order, OrderEvent, Product, User
+from .models import ADMIN, CLIENT, OWNER, Bulletin, Company, Lead, Order, OrderEvent, Product, User
 from .services.orders import price_cart
-from .timeutil import utcnow
+from .timeutil import format_datetime, utcnow
 
 DEMO_PASSWORD = "demo-password-123"
 
@@ -37,6 +37,22 @@ DEMO_CLIENTS = [
 
 
 def init_cli(app):
+    @app.cli.command("leads")
+    @click.option("--limit", default=20, show_default=True, type=click.IntRange(1, 1000), help="How many to list.")
+    def list_leads(limit):
+        """List the latest enquiries from the contact form, newest first."""
+        leads = db.session.scalars(db.select(Lead).order_by(Lead.created_at.desc(), Lead.id.desc()).limit(limit)).all()
+        if not leads:
+            click.echo("No enquiries yet.")
+            return
+        for lead in leads:
+            when = format_datetime(lead.created_at, app.config["DEFAULT_TIMEZONE"])
+            company = f", {lead.company}" if lead.company else ""
+            click.echo(f"#{lead.id}  {when}  {lead.name} <{lead.email}>{company}")
+            for line in (lead.message or "").splitlines():
+                click.echo(f"    {line}")
+            click.echo()
+
     @app.cli.command("seed-demo")
     @click.option("--email", default="owner@orderflow.example", show_default=True, help="Owner sign-in email.")
     @click.option("--force", is_flag=True, help="Add the demo company even if that email exists.")
