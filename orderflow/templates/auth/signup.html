@@ -14,6 +14,7 @@
   {{ field(form.email, autocomplete="email", hint="We'll send a link to confirm it.") }}
   {{ field(form.password, autocomplete="new-password", hint=password_hint) }}
   {{ field(form.accept_terms) }}
+  <p class="auth__terms">Read the <a class="text-link" href="{{ url_for('public.terms') }}">Terms of Service</a> and <a class="text-link" href="{{ url_for('public.privacy') }}">Privacy Policy</a>.</p>
   {{ button("Create account", class="btn--block") }}
 </form>
 <p class="auth__switch">Already have an account? <a class="text-link" href="{{ url_for('auth.login') }}">Sign in</a></p>
