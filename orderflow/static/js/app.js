@@ -62,9 +62,16 @@
     var submitter = event.submitter;
     confirmDialog(form.dataset.confirm, form.dataset.confirmLabel, form.dataset.confirmVariant).then(function (yes) {
       if (!yes) return;
+      // The flag lets this one resubmission through; requestSubmit() fires its
+      // submit event straight away, so it can be cleared again right after.
+      // Left set, a page restored with Back would skip the question next time.
       form.dataset.confirmed = "yes";
-      if (form.requestSubmit) form.requestSubmit(submitter || undefined);
-      else form.submit();
+      try {
+        if (form.requestSubmit) form.requestSubmit(submitter || undefined);
+        else form.submit();
+      } finally {
+        delete form.dataset.confirmed;
+      }
     });
   });
 
@@ -80,12 +87,16 @@
     }, 0);
   });
 
-  // A page restored from the back/forward cache keeps disabled buttons; re-enable them
+  // A page restored from the back/forward cache keeps disabled buttons and any
+  // half-finished confirmation; re-enable the buttons and ask again next time
   window.addEventListener("pageshow", function (event) {
     if (!event.persisted) return;
     document.querySelectorAll('button[aria-busy="true"]').forEach(function (button) {
       button.disabled = false;
       button.removeAttribute("aria-busy");
+    });
+    document.querySelectorAll("form[data-confirmed]").forEach(function (form) {
+      delete form.dataset.confirmed;
     });
   });
 

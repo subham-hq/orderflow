@@ -525,3 +525,74 @@ def test_confirming_sends_the_form_once(tmp_path):
     out = run_js(tmp_path, DELETE_FORM, script)["out"]
     assert out["submitted"] == ["/app/bulletins/7/delete"]
     assert out["dialogs"] == 0
+
+
+# Coming back with Back: a page restored from the back/forward cache keeps its
+# DOM, so nothing a confirmation left behind may let the next click skip it
+
+CONFIRM_THEN_RESTORE = (
+    OPEN_DIALOG
+    + """
+h.click(dialog.querySelector('button[value="ok"]'));
+await h.flush();
+h.advance(0);  // the double-submit guard disables the buttons
+const form = h.$("form[data-confirm]");
+h.report("flagAfterSending", form.hasAttribute("data-confirmed"));
+h.pageshow(true);  // Back: the page comes out of the back/forward cache
+const button = form.querySelector("button");
+h.report("buttonEnabled", !button.disabled);
+h.click(button);
+await h.flush();
+h.report("submitted", h.submissions());
+h.report("askedAgain", h.$$("dialog").length === 1);
+"""
+)
+
+
+@needs_node
+def test_a_restored_page_asks_again_before_sending(tmp_path):
+    out = run_js(tmp_path, DELETE_FORM, CONFIRM_THEN_RESTORE)["out"]
+    assert out["flagAfterSending"] is False
+    assert out["buttonEnabled"] is True
+    assert out["submitted"] == ["/app/bulletins/7/delete"]  # only the first, confirmed one
+    assert out["askedAgain"] is True
+
+
+@needs_node
+def test_a_restored_page_clears_a_confirmation_left_behind(tmp_path):
+    # For example from a submission that was stopped before the next page loaded
+    script = """
+    const form = h.$("form[data-confirm]");
+    form.dataset.confirmed = "yes";
+    h.pageshow(false);  // an ordinary load leaves the page alone
+    h.report("afterOrdinaryLoad", form.hasAttribute("data-confirmed"));
+    h.pageshow(true);
+    h.report("afterRestore", form.hasAttribute("data-confirmed"));
+    h.click(form.querySelector("button"));
+    await h.flush();
+    h.report("submitted", h.submissions());
+    h.report("askedAgain", h.$$("dialog").length === 1);
+    """
+    out = run_js(tmp_path, DELETE_FORM, script)["out"]
+    assert out["afterOrdinaryLoad"] is True
+    assert out["afterRestore"] is False
+    assert out["submitted"] == [] and out["askedAgain"] is True
+
+
+@needs_node
+def test_confirming_one_form_never_skips_the_question_on_another(tmp_path):
+    script = (
+        OPEN_DIALOG
+        + """
+    h.click(dialog.querySelector('button[value="ok"]'));
+    await h.flush();
+    const other = h.$$("form[data-confirm]")[1];
+    h.click(other.querySelector("button"));
+    await h.flush();
+    h.report("submitted", h.submissions());
+    h.report("askedAgain", h.$$("dialog").length === 1);
+    """
+    )
+    out = run_js(tmp_path, DELETE_FORM + APPROVE_FORM, script)["out"]
+    assert out["submitted"] == ["/app/bulletins/7/delete"]
+    assert out["askedAgain"] is True
