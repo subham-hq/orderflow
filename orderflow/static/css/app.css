@@ -1672,6 +1672,139 @@ a.table__primary.mono:hover,
     content: "GST ";
   }
 
+  /* Workspace catalog: product, category, unit, price, GST, status, actions */
+  .table--products td:nth-child(1) {
+    grid-area: 1 / 1;
+  }
+
+  .table--products td:nth-child(4) {
+    grid-area: 1 / 2;
+    font-weight: 650;
+  }
+
+  .table--products td:nth-child(2) {
+    grid-area: 2 / 1;
+    color: var(--muted);
+    font-size: 0.8125rem;
+  }
+
+  .table--products td:nth-child(5) {
+    grid-area: 2 / 2;
+    color: var(--muted);
+    font-size: 0.8125rem;
+  }
+
+  .table--products td:nth-child(5)::before {
+    content: "GST ";
+  }
+
+  .table--products td:nth-child(3) {
+    display: none;
+  }
+
+  /* Status and actions share the last row: status on the left, actions on
+     the right, so neither widens the figures column */
+  .table--products td:nth-child(6) {
+    grid-area: 3 / 1 / 4 / 3;
+    justify-self: start;
+    padding-top: 0.375rem;
+  }
+
+  .table--products td:nth-child(7) {
+    grid-area: 3 / 1 / 4 / 3;
+    justify-self: end;
+    padding-top: 0.375rem;
+    margin-right: -0.5rem;
+  }
+
+  /* Clients: client, email, status, orders, last sign-in, actions */
+  .table--clients td:nth-child(1) {
+    grid-area: 1 / 1;
+  }
+
+  .table--clients td:nth-child(3) {
+    grid-area: 1 / 2;
+    justify-self: end;
+    text-align: right;
+  }
+
+  .table--clients td:nth-child(2) {
+    grid-area: 2 / 1 / 3 / 3;
+    font-size: 0.875rem;
+  }
+
+  .table--clients td:nth-child(5) {
+    grid-area: 3 / 1;
+    color: var(--muted);
+    font-size: 0.8125rem;
+  }
+
+  .table--clients td:nth-child(5)::before {
+    content: "Last sign-in: ";
+  }
+
+  .table--clients td:nth-child(4) {
+    grid-area: 3 / 2;
+    color: var(--muted);
+    font-size: 0.8125rem;
+  }
+
+  .table--clients td:nth-child(4)::before {
+    content: "Orders: ";
+  }
+
+  .table--clients td:nth-child(6) {
+    grid-area: 4 / 1 / 5 / 3;
+    padding-top: 0.25rem;
+    margin-left: -0.6875rem;
+  }
+
+  .table--clients td:nth-child(6) .cluster {
+    justify-content: flex-start;
+  }
+
+  /* Team: name, role, status, last sign-in, actions */
+  .table--team td:nth-child(1) {
+    grid-area: 1 / 1;
+  }
+
+  .table--team td:nth-child(3) {
+    grid-area: 1 / 2;
+    justify-self: end;
+  }
+
+  .table--team td:nth-child(2) {
+    grid-area: 2 / 1;
+    color: var(--muted);
+    font-size: 0.8125rem;
+  }
+
+  .table--team td:nth-child(4) {
+    grid-area: 2 / 2;
+    color: var(--muted);
+    font-size: 0.8125rem;
+    text-align: right;
+  }
+
+  .table--team td:nth-child(4)::before {
+    content: "Last sign-in: ";
+  }
+
+  .table--team td:nth-child(5) {
+    grid-area: 3 / 1 / 4 / 3;
+    padding-top: 0.25rem;
+    text-align: left;
+  }
+
+  .table--team td:nth-child(5) .cluster {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+
+  .table--team td:nth-child(5) > .muted {
+    font-size: 0.8125rem;
+  }
+
   /* The cart: item, unit price, quantity, GST, amount, remove */
   .table--cart td:nth-child(1) {
     grid-area: 1 / 1;
