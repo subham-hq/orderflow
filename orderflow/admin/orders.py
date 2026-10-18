@@ -4,15 +4,30 @@ import re
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 
-from flask import render_template, request, url_for
+from flask import abort, flash, redirect, render_template, request, url_for
 from flask_login import current_user
+from flask_wtf import FlaskForm
 from sqlalchemy import func, or_, select
-from sqlalchemy.orm import contains_eager
+from sqlalchemy.orm import contains_eager, joinedload, selectinload
+from wtforms import HiddenField, TextAreaField
+from wtforms.validators import DataRequired, Length
 
 from ..extensions import db
-from ..models import APPROVED, CANCELLED, FULFILLED, ORDER_STATUSES, PENDING, REJECTED, Order, OrderItem, User
+from ..models import (
+    APPROVED,
+    CANCELLED,
+    FULFILLED,
+    ORDER_STATUSES,
+    PENDING,
+    REJECTED,
+    Order,
+    OrderEvent,
+    OrderItem,
+    User,
+)
 from ..permissions import staff_required
 from ..services.analytics import local_midnight
+from ..services.orders import STATUS_LABELS, OrderError, allowed_transitions, transition_order
 from . import bp
 
 PER_PAGE = 25
@@ -236,7 +251,172 @@ def orders():
     )
 
 
+# Order details and status changes ----------------------------------------------
+
+NOTE_MAX_LENGTH = 1000
+NUMBER_MAX_LENGTH = Order.number.type.length
+
+# How each change reads in messages: "ORD-000012 is fulfilled, so it can't be rejected."
+CHANGE_VERBS = {
+    PENDING: "moved back to pending review",
+    APPROVED: "approved",
+    REJECTED: "rejected",
+    FULFILLED: "marked as fulfilled",
+    CANCELLED: "cancelled",
+}
+
+SUCCESS_MESSAGES = {
+    APPROVED: "Approved {number}. Mark it as fulfilled once the goods are delivered.",
+    REJECTED: "Rejected {number}. Your reason is saved on the order for the client to see.",
+    FULFILLED: "Marked {number} as fulfilled.",
+    CANCELLED: "Cancelled {number}.",
+}
+
+
+def clean_note(value):
+    """Trim a note and use plain newlines, so the length matches what the textarea counted."""
+    if not isinstance(value, str):
+        return value
+    return value.replace("\r\n", "\n").replace("\r", "\n").strip()
+
+
+NOTE_LENGTH = Length(max=NOTE_MAX_LENGTH, message=f"Keep this to {NOTE_MAX_LENGTH:,} characters or fewer.")
+
+
+class StatusChangeForm(FlaskForm):
+    """Approve, mark as fulfilled or cancel, with an optional note for the client."""
+
+    to_status = HiddenField()
+    message = TextAreaField("Note for the client (optional)", filters=[clean_note], validators=[NOTE_LENGTH])
+
+
+class RejectForm(StatusChangeForm):
+    message = TextAreaField(
+        "Reason for rejecting",
+        filters=[clean_note],
+        validators=[
+            DataRequired(message="Add a reason so the client knows why the order was rejected."),
+            NOTE_LENGTH,
+        ],
+    )
+
+
+def note_form_for(allowed):
+    """The blank form with a text box shown on the page: reject a pending order, or cancel an approved one."""
+    if REJECTED in allowed:
+        form = RejectForm(formdata=None)
+        form.to_status.data = REJECTED
+    elif CANCELLED in allowed:
+        form = StatusChangeForm(formdata=None)
+        form.to_status.data = CANCELLED
+    else:
+        return None
+    return form
+
+
+def get_order_or_404(number, *options, lock=False):
+    """Load one of the current company's orders by its number, or 404."""
+    if len(number) > NUMBER_MAX_LENGTH or "\x00" in number:
+        # Can't be an order number; Postgres would also refuse a NUL in the query
+        abort(404)
+    stmt = select(Order).where(Order.company_id == current_user.company_id, Order.number == number)
+    if options:
+        stmt = stmt.options(*options)
+    if lock:
+        # Two people clicking at once can't both change the order (Postgres row lock)
+        stmt = stmt.with_for_update()
+    order = db.session.scalar(stmt)
+    if order is None:
+        abort(404)
+    return order
+
+
+def not_allowed_message(order, to_status):
+    if to_status == order.status:
+        return f"{order.number} is already {STATUS_LABELS[order.status].lower()}, so nothing changed."
+    if order.status == PENDING and to_status == FULFILLED:
+        return f"{order.number} hasn't been approved yet. Approve it before marking it as fulfilled."
+    if order.status == PENDING and to_status == CANCELLED:
+        return f"{order.number} is still pending review. To turn it down, reject it with a reason for the client."
+    current = STATUS_LABELS[order.status].lower()
+    return f"{order.number} is {current}, so it can't be {CHANGE_VERBS[to_status]}."
+
+
+def render_order(order, note_form=None):
+    allowed = allowed_transitions(order, current_user)
+    if note_form is None:
+        note_form = note_form_for(allowed)
+    cancel_event = next((event for event in reversed(order.events) if event.to_status == CANCELLED), None)
+    return render_template(
+        "admin/order_detail.html",
+        order=order,
+        client=order.client,
+        allowed=allowed,
+        note_form=note_form,
+        cancel_event=cancel_event,
+        line_count=len(order.items),
+        transition_url=url_for("admin.order_transition", number=order.number),
+    )
+
+
 @bp.route("/orders/<number>")
 @staff_required
 def order_detail(number):
-    return render_template("placeholder.html", title=f"Order {number}", layout="layouts/app.html")
+    order = get_order_or_404(
+        number,
+        joinedload(Order.client),
+        joinedload(Order.decided_by),
+        joinedload(Order.fulfilled_by),
+        selectinload(Order.items),
+        selectinload(Order.events).joinedload(OrderEvent.actor),
+    )
+    return render_order(order)
+
+
+@bp.route("/orders/<number>/status", methods=["POST"])
+@staff_required
+def order_transition(number):
+    order = get_order_or_404(number, lock=True)
+    detail_url = url_for("admin.order_detail", number=order.number)
+
+    to_status = (request.form.get("to_status") or "").strip().lower()
+    if to_status not in ORDER_STATUSES:
+        flash("We didn't recognise that change. Use the buttons on this page to update the order.", "danger")
+        return redirect(detail_url)
+
+    allowed = allowed_transitions(order, current_user)
+    if to_status not in allowed:
+        tone = "info" if to_status == order.status else "warning"
+        flash(not_allowed_message(order, to_status), tone)
+        return redirect(detail_url)
+
+    form = RejectForm() if to_status == REJECTED else StatusChangeForm()
+    if not form.validate_on_submit():
+        shown = note_form_for(allowed)
+        if shown is not None and shown.to_status.data == to_status:
+            # Show the page again with what they typed and the problem next to it
+            form.to_status.data = to_status
+            return render_order(order, note_form=form)
+        flash(next(iter(form.errors.values()))[0], "danger")
+        return redirect(detail_url)
+
+    try:
+        transition_order(order, current_user, to_status, form.message.data)
+    except OrderError as error:
+        db.session.rollback()
+        flash(str(error), "danger")
+        return redirect(detail_url)
+
+    flash(SUCCESS_MESSAGES[to_status].format(number=order.number), "success")
+    return redirect(detail_url)
+
+
+@bp.route("/orders/<number>/invoice")
+@staff_required
+def invoice(number):
+    order = get_order_or_404(number, joinedload(Order.client), selectinload(Order.items))
+    return render_template(
+        "shared/invoice.html",
+        order=order,
+        back_url=url_for("admin.order_detail", number=order.number),
+    )
