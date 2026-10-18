@@ -4,7 +4,14 @@ All amounts are integers in paise. Conversion from user input uses Decimal
 and rounds half up to the nearest paisa; floats are never used for money.
 """
 
+import re
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
+
+# Commas are only accepted where they group digits: the Indian way
+# (1,23,45,678.50) or the international way (12,345,678.50). Anywhere else a
+# comma is most likely a decimal comma or a typo ("12,50"), and dropping it
+# would store a price 100 times too high.
+GROUPED_NUMBER = re.compile(r"[+-]?(?:\d{1,3}(?:,\d{3})+|\d{1,2}(?:,\d{2})*,\d{3})(?:\.\d*)?", re.ASCII)
 
 # Largest price accepted from a form: 1 crore rupees
 MAX_PRICE_PAISE = 10_000_000_00
@@ -18,9 +25,13 @@ def _decimal(value):
     if isinstance(value, Decimal):
         amount = value
     else:
-        text = str(value).strip().replace(",", "") if value is not None else ""
+        text = str(value).strip() if value is not None else ""
         if not text:
             raise ValueError("Enter an amount.")
+        if "," in text:
+            if not GROUPED_NUMBER.fullmatch(text):
+                raise ValueError("Use a dot for decimals and commas only between groups of digits, like 1,250.50.")
+            text = text.replace(",", "")
         try:
             amount = Decimal(text)
         except InvalidOperation:

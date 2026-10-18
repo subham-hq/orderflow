@@ -44,6 +44,50 @@ def test_to_paise_rejects_non_numbers(text):
         to_paise(text)
 
 
+@pytest.mark.parametrize(
+    "text, expected",
+    [
+        ("1,250", 1_250_00),
+        ("1,250.50", 1_250_50),
+        ("12,500.5", 12_500_50),
+        ("123,456", 123_456_00),
+        ("1,234,567", 1_234_567_00),  # international grouping
+        ("12,34,567.89", 12_34_567_89),  # Indian grouping
+        ("1,00,00,000", 1_00_00_000_00),
+        ("-1,250", -1_250_00),
+        ("1,250.", 1_250_00),
+    ],
+)
+def test_commas_that_group_digits_are_accepted(text, expected):
+    assert to_paise(text) == expected
+
+
+@pytest.mark.parametrize(
+    "text",
+    ["12,50", "0,99", "1,2", "1.250,00", ",5", "5,", "1,,250", "1,234,56,789", "12,3456", "1,2345", "1, 250", "१,२५०"],
+)
+def test_misplaced_commas_are_refused_rather_than_dropped(text):
+    # Dropping the comma read "12,50" as ₹1,250.00 and "1.250,00" as ₹1.25
+    with pytest.raises(ValueError, match="commas only between groups of digits"):
+        to_paise(text)
+
+
+def test_a_decimal_comma_in_the_product_form_is_refused(client, login, owner):
+    from orderflow.extensions import db
+    from orderflow.models import Product
+
+    login(owner)
+    form = {"name": "Carton", "sku": "CTN-001", "unit": "box", "price": "12,50", "gst_rate": "18", "is_active": "y"}
+    response = client.post("/app/products/new", data=form)
+    assert response.status_code == 200
+    assert "commas only between groups of digits" in response.get_data(as_text=True)
+    assert db.session.scalar(db.select(db.func.count(Product.id))) == 0
+
+    response = client.post("/app/products/new", data={**form, "price": "₹1,250.50"})
+    assert response.status_code == 302
+    assert db.session.scalar(db.select(Product.price_paise)) == 1_250_50
+
+
 @pytest.mark.parametrize("text", ["0", "-5", "0.001", "100000000.01", "1e400"])
 def test_parse_price_rejects_out_of_range(text):
     with pytest.raises(ValueError):
@@ -59,7 +103,7 @@ def test_parse_gst_rate(text, bp):
     assert parse_gst_rate(text) == bp
 
 
-@pytest.mark.parametrize("text", ["-1", "101", "abc", "nan"])
+@pytest.mark.parametrize("text", ["-1", "101", "abc", "nan", "1,8"])
 def test_parse_gst_rate_rejects_bad_values(text):
     with pytest.raises(ValueError):
         parse_gst_rate(text)
