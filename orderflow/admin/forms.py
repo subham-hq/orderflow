@@ -100,10 +100,8 @@ class Phone:
 
     def __call__(self, form, field):
         value = field.data or ""
-        if not value:
-            return
         digits = sum(char.isdigit() for char in value)
-        if not _PHONE_CHARS.fullmatch(value) or not 6 <= digits <= 15:
+        if value and (not _PHONE_CHARS.fullmatch(value) or not 6 <= digits <= 15):
             raise ValidationError("Enter a phone number using digits, spaces and + - ( ), like +91 98450 12345.")
 
 
