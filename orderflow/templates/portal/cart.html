@@ -1,5 +1,5 @@
 {% extends "layouts/portal.html" %}
-{% from "macros/ui.html" import icon, button, link_button, page_header, empty_state, csrf %}
+{% from "macros/ui.html" import icon, button, link_button, page_header, empty_state, field %}
 {% set active_nav = "cart" %}
 {% set supplier = current_user.company.name %}
 {% block title %}Your cart{% endblock %}
@@ -24,12 +24,19 @@
 {% if errors %}
 <div class="alert alert--danger" role="alert">
   {{ icon('alert') }}
-  <p class="alert__text">Some quantities need fixing. Check the highlighted {{ "line" if errors | length == 1 else "lines" }} and update your cart again.</p>
+  <p class="alert__text">Some quantities need fixing. Check the highlighted {{ "line" if errors | length == 1 else "lines" }} and try again.</p>
+</div>
+{% endif %}
+{% if form.submission_key.errors %}
+<div class="alert alert--warning" role="alert">
+  {{ icon('alert') }}
+  <p class="alert__text">{{ form.submission_key.errors[0] }}</p>
 </div>
 {% endif %}
 
+{# One form: "Update cart" and the remove buttons post to cart_update, "Place order" posts the same fields to checkout #}
 <form method="post" action="{{ url_for('portal.cart_update') }}" id="cart-form" class="stack" novalidate>
-  {{ csrf() }}
+  {{ form.hidden_tag() }}
   {# Pressing Enter in a quantity box uses the first submit button: make that "Update cart", not a Remove button #}
   <button type="submit" class="visually-hidden" tabindex="-1" aria-hidden="true">Update cart</button>
   <section class="card card--flush" aria-labelledby="cart-items-title">
@@ -92,6 +99,13 @@
     <div class="card__body stack">
       <h2 class="card__title" id="cart-summary-title">Summary</h2>
       {% with order = priced %}{% include "shared/_order_totals.html" %}{% endwith %}
+      {{ field(form.notes, hint="Optional. Add a PO number, delivery instructions or anything else " ~ supplier ~ " should know.", rows=4) }}
+      <div class="split">
+        <p class="muted">{{ supplier }} reviews every order before it's confirmed. You can cancel it while it's pending review.</p>
+        <button type="submit" class="btn btn--primary btn--lg" formaction="{{ url_for('portal.checkout') }}">
+          {{ icon('check') }}<span>Place order</span>
+        </button>
+      </div>
     </div>
   </section>
 </form>

@@ -1,16 +1,27 @@
 """Forms used in the client portal."""
 
+import re
+
 from flask_wtf import FlaskForm
-from wtforms import HiddenField, StringField
-from wtforms.validators import ValidationError
+from wtforms import HiddenField, StringField, TextAreaField
+from wtforms.validators import Length, Optional, ValidationError
 
 from ..money import MAX_QUANTITY
 from ..services.cart import parse_id
 from ..services.orders import OrderError, parse_quantity
 
+NOTES_MAX_LENGTH = 2000
+# secrets.token_urlsafe(16) makes 22 characters; the column holds 64
+SUBMISSION_KEY_PATTERN = re.compile(r"^[A-Za-z0-9_-]{16,64}$")
+
 
 def strip(value):
     return value.strip() if isinstance(value, str) else value
+
+
+def normalize_newlines(value):
+    """Browsers send line breaks in a textarea as \\r\\n; keep them as \\n."""
+    return value.replace("\r\n", "\n").replace("\r", "\n") if isinstance(value, str) else value
 
 
 def read_quantity(value):
@@ -46,3 +57,24 @@ class AddToCartForm(FlaskForm):
             raise ValidationError(str(error)) from None
         if self.quantity_value == 0:
             raise ValidationError("Enter a quantity of 1 or more.")
+
+
+class CheckoutForm(FlaskForm):
+    """Order notes, plus the hidden fields that make placing an order safe to submit twice."""
+
+    notes = TextAreaField(
+        "Notes for the supplier",
+        filters=[normalize_newlines, strip],
+        validators=[
+            Optional(),
+            Length(max=NOTES_MAX_LENGTH, message=f"Keep notes to {NOTES_MAX_LENGTH:,} characters or fewer."),
+        ],
+    )
+    # A one-time key made when the cart page is shown: submitting the same page twice returns the same order
+    submission_key = HiddenField()
+    # A fingerprint of the cart as shown, so the order is placed only for exactly what the client saw
+    cart_version = HiddenField()
+
+    def validate_submission_key(self, field):
+        if not field.data or not SUBMISSION_KEY_PATTERN.match(field.data):
+            raise ValidationError("This page has expired. Check your cart and place the order again.")
