@@ -144,18 +144,31 @@ def product_new():
     return _render_product_form(form)
 
 
+def _kept_visibility_note(kept):
+    """Why visibility didn't follow a form that was opened before it changed."""
+    if kept is None:
+        return ""
+    if kept:
+        return " It was shown to clients while you had this page open, so it's still visible."
+    return " It was hidden from clients while you had this page open, so it's still hidden."
+
+
 @bp.route("/products/<int:product_id>/edit", methods=["GET", "POST"])
 @staff_required
 def product_edit(product_id):
     product = get_company_object_or_404(Product, product_id)
-    form = ProductForm(data=product_form_data(product) if request.method == "GET" else None)
+    form = ProductForm(
+        data=product_form_data(product) if request.method == "GET" else None, current_active=product.is_active
+    )
     # Keep the product's current GST rate selectable even if it isn't a standard slab
     form.gst_rate.choices = catalog.gst_choices(product.gst_rate_bp)
 
     if form.validate_on_submit() and not _sku_taken(form, product):
         data = form.product_data(catalog.Categories.for_company(_company_id()))
+        kept_note = _kept_visibility_note(form.kept_state())
+        was_active = product.is_active
         if not catalog.apply_product_data(product, data):
-            flash(f"No changes to save for “{product.name}”.", "info")
+            flash(f"No changes to save for “{product.name}”.{kept_note}", "info")
             return redirect(url_for("admin.products"))
         try:
             db.session.commit()
@@ -163,7 +176,10 @@ def product_edit(product_id):
             _sku_race_error(form)
             product = get_company_object_or_404(Product, product_id)
         else:
-            flash(f"Saved “{product.name}”. New orders use these details; past orders keep theirs.", "success")
+            message = f"Saved “{product.name}”. New orders use these details; past orders keep theirs."
+            if product.is_active != was_active:
+                message += " Clients can order it now." if product.is_active else " It's hidden from clients now."
+            flash(message + kept_note, "success")
             return redirect(url_for("admin.products"))
     return _render_product_form(form, product)
 
@@ -233,7 +249,7 @@ def _row_formdata(values, product, columns):
             data["gst_rate"] = money.rate_input_value(money.parse_gst_rate(text)) if text else ""
         except ValueError:
             data["gst_rate"] = text
-    formdata = MultiDict({key: value for key, value in data.items() if key != "is_active"})
+    formdata = MultiDict({key: value for key, value in data.items() if key not in ("is_active", "is_active_was")})
     if data.get("is_active"):
         formdata["is_active"] = "y"
     return formdata

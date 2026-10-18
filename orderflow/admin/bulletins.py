@@ -14,7 +14,7 @@ from ..extensions import db
 from ..models import Bulletin
 from ..permissions import company_select, get_company_object_or_404, safe_next_url, staff_required
 from . import bp
-from .forms import BulletinForm, page_number, paginate
+from .forms import BulletinForm, page_number, paginate, state_value
 
 LIVE = "live"
 DRAFT = "draft"
@@ -43,6 +43,7 @@ def _form_values(bulletin):
         "title": bulletin.title,
         "body": bulletin.body,
         "publish": bool(bulletin.is_published),
+        "publish_was": state_value(bulletin.is_published),
         "expires_at": timeutil.local_input_value(bulletin.expires_at, _timezone()),
     }
 
@@ -105,14 +106,16 @@ def bulletin_edit(bulletin_id):
         data=_form_values(bulletin) if request.method == "GET" else None,
         timezone=_timezone(),
         current_expiry=bulletin.expires_at,
+        current_published=bulletin.is_published,
     )
     if form.validate_on_submit():
         changes = {
             "title": form.title.data,
             "body": form.body.data,
-            "is_published": bool(form.publish.data),
+            "is_published": form.state_to_save(),
             "expires_at": form.expires_at.parsed,
         }
+        kept_note = _kept_state_note(form.kept_state())
         changed = False
         for name, value in changes.items():
             current = getattr(bulletin, name)
@@ -122,12 +125,21 @@ def bulletin_edit(bulletin_id):
                 setattr(bulletin, name, value)
                 changed = True
         if not changed:
-            flash(f"No changes to save for “{bulletin.title}”.", "info")
+            flash(f"No changes to save for “{bulletin.title}”.{kept_note}", "info")
             return redirect(url_for("admin.bulletins"))
         db.session.commit()
-        flash(f"Saved “{bulletin.title}”. {_visibility(bulletin)}", "success")
+        flash(f"Saved “{bulletin.title}”.{kept_note} {_visibility(bulletin)}", "success")
         return redirect(url_for("admin.bulletins"))
     return _render_form(form, bulletin)
+
+
+def _kept_state_note(kept):
+    """Why the published state didn't follow a form that was opened before it changed."""
+    if kept is None:
+        return ""
+    if kept:
+        return " It was published while you had this page open, so we left it published."
+    return " It was unpublished while you had this page open, so we left it as a draft."
 
 
 @bp.route("/bulletins/<int:bulletin_id>/status", methods=["POST"])

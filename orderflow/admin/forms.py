@@ -12,7 +12,7 @@ from datetime import timedelta
 
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileAllowed, FileField, FileRequired
-from wtforms import BooleanField, EmailField, SelectField, StringField, TextAreaField
+from wtforms import BooleanField, EmailField, HiddenField, SelectField, StringField, TextAreaField
 from wtforms.validators import DataRequired, Email, Length, Optional, Regexp, StopValidation, ValidationError
 
 from .. import money, timeutil
@@ -154,10 +154,50 @@ def _phone():
 CHECKBOX_FALSE_VALUES = (False, "", "0", "false", "False", "FALSE", "off", "Off", "OFF", "no", "No", "NO", "n", "N")
 
 
+def state_value(flag):
+    """How a checkbox's hidden copy records the state an edit form was opened with."""
+    return "1" if flag else "0"
+
+
+class KeepsState:
+    """Saving an edit form leaves a show/hide or publish checkbox alone unless
+    the person changed it, so a form left open in another tab can't quietly
+    undo a change made since (see kept_state()).
+
+    The form's checkbox_name and state_field_name name the checkbox and its
+    hidden copy (a HiddenField holding state_value() of the saved value when
+    the form was opened); saved_state is the saved value now when editing,
+    None otherwise.
+    """
+
+    checkbox_name = ""
+    state_field_name = ""
+    saved_state = None
+
+    def _untouched(self):
+        was = self[self.state_field_name].data
+        if was not in ("0", "1"):
+            return False  # no copy (an older page or a script): take the checkbox as sent
+        return bool(self[self.checkbox_name].data) == (was == "1")
+
+    def state_to_save(self):
+        """The value to save: the current one if the person left the checkbox as it was."""
+        if self.saved_state is not None and self._untouched():
+            return bool(self.saved_state)
+        return bool(self[self.checkbox_name].data)
+
+    def kept_state(self):
+        """The current value when it changed while the form was open and is being kept; else None."""
+        if self.saved_state is None or not self._untouched():
+            return None
+        was = self[self.state_field_name].data == "1"
+        return bool(self.saved_state) if bool(self.saved_state) != was else None
+
+
 # Catalog -------------------------------------------------------------------
 
 
-class ProductForm(FlaskForm):
+class ProductForm(KeepsState, FlaskForm):
     name = StringField(
         "Product name",
         filters=[squash],
@@ -187,6 +227,15 @@ class ProductForm(FlaskForm):
     is_active = BooleanField(
         "Show this product in the client catalog", default=True, false_values=CHECKBOX_FALSE_VALUES
     )
+    is_active_was = HiddenField()
+
+    checkbox_name = "is_active"
+    state_field_name = "is_active_was"
+
+    def __init__(self, *args, current_active=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        # The product's saved visibility when editing (see KeepsState)
+        self.saved_state = current_active
 
     def product_data(self, categories):
         """Validated values, ready for services.catalog.apply_product_data().
@@ -202,7 +251,7 @@ class ProductForm(FlaskForm):
             "price_paise": self.price.parsed,
             "gst_rate_bp": self.gst_rate.parsed,
             "description": self.description.data or None,
-            "is_active": bool(self.is_active.data),
+            "is_active": self.state_to_save(),
         }
 
 
@@ -217,6 +266,7 @@ def product_form_data(product):
         "gst_rate": money.rate_input_value(product.gst_rate_bp),
         "description": product.description or "",
         "is_active": bool(product.is_active),
+        "is_active_was": state_value(product.is_active),
     }
 
 
@@ -260,7 +310,7 @@ class TeamInviteForm(FlaskForm):
 # Bulletins -------------------------------------------------------------------
 
 
-class BulletinForm(FlaskForm):
+class BulletinForm(KeepsState, FlaskForm):
     title = StringField(
         "Title",
         filters=[squash],
@@ -272,14 +322,20 @@ class BulletinForm(FlaskForm):
         validators=[DataRequired("Write the message your clients will see."), _length(4000, "the message")],
     )
     publish = BooleanField("Publish it so clients can see it", default=True, false_values=CHECKBOX_FALSE_VALUES)
+    publish_was = HiddenField()
     expires_at = StringField("Take it down at (optional)", filters=[strip])
 
-    def __init__(self, *args, timezone=timeutil.DEFAULT_TZ, current_expiry=None, **kwargs):
+    checkbox_name = "publish"
+    state_field_name = "publish_was"
+
+    def __init__(self, *args, timezone=timeutil.DEFAULT_TZ, current_expiry=None, current_published=None, **kwargs):
         super().__init__(*args, **kwargs)
         # The company time zone the expiry is typed in, and the saved expiry
         # when editing (the input only shows whole minutes)
         self.timezone = timezone
         self.current_expiry = timeutil.as_utc(current_expiry)
+        # The bulletin's saved published state when editing (see KeepsState)
+        self.saved_state = current_published
 
     def validate_expires_at(self, field):
         """Parse the expiry in the company's time zone; result (UTC) in field.parsed."""
@@ -297,7 +353,7 @@ class BulletinForm(FlaskForm):
             raise StopValidation(
                 f"Choose a time within the next {BULLETIN_MAX_YEARS_AHEAD} years, or leave it blank to keep it up."
             )
-        if self.publish.data and expires <= now:
+        if self.state_to_save() and expires <= now:
             raise StopValidation(
                 "That time has already passed. Choose a time in the future, or leave it blank to keep "
                 "the bulletin up until you take it down."
