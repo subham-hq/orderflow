@@ -5,11 +5,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}{{ APP_NAME }}{% endblock %}{% if self.title() != APP_NAME %} · {{ APP_NAME }}{% endif %}</title>
-  <meta name="description" content="{% block description %}OrderFlow is B2B ordering for suppliers: share your catalog, take purchase orders from business clients, approve them and send GST-ready invoices.{% endblock %}">
-  <meta name="theme-color" content="#1b2a6b" media="(prefers-color-scheme: light)">
+  <meta name="description" content="{% block description %}OrderFlow is B2B ordering for suppliers: share your catalog, take purchase orders from business clients, approve them and send GST-ready proforma invoices.{% endblock %}">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#f5f6fb" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#0b0f24" media="(prefers-color-scheme: dark)">
   {% block meta %}{% endblock %}
   <link rel="icon" href="{{ url_for('static', filename='img/favicon.svg') }}" type="image/svg+xml">
+  <link rel="icon" href="{{ url_for('static', filename='img/icon-192.png') }}" type="image/png" sizes="192x192">
   <link rel="apple-touch-icon" href="{{ url_for('static', filename='img/apple-touch-icon.png') }}">
   <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest') }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
