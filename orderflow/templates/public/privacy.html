@@ -1,7 +1,13 @@
 {% extends "layouts/marketing.html" %}
 {% block title %}Privacy Policy{% endblock %}
+{% block description %}What information {{ APP_NAME }} collects, why, who it is shared with and the choices you have.{% endblock %}
+{# How to reach us: the contact email if one is configured, otherwise the contact form #}
+{% macro contact_link() -%}
+{% if config.CONTACT_EMAIL %}email us at <a href="mailto:{{ config.CONTACT_EMAIL }}">{{ config.CONTACT_EMAIL }}</a>{% else %}write to us using <a href="{{ url_for('public.index') }}#contact">the contact form on our website</a>{% endif %}
+{%- endmacro %}
 {% block content %}
-<article class="container prose legal">
+<div class="container legal">
+<article class="prose">
   <p class="legal__updated">Last updated 18 October 2026</p>
   <h1>Privacy Policy</h1>
   <p>This policy explains what information {{ config.LEGAL_NAME }} ("we") collects when you use {{ APP_NAME }}, why we collect it, and the choices you have.</p>
@@ -35,7 +41,7 @@
   <p>We keep account and business data while the workspace is active. Orders are kept as business records. When a workspace owner asks us to delete their workspace, we delete its data within 30 days, except where we must keep it by law.</p>
 
   <h2>Your choices</h2>
-  <p>You can update your name and password from your account settings. To get a copy of your data, correct it, or delete your account, email us at {{ config.CONTACT_EMAIL or '[contact email]' }}. If you're a client of a supplier, you can also ask the supplier directly.</p>
+  <p>You can update your name and password from your account settings. To get a copy of your data, correct it, or delete your account, {{ contact_link() }}. If you're a client of a supplier, you can also ask the supplier directly.</p>
 
   <h2>Security</h2>
   <p>Connections are encrypted with HTTPS, passwords are hashed, and each supplier's data is kept separate from every other supplier's. No system is perfectly secure, so please use a strong, unique password.</p>
@@ -44,6 +50,7 @@
   <p>If we change this policy in a way that matters, we'll update the date above and, for significant changes, tell workspace owners by email.</p>
 
   <h2>Contact</h2>
-  <p>Questions about privacy: {{ config.CONTACT_EMAIL or '[contact email]' }}.</p>
+  <p>Questions about privacy? Please {{ contact_link() }}.</p>
 </article>
+</div>
 {% endblock %}

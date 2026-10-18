@@ -1,7 +1,13 @@
 {% extends "layouts/marketing.html" %}
 {% block title %}Terms of Service{% endblock %}
+{% block description %}The agreement between you and {{ APP_NAME }} about using the service.{% endblock %}
+{# How to reach us: the contact email if one is configured, otherwise the contact form #}
+{% macro contact_link() -%}
+{% if config.CONTACT_EMAIL %}email us at <a href="mailto:{{ config.CONTACT_EMAIL }}">{{ config.CONTACT_EMAIL }}</a>{% else %}write to us using <a href="{{ url_for('public.index') }}#contact">the contact form on our website</a>{% endif %}
+{%- endmacro %}
 {% block content %}
-<article class="container prose legal">
+<div class="container legal">
+<article class="prose">
   <p class="legal__updated">Last updated 18 October 2026</p>
   <h1>Terms of Service</h1>
   <p>These terms are an agreement between you and {{ config.LEGAL_NAME }} ("we") about your use of {{ APP_NAME }}. By creating an account or accepting an invitation, you agree to them.</p>
@@ -13,7 +19,7 @@
   <ul>
     <li>You must give accurate details and keep your password secure. You're responsible for activity under your account.</li>
     <li>The person who creates a workspace is its owner and controls who can access it. Owners and admins can invite, suspend and remove users in their workspace.</li>
-    <li>Tell us straight away at {{ config.CONTACT_EMAIL or '[contact email]' }} if you think your account has been misused.</li>
+    <li>If you think your account has been misused, {{ contact_link() }} straight away.</li>
   </ul>
 
   <h2>Your data</h2>
@@ -38,6 +44,7 @@
   <p>We may update these terms. If a change is significant, we'll tell workspace owners by email before it takes effect.</p>
 
   <h2>Contact</h2>
-  <p>Questions about these terms: {{ config.CONTACT_EMAIL or '[contact email]' }}.</p>
+  <p>Questions about these terms? Please {{ contact_link() }}.</p>
 </article>
+</div>
 {% endblock %}

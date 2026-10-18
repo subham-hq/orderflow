@@ -1,4 +1,4 @@
-"""The public pages: landing page and contact form."""
+"""The public pages: landing page, contact form, legal pages and error pages."""
 
 import re
 
@@ -7,7 +7,7 @@ import pytest
 from orderflow import create_app
 from orderflow.extensions import db
 from orderflow.models import Lead
-from tests.design_helpers import page
+from tests.design_helpers import Page, page
 
 LANDING_SECTIONS = ("features", "how-it-works", "pricing", "faq", "contact")
 
@@ -202,3 +202,108 @@ def test_contact_validation_error_is_shown_in_the_contact_section(client):
     contact = body[body.index('id="contact"') :]
     assert "alert--danger" in contact
     assert db.session.scalar(db.select(db.func.count(Lead.id))) == 0
+
+
+# --------------------------------------------------------------------------
+# Legal pages
+# --------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("path", "heading", "phrase"),
+    [
+        ("/privacy", "Privacy Policy", "We don't sell personal information"),
+        ("/terms", "Terms of Service", "You keep ownership of the data"),
+    ],
+)
+def test_legal_pages_render_as_prose(client, path, heading, phrase):
+    response = client.get(path)
+    assert response.status_code == 200
+    html = page(response)
+    assert html.with_class("prose")
+    assert heading in html.text and phrase in html.text
+    assert "Last updated 18 October 2026" in html.text
+    assert "[contact email]" not in html.text
+    assert "mailto:sales@orderflow.test" in html.hrefs()
+
+
+def test_legal_pages_point_to_the_contact_form_without_a_contact_email(app, client):
+    app.config["CONTACT_EMAIL"] = None
+    for path in ("/privacy", "/terms"):
+        html = page(client.get(path))
+        assert "/#contact" in html.hrefs()
+        assert "the contact form on our website" in html.text
+        assert "None" not in html.text
+
+
+# --------------------------------------------------------------------------
+# Error pages
+# --------------------------------------------------------------------------
+
+
+def test_404_page(client):
+    response = client.get("/no-such-page")
+    assert response.status_code == 404
+    html = page(response)
+    assert "Error 404" in html.text
+    assert "We couldn't find that page" in html.text
+    assert "/" in html.hrefs() and "/login" in html.hrefs()
+
+
+def test_405_page(client):
+    response = client.get("/logout")
+    assert response.status_code == 405
+    assert "That action isn't allowed here" in page(response).text
+
+
+def test_expired_form_page(csrf_app):
+    response = csrf_app.test_client().post("/login", data={"email": "a@example.com", "password": "x"})
+    assert response.status_code == 400
+    assert "This form has expired" in page(response).text
+
+
+def test_500_page_is_friendly(app):
+    app.config["PROPAGATE_EXCEPTIONS"] = False
+
+    @app.route("/__boom")
+    def boom():
+        raise RuntimeError("boom")
+
+    response = app.test_client().get("/__boom")
+    assert response.status_code == 500
+    html = page(response)
+    assert "Something went wrong on our side" in html.text
+    assert "boom" not in html.text
+
+
+def test_error_page_sends_signed_in_people_back_to_their_home(client, login, owner, buyer):
+    login(owner)
+    html = page(client.get("/no-such-page"))
+    assert "Back to your workspace" in html.text and "/start" in html.hrefs()
+    client.post("/logout")
+    login(buyer)
+    assert "Back to your portal" in page(client.get("/no-such-page")).text
+
+
+# --------------------------------------------------------------------------
+# Placeholder page
+# --------------------------------------------------------------------------
+
+
+def test_placeholder_page_in_both_shells(client, login, owner, buyer):
+    login(owner)
+    html = page(client.get("/app/bulletins"))
+    assert "Bulletins" in html.text and "This page is being built" in html.text
+    assert html.with_class("sidebar")
+    client.post("/logout")
+    login(buyer)
+    html = page(client.get("/portal/orders"))
+    assert "This page is being built" in html.text
+    assert html.with_class("portal-header")
+
+
+def test_page_parser_helper_handles_scripts_and_classes():
+    html = Page('<div class="a b" id="x"><script>var s = "<p>";</script><p>Hi</p></div>')
+    assert html.text == "Hi"
+    assert html.ids == {"x"}
+    assert html.with_class("b")

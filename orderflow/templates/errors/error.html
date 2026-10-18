@@ -3,20 +3,28 @@
 {% block title %}{{ title }}{% endblock %}
 {% block body_class %}page-error{% endblock %}
 {% block body %}
-<main id="main" class="error-page">
-  <a class="brand error-page__brand" href="{{ url_for('public.index') }}">
-    <img class="brand__mark" src="{{ url_for('static', filename='img/logo-mark.svg') }}" alt="" width="28" height="28">
-    <span class="brand__name">{{ APP_NAME }}</span>
-  </a>
-  <p class="error-page__code">Error {{ code }}</p>
-  <h1 class="error-page__title">{{ title }}</h1>
-  <p class="error-page__text">{{ message }}</p>
-  <div class="cluster">
-    {% if current_user.is_authenticated %}
-      {{ link_button("Back to " ~ ("your workspace" if current_user.is_staff else "your portal"), url_for('public.start'), variant="primary") }}
-    {% else %}
-      {{ link_button("Go to the home page", url_for('public.index'), variant="primary") }}
-    {% endif %}
+<div class="error-page">
+  <main id="main" class="error-page__inner">
+    <a class="brand error-page__brand" href="{{ url_for('public.index') }}">
+      <img class="brand__mark" src="{{ url_for('static', filename='img/logo-mark.svg') }}" alt="" width="28" height="28">
+      <span class="brand__name">{{ APP_NAME }}</span>
+    </a>
+    <div class="error-page__content">
+      <p class="error-page__code">Error {{ code }}</p>
+      <h1 class="error-page__title">{{ title }}</h1>
+      <p class="error-page__text">{{ message }}</p>
+      <div class="cluster">
+        {% if current_user.is_authenticated %}
+          {{ link_button("Back to " ~ ("your workspace" if current_user.is_staff else "your portal"), url_for('public.start'), variant="primary") }}
+        {% else %}
+          {{ link_button("Go to the home page", url_for('public.index'), variant="primary") }}
+          {{ link_button("Sign in", url_for('auth.login'), variant="secondary") }}
+        {% endif %}
+      </div>
+    </div>
+  </main>
+  <div class="error-page__art weave" aria-hidden="true">
+    <span class="error-page__number">{{ code }}</span>
   </div>
-</main>
+</div>
 {% endblock %}
