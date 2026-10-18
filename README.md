@@ -87,6 +87,11 @@ Open <http://127.0.0.1:5000>. `seed-demo` creates a demo supplier with
 products, clients and two months of orders; it prints the sign-in details.
 Emails are printed to the terminal while `MAIL_BACKEND=console`.
 
+The `flask` command uses the development settings, with a public
+development key, when `APP_ENV` and `SECRET_KEY` aren't set. Anything else,
+such as `gunicorn wsgi:app`, refuses to start until both are set in `.env`
+or the environment.
+
 ## Tests
 
 ```bash

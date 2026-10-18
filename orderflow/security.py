@@ -6,6 +6,8 @@ import re
 from flask import abort, request
 from flask_login import current_user
 
+from .config import check_settings
+
 # ASCII control characters (NUL, tab, newline, ...). None belong in a URL path.
 CONTROL_CHARACTERS = re.compile(r"[\x00-\x1f\x7f]")
 
@@ -59,6 +61,8 @@ class AccessLogPath:
 
 
 def init_security(app):
+    # Fail at start-up rather than run with a public key or a throwaway database
+    check_settings(app)
     app.wsgi_app = AccessLogPath(app.wsgi_app)
 
     @app.before_request

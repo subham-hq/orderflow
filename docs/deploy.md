@@ -42,8 +42,13 @@ Your sender address must be on the verified domain, for example
    | `CONTACT_EMAIL` | `hello@example.com` | Receives landing-page enquiries; shown in the legal pages |
    | `LEGAL_NAME` | `Example Technologies Pvt Ltd` | The business named in the Privacy Policy and Terms |
 
-   `SECRET_KEY` is generated for you and `DATABASE_URL` is connected to the
-   database automatically. Leave them as they are.
+   `SECRET_KEY` is generated for you, `DATABASE_URL` is connected to the
+   database automatically and `APP_ENV` is set to `production`. Leave them
+   as they are. If you ever set up a service by hand, set all three: without
+   `APP_ENV` or `SECRET_KEY` the app refuses to start rather than run with
+   development settings and a public key, and in production it refuses to
+   start without `DATABASE_URL` rather than keep orders in a SQLite file that
+   the next deploy deletes.
 4. Choose instance types. The free web service sleeps when it's idle and free
    Render Postgres databases expire, so use paid instances for a public
    launch.

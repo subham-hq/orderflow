@@ -4,11 +4,19 @@ Settings come from environment variables so the same code runs locally,
 in tests and on Render. See .env.example for the full list.
 """
 
+import logging
 import os
 from datetime import timedelta
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+log = logging.getLogger("orderflow")
+
+# The development config's fallback key is published right here, so anyone
+# could sign session cookies and emailed links with it. check_settings()
+# only allows it inside the flask command on a developer's computer.
+DEV_SECRET_KEY = "dev-only-secret-key-do-not-use-in-production"
 
 
 def _bool(name, default=False):
@@ -18,13 +26,23 @@ def _bool(name, default=False):
     return value.strip().lower() in {"1", "true", "yes", "on"}
 
 
+def running_flask_command():
+    """True inside the `flask` command (flask run, flask db upgrade, ...), false under gunicorn."""
+    # Flask's command line sets this before it loads the app
+    return os.environ.get("FLASK_RUN_FROM_CLI") == "true"
+
+
+def local_database_url():
+    """The SQLite file used when DATABASE_URL isn't set."""
+    return f"sqlite:///{BASE_DIR / 'instance' / 'orderflow.db'}"
+
+
 def database_url():
     """Return the SQLAlchemy URL for DATABASE_URL, defaulting to local SQLite."""
     url = os.environ.get("DATABASE_URL", "").strip()
     if not url:
-        instance_dir = BASE_DIR / "instance"
-        instance_dir.mkdir(exist_ok=True)
-        return f"sqlite:///{instance_dir / 'orderflow.db'}"
+        (BASE_DIR / "instance").mkdir(exist_ok=True)
+        return local_database_url()
 
     # Render (and Heroku-style hosts) hand out postgres:// URLs. SQLAlchemy
     # needs the dialect name and the psycopg 3 driver spelled out.
@@ -95,11 +113,13 @@ class Config:
 
 
 class DevelopmentConfig(Config):
+    APP_ENV = "development"
     DEBUG = True
-    SECRET_KEY = Config.SECRET_KEY or "dev-only-secret-key-do-not-use-in-production"
+    SECRET_KEY = Config.SECRET_KEY or DEV_SECRET_KEY
 
 
 class TestingConfig(Config):
+    APP_ENV = "testing"
     TESTING = True
     SECRET_KEY = "test-secret-key"
     SQLALCHEMY_DATABASE_URI = os.environ.get("TEST_DATABASE_URL") or "sqlite://"
@@ -112,6 +132,7 @@ class TestingConfig(Config):
 
 
 class ProductionConfig(Config):
+    APP_ENV = "production"
     SESSION_COOKIE_SECURE = True
     REMEMBER_COOKIE_SECURE = True
     TRUST_PROXY = True
@@ -127,7 +148,44 @@ CONFIGS = {
 
 
 def get_config(name=None):
-    name = (name or os.environ.get("APP_ENV") or "development").lower()
+    name = (name or os.environ.get("APP_ENV") or "").strip().lower()
+    if not name:
+        # Falling back to development on a server would run it with DEBUG on,
+        # cookies that aren't Secure and possibly the public key above.
+        if not running_flask_command():
+            raise RuntimeError(
+                "APP_ENV is not set. Set APP_ENV=production on a server (render.yaml does this), "
+                "or APP_ENV=development in .env on your computer."
+            )
+        name = "development"
     if name not in CONFIGS:
         raise RuntimeError(f"Unknown APP_ENV {name!r}; use one of {', '.join(CONFIGS)}")
     return CONFIGS[name]
+
+
+def check_settings(app):
+    """Refuse to start with settings that would expose or lose data, and warn about risky ones.
+
+    Runs while the app is created, after any overrides passed to create_app.
+    """
+    config = app.config
+    local = running_flask_command()
+    if config.get("SECRET_KEY") == DEV_SECRET_KEY and not local:
+        raise RuntimeError(
+            "SECRET_KEY is not set. The development key is public, so it only works with the flask command "
+            "(flask run) on your computer. Generate a key and add it to the environment."
+        )
+    if config.get("APP_ENV") == "development" and not local:
+        log.warning(
+            "APP_ENV is development outside the flask command: DEBUG is on and cookies aren't marked Secure. "
+            "Use APP_ENV=production on a server."
+        )
+    if config.get("APP_ENV") == "production":
+        uri = str(config.get("SQLALCHEMY_DATABASE_URI") or "")
+        if uri == local_database_url():
+            raise RuntimeError(
+                "DATABASE_URL is not set. Production needs a Postgres database; without one the app would "
+                "use a local SQLite file, and a redeploy or restart on Render deletes it with every order in it."
+            )
+        if uri.startswith("sqlite"):
+            log.warning("The database is SQLite. On Render its file is deleted on every deploy; use Postgres.")
