@@ -207,7 +207,7 @@ def reset_password(token):
             action_label="Request a new link",
         ), 400
 
-    form = SetPasswordForm()
+    form = SetPasswordForm(account_email=user.email)
     if form.validate_on_submit():
         user.set_password(form.password.data)
         user.end_all_sessions()
@@ -242,7 +242,7 @@ def accept_invite_page(token):
         flash("This invitation has been withdrawn.", "warning")
         return redirect(url_for("auth.login"))
 
-    form = SetPasswordForm()
+    form = SetPasswordForm(account_email=user.email)
     if form.validate_on_submit():
         try:
             accept_invite(user, form.password.data)
@@ -259,7 +259,7 @@ def accept_invite_page(token):
 @login_and_verified_required
 @limiter.limit("10 per hour", methods=["POST"])
 def change_password():
-    form = ChangePasswordForm()
+    form = ChangePasswordForm(account_email=current_user.email)
     if form.validate_on_submit():
         if not current_user.check_password(form.current_password.data):
             form.current_password.errors.append("That isn't your current password.")

@@ -89,9 +89,22 @@ def password_problem(password, email=None):
         return "Use 128 characters or fewer."
     if password.lower() in COMMON_PASSWORDS or len(set(password)) < 4:
         return "That password is too easy to guess. Try a short phrase instead."
-    if email and normalize_email(email).split("@")[0] in password.lower() and len(password) < 16:
+    if email and _based_on_email(password, email):
         return "Don't base your password on your email address."
     return None
+
+
+def _based_on_email(password, email):
+    """True if the password is mostly the name in the email address, like priya2024 for priya@acme.in.
+
+    What's left once the name is taken out must be long enough to be a
+    password on its own. Names shorter than 3 letters ("jo", "me") are
+    ignored: they turn up inside ordinary words.
+    """
+    name = normalize_email(email).split("@")[0].split("+")[0]
+    if len(name) < 3 or name not in password.lower():
+        return False
+    return len(password.lower().replace(name, "")) < MIN_PASSWORD_LENGTH
 
 
 def find_user_by_email(email):

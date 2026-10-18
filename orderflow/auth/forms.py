@@ -10,10 +10,16 @@ def _strip(value):
 
 
 class StrongPassword:
-    """Reject short or common passwords, using the email field if the form has one."""
+    """Reject weak passwords, checking them against the account's email address.
+
+    That's the form's email field when it has one (sign-up), otherwise the
+    account_email the view gives the form (reset, invitation, change password).
+    """
 
     def __call__(self, form, field):
-        email = form.email.data if hasattr(form, "email") else None
+        email = getattr(form, "account_email", None)
+        if email is None and "email" in form:
+            email = form.email.data
         problem = password_problem(field.data, email)
         if problem:
             raise ValidationError(problem)
@@ -94,12 +100,20 @@ class ForgotPasswordForm(FlaskForm):
     email = _email("Email", "the email address you sign in with")
 
 
-class SetPasswordForm(FlaskForm):
+class _AccountPasswordForm(FlaskForm):
+    """A password form for an existing account; account_email is that account's address."""
+
+    def __init__(self, *args, account_email=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.account_email = account_email
+
+
+class SetPasswordForm(_AccountPasswordForm):
     password = _new_password()
     confirm = _confirm_password()
 
 
-class ChangePasswordForm(FlaskForm):
+class ChangePasswordForm(_AccountPasswordForm):
     current_password = PasswordField(
         "Current password",
         validators=[
