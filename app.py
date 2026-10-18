@@ -1048,9 +1048,10 @@ def admin_dashboard():
     )
     pending_count = orders[0]["total"]
 
-    # Calculate total value of approved orders.
+    # Calculate total value of approved and fulfilled orders.
+    # Fulfilled orders were approved first, so they still count as revenue.
     revenue = db.execute(
-        "SELECT SUM(total_amount) AS total FROM orders WHERE status = 'approved' AND company_id = ?",
+        "SELECT SUM(total_amount) AS total FROM orders WHERE status IN ('approved', 'fulfilled') AND company_id = ?",
         company_id
     )
     total_approved_revenue = revenue[0]["total"]
