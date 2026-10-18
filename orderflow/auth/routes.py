@@ -169,6 +169,9 @@ def verify_email(token):
 
 @bp.route("/forgot-password", methods=["GET", "POST"])
 @limiter.limit("5 per hour", methods=["POST"])
+# Per address too, so nobody can flood one inbox from many networks. Every
+# request counts, whether or not the account exists, so this reveals nothing.
+@limiter.limit("3 per hour", methods=["POST"], key_func=lambda: f"reset:{_email_key()}")
 def forgot_password():
     form = ForgotPasswordForm()
     if form.validate_on_submit():
