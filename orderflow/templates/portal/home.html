@@ -31,7 +31,7 @@
 {% if total_orders %}
 <section aria-label="Your orders at a glance">
   <div class="grid grid--3 stat-grid">
-    {{ stat("Open orders", "{:,}".format(open_orders), hint="Waiting for review or approved", href=url_for('portal.orders')) }}
+    {{ stat("Open orders", "{:,}".format(open_orders), hint="Waiting for review or approved", href=url_for('portal.orders', status='open')) }}
     {{ stat("Spent this month", spent_this_month | inr, hint="Approved and fulfilled orders placed in " ~ (now | date("%B %Y"))) }}
     {{ stat("Total orders", "{:,}".format(total_orders), hint="Since you joined", href=url_for('portal.orders')) }}
   </div>

@@ -8,11 +8,12 @@ from sqlalchemy import func, or_
 from sqlalchemy.orm import selectinload
 
 from ..extensions import db
-from ..models import APPROVED, PENDING, REVENUE_STATUSES, Bulletin, Order
+from ..models import REVENUE_STATUSES, Bulletin, Order
 from ..permissions import client_required
 from ..services import cart as cart_service
 from ..timeutil import get_zone, utcnow
 from . import bp
+from .orders import OPEN_STATUSES
 
 RECENT_ORDERS = 5
 
@@ -75,7 +76,7 @@ def home():
     return render_template(
         "portal/home.html",
         bulletins=live_bulletins(current_user.company_id, now),
-        open_orders=by_status.get(PENDING, 0) + by_status.get(APPROVED, 0),
+        open_orders=sum(by_status.get(status, 0) for status in OPEN_STATUSES),
         total_orders=sum(by_status.values()),
         spent_this_month=int(spent_this_month or 0),
         recent_orders=recent_orders,

@@ -88,6 +88,7 @@
 </div>
 {% else %}
 {% set empty = {
+  'open': ("No open orders", "Orders waiting for review, and approved orders " ~ supplier ~ " is getting ready, appear here."),
   'pending': ("No orders waiting for review", "Orders you place stay here until " ~ supplier ~ " approves or rejects them."),
   'approved': ("No approved orders right now", "Orders " ~ supplier ~ " has approved and is getting ready appear here."),
   'fulfilled': ("No fulfilled orders yet", "Orders " ~ supplier ~ " has delivered or handed over appear here."),

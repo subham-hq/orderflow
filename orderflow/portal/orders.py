@@ -16,9 +16,13 @@ from .helpers import get_client_order_or_404, like_pattern, page_arg, paginate, 
 
 PER_PAGE = 20
 
+# Orders still in progress: the home page's "Open orders" tile counts these and links to their tab
+OPEN_STATUSES = (PENDING, APPROVED)
+
 # Status tabs on the orders list: key, label, statuses shown
 TABS = (
     ("all", "All", ORDER_STATUSES),
+    ("open", "Open", OPEN_STATUSES),
     ("pending", "Pending", (PENDING,)),
     ("approved", "Approved", (APPROVED,)),
     ("fulfilled", "Fulfilled", (FULFILLED,)),
