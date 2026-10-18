@@ -18,6 +18,7 @@ from ..extensions import db
 from ..models import (
     APPROVED,
     CANCELLED,
+    CLIENT,
     FULFILLED,
     ORDER_STATUSES,
     PENDING,
@@ -29,6 +30,7 @@ from ..models import (
 )
 from ..permissions import staff_required
 from ..services.analytics import local_midnight
+from ..services.clients import display_name
 from ..services.orders import STATUS_LABELS, OrderError, allowed_transitions, transition_order
 from ..timeutil import to_local, utcnow
 from . import bp
@@ -37,6 +39,7 @@ PER_PAGE = 25
 MAX_PAGE = 10_000
 SEARCH_MAX_LENGTH = 100
 DATE_PATTERN = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
+CLIENT_ID_MAX_DIGITS = 9  # ids are 32-bit integers in Postgres
 
 # Tabs on the order list, in order: (status or None for all, label)
 STATUS_TABS = (
@@ -91,12 +94,25 @@ class OrderFilters:
     date_to: date | None = None
     raw_from: str = ""
     raw_to: str = ""
+    # One client's orders (from their client page); client is that User once
+    # resolve_client() has checked they're a client of this company
+    client_id: int | None = None
+    client: User | None = None
     messages: list = field(default_factory=list)
 
     @property
     def searching(self):
-        """True when anything other than the status tab narrows the list."""
+        """True when a search or a date narrows the list."""
         return bool(self.q or self.date_from or self.date_to)
+
+    @property
+    def narrowed(self):
+        """True when anything other than the status tab narrows the list."""
+        return self.searching or self.client_id is not None
+
+    @property
+    def client_name(self):
+        return display_name(self.client) if self.client else ""
 
     def args(self, **changes):
         """Query-string arguments that reproduce these filters, for links."""
@@ -105,6 +121,7 @@ class OrderFilters:
             "q": self.q,
             "from": self.date_from.isoformat() if self.date_from else None,
             "to": self.date_to.isoformat() if self.date_to else None,
+            "client": self.client_id,
         }
         values.update(changes)
         return {key: value for key, value in values.items() if value}
@@ -137,6 +154,23 @@ def parse_order_filters(args):
         filters.date_from, filters.date_to = filters.date_to, filters.date_from
         filters.raw_from, filters.raw_to = filters.date_from.isoformat(), filters.date_to.isoformat()
         filters.messages.append("The start date was after the end date, so we swapped them.")
+
+    raw_client = (args.get("client") or "").strip()
+    if raw_client.isascii() and raw_client.isdigit() and len(raw_client) <= CLIENT_ID_MAX_DIGITS:
+        filters.client_id = int(raw_client)
+    return filters
+
+
+def resolve_client(company, filters):
+    """Check the client filter names a client of this company; drop it if not."""
+    if filters.client_id is None:
+        return filters
+    client = db.session.get(User, filters.client_id)
+    if client is None or client.company_id != company.id or client.role != CLIENT:
+        filters.client_id = None
+        filters.messages.append("We couldn't find that client, so this shows orders from every client.")
+    else:
+        filters.client = client
     return filters
 
 
@@ -162,6 +196,8 @@ def filter_conditions(company, filters):
         conditions.append(Order.placed_at >= local_midnight(filters.date_from, company.timezone))
     if filters.date_to:
         conditions.append(Order.placed_at < local_midnight(filters.date_to + timedelta(days=1), company.timezone))
+    if filters.client_id is not None:
+        conditions.append(Order.client_id == filters.client_id)
     return conditions
 
 
@@ -216,7 +252,7 @@ class Tab:
 @staff_required
 def orders():
     company = current_user.company
-    filters = parse_order_filters(request.args)
+    filters = resolve_client(company, parse_order_filters(request.args))
     counts = status_counts(company, filters)
 
     stmt = filtered_orders(company, filters)
@@ -225,7 +261,7 @@ def orders():
         # Past the last page (an old link, or a hand-typed number): show the last one
         page = db.paginate(stmt, page=page.pages, per_page=PER_PAGE, error_out=False)
 
-    if filters.searching:
+    if filters.narrowed:
         has_orders = db.session.scalar(select(select(Order.id).where(Order.company_id == company.id).exists()))
     else:
         has_orders = bool(counts)
@@ -249,7 +285,8 @@ def orders():
         has_orders=has_orders,
         status_label=status_label,
         empty_tab_text=EMPTY_TAB_TEXT.get(filters.status),
-        clear_url=url_for("admin.orders", **({"status": filters.status} if filters.status else {})),
+        clear_url=url_for("admin.orders", **filters.args(q=None, **{"from": None, "to": None})),
+        all_clients_url=url_for("admin.orders", **filters.args(client=None)),
     )
 
 
@@ -540,7 +577,7 @@ def stream_csv(rows):
 @staff_required
 def orders_export():
     company = current_user.company
-    filters = parse_order_filters(request.args)
+    filters = resolve_client(company, parse_order_filters(request.args))
     today = to_local(utcnow(), company.timezone).date()
     return Response(
         stream_with_context(stream_csv(export_rows(company, filters))),

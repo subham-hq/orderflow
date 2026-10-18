@@ -119,7 +119,7 @@
       <div class="card__body">
         <dl class="kv">
           <div class="kv__row"><dt class="kv__label">Buyer company</dt><dd class="kv__value">{{ client.buyer_company or "Not given" }}</dd></div>
-          <div class="kv__row"><dt class="kv__label">Contact</dt><dd class="kv__value">{{ client.full_name }}</dd></div>
+          <div class="kv__row"><dt class="kv__label">Contact</dt><dd class="kv__value"><a class="text-link" href="{{ url_for('admin.client_detail', user_id=client.id) }}">{{ client.full_name }}</a></dd></div>
           <div class="kv__row"><dt class="kv__label">Email</dt><dd class="kv__value"><a class="text-link" href="mailto:{{ client.email }}">{{ client.email }}</a></dd></div>
           <div class="kv__row"><dt class="kv__label">Phone</dt><dd class="kv__value">{% if client.phone %}<a class="text-link" href="tel:{{ client.phone | replace(' ', '') }}">{{ client.phone }}</a>{% else %}Not given{% endif %}</dd></div>
         </dl>

@@ -64,7 +64,7 @@
         </table>
       </div>
       {% if order_count > orders | length %}
-      <div class="card__footer muted">Showing the latest {{ orders | length }} of {{ "{:,}".format(order_count) }} orders.</div>
+      <div class="card__footer"><span class="muted">Showing the latest {{ orders | length }} of {{ "{:,}".format(order_count) }} orders.</span> <a class="text-link" href="{{ url_for('admin.orders', client=client.id) }}">View all {{ "{:,}".format(order_count) }} orders</a></div>
       {% endif %}
       {% else %}
       <div class="card__body">

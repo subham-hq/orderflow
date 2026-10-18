@@ -88,7 +88,9 @@ def test_pending_order_shows_everything_needed_to_decide(client, login, request,
     assert "Placed 31 Oct 2026, 11:30 PM by Buyer Pvt Ltd" in page
     # Client card
     assert '<dd class="kv__value">Buyer Pvt Ltd</dd>' in page
-    assert f'<dd class="kv__value">{buyer.full_name}</dd>' in page
+    assert (
+        f'<dd class="kv__value"><a class="text-link" href="/app/clients/{buyer.id}">{buyer.full_name}</a></dd>' in page
+    )
     assert '<a class="text-link" href="mailto:buyer@sunrise.example">buyer@sunrise.example</a>' in page
     assert '<a class="text-link" href="tel:+919845012345">+91 98450 12345</a>' in page
     # Lines and totals from the snapshot

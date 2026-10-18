@@ -26,6 +26,7 @@
 
   <form class="toolbar" method="get" action="{{ url_for('admin.orders') }}" role="search" data-allow-resubmit>
     {% if filters.status %}<input type="hidden" name="status" value="{{ filters.status }}">{% endif %}
+    {% if filters.client %}<input type="hidden" name="client" value="{{ filters.client_id }}">{% endif %}
     <div class="search">
       <label class="visually-hidden" for="order-search">Search orders</label>
       {{ icon('search') }}
@@ -42,6 +43,10 @@
     {{ button("Apply", variant="secondary", icon_name="filter") }}
     {% if filters.searching %}<a class="text-link" href="{{ clear_url }}">Clear search and dates</a>{% endif %}
   </form>
+
+  {% if filters.client %}
+  <div class="alert alert--info">{{ icon('users') }}<p class="alert__text">Showing orders from <a class="text-link" href="{{ url_for('admin.client_detail', user_id=filters.client.id) }}">{{ filters.client_name }}</a> only. <a class="text-link" href="{{ all_clients_url }}">Show orders from every client</a></p></div>
+  {% endif %}
 
   {% for message in filters.messages %}
   <div class="alert alert--warning" role="alert">{{ icon('alert') }}<p class="alert__text">{{ message }}</p></div>
@@ -88,15 +93,26 @@
     </div>
   </div>
   {{ pagination(page, 'admin.orders') }}
-  {% elif filters.searching and filters.status and tabs[0].count %}
-  {# The search finds orders, just none in this tab #}
+  {% elif filters.status and tabs[0].count %}
+  {# Orders match, just none in this tab #}
   {% set matching = tabs[0].count %}
+  {% set none_are = ("it isn't " if matching == 1 else "none of them are ") ~ status_label | lower ~ "." %}
   <div class="card">
-    {{ empty_state("No " ~ status_label | lower ~ " orders match your search", "Your search matches " ~ "{:,}".format(matching) ~ (" order" if matching == 1 else " orders") ~ ", but " ~ ("it isn't " if matching == 1 else "none of them are ") ~ status_label | lower ~ ".", url_for('admin.orders', **filters.args(status=None)), "Show " ~ ("the matching order" if matching == 1 else "all " ~ "{:,}".format(matching) ~ " matching orders"), "search", action_variant="secondary") }}
+    {% if filters.searching %}
+    {{ empty_state("No " ~ status_label | lower ~ " orders match your search", "Your search matches " ~ "{:,}".format(matching) ~ (" order" if matching == 1 else " orders") ~ ", but " ~ none_are, url_for('admin.orders', **filters.args(status=None)), "Show " ~ ("the matching order" if matching == 1 else "all " ~ "{:,}".format(matching) ~ " matching orders"), "search", action_variant="secondary") }}
+    {% elif filters.client %}
+    {{ empty_state("No " ~ status_label | lower ~ " orders from " ~ filters.client_name, filters.client_name ~ " has placed " ~ "{:,}".format(matching) ~ (" order" if matching == 1 else " orders") ~ ", but " ~ none_are, url_for('admin.orders', **filters.args(status=None)), "Show all their orders", "orders", action_variant="secondary") }}
+    {% else %}
+    {{ empty_state("No " ~ status_label | lower ~ " orders", empty_tab_text, icon_name="orders") }}
+    {% endif %}
   </div>
   {% elif filters.searching %}
   <div class="card">
     {{ empty_state("No orders match your search", "Check the spelling, or try a wider date range. Search looks at order numbers, client names, buyer companies and email addresses.", clear_url, "Clear search and dates", "search", action_variant="secondary") }}
+  </div>
+  {% elif filters.client %}
+  <div class="card">
+    {{ empty_state(filters.client_name ~ " hasn't placed any orders yet", "When they place an order in their portal, it shows up here for you to review.", all_clients_url, "Show orders from every client", "orders", action_variant="secondary") }}
   </div>
   {% else %}
   <div class="card">
