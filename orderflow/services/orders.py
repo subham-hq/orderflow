@@ -43,6 +43,10 @@ TRANSITION_VERBS = {
 }
 
 
+# How many order numbers to try before giving up, when earlier ones are taken
+MAX_NUMBER_ATTEMPTS = 100
+
+
 class OrderError(ValueError):
     """A problem with an order the user can fix, with a safe message."""
 
@@ -122,13 +126,31 @@ def price_cart(company_id, cart):
 def _next_order_number(company_id):
     """Reserve the next order number for a company (ORD-000001, ...).
 
-    Row-locks the company on Postgres so two orders can't get the same
-    number; SQLite serialises writes anyway.
+    The counter is bumped with an UPDATE before it is read. The UPDATE takes
+    the company row's lock on Postgres and the database's write lock on
+    SQLite, held until the order is committed, so a second checkout waits
+    and then reads the new value; two orders can never get the same number.
+    (Reading first under SELECT ... FOR UPDATE didn't hold on SQLite, which
+    ignores FOR UPDATE, and the session could return a stale Company.)
+    Numbers that are already taken, say by an order added by hand, are skipped.
     """
-    company = db.session.execute(db.select(Company).where(Company.id == company_id).with_for_update()).scalar_one()
-    seq = company.next_order_seq or 1
-    company.next_order_seq = seq + 1
-    return f"{company.order_prefix or 'ORD'}-{seq:06d}"
+    for _ in range(MAX_NUMBER_ATTEMPTS):
+        db.session.execute(
+            db.update(Company)
+            .where(Company.id == company_id)
+            .values(next_order_seq=db.func.coalesce(Company.next_order_seq, 1) + 1)
+            .execution_options(synchronize_session=False)
+        )
+        # Columns, not the Company object, so the identity map can't hand back an old value
+        seq, prefix = db.session.execute(
+            db.select(Company.next_order_seq, Company.order_prefix).where(Company.id == company_id)
+        ).one()
+        number = f"{prefix or 'ORD'}-{seq - 1:06d}"
+        taken = db.session.scalar(db.select(Order.id).where(Order.company_id == company_id, Order.number == number))
+        if taken is None:
+            return number
+    db.session.rollback()
+    raise OrderError("We couldn't give this order a number. Please try again in a moment.")
 
 
 def place_order(client, cart, notes=None, submission_key=None):
@@ -225,6 +247,19 @@ def transition_order(order, user, to_status, message=None):
 
     now = utcnow()
     previous = order.status
+    # Change the status only if it is still the one checked above, so two
+    # people acting on the same order at once (approve and reject, or a client
+    # cancelling as staff approve) can't both win. The views lock the row on
+    # Postgres, but SQLite ignores FOR UPDATE and a caller may hold an old copy.
+    changed = db.session.execute(
+        db.update(Order)
+        .where(Order.id == order.id, Order.status == previous)
+        .values(status=to_status)
+        .execution_options(synchronize_session=False)
+    )
+    if changed.rowcount != 1:
+        db.session.rollback()
+        raise OrderError("Someone else changed this order a moment ago. Check its status and try again.")
     order.status = to_status
     if to_status in (APPROVED, REJECTED):
         order.decided_at = now
