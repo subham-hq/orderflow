@@ -50,12 +50,11 @@ import os
 from flask_wtf.csrf import CSRFProtect
 from datetime import datetime
 import random
-from cs50 import SQL
 from flask import Flask, flash, redirect, render_template, request, session, url_for
 from flask_session import Session
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from helpers import admin_required, client_required, inr
+from helpers import admin_required, client_required, db, inr
 
 # ==================================================
 # SYSTEM ARCHITECTURE OVERVIEW
@@ -194,12 +193,8 @@ app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
 Session(app)
 
-# Get the absolute directory of the current file
-BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-db_path = os.path.join(BASE_DIR, "orderflow.db")
-
-# Initialize database with the absolute path
-db = SQL(f"sqlite:///{db_path}")
+# The database handle (db) is created in helpers.py, which also builds
+# orderflow.db from schema.sql on first run.
 
 # --------------------------------------------------
 # SECURITY MIDDLEWARE

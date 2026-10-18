@@ -1,10 +1,40 @@
-import requests
+import os
+import sqlite3
 
 from cs50 import SQL
-from flask import flash, redirect, render_template, session
+from flask import flash, redirect, session
 from functools import wraps
 
-db = SQL("sqlite:///orderflow.db")
+# Resolve paths relative to this file so the app works from any working directory
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+DB_PATH = os.path.join(BASE_DIR, "orderflow.db")
+SCHEMA_PATH = os.path.join(BASE_DIR, "schema.sql")
+
+
+def init_db():
+    """
+    Create the SQLite database from schema.sql if it does not exist yet.
+    """
+
+    if os.path.exists(DB_PATH):
+        return
+
+    connection = sqlite3.connect(DB_PATH)
+    try:
+        with open(SCHEMA_PATH) as schema:
+            connection.executescript(schema.read())
+    except Exception:
+        # Don't leave a half-built database behind
+        connection.close()
+        os.remove(DB_PATH)
+        raise
+    connection.close()
+
+
+init_db()
+
+# Single shared database handle, used by these decorators and by app.py
+db = SQL(f"sqlite:///{DB_PATH}")
 
 def client_required(f):
     """
@@ -32,8 +62,6 @@ def client_required(f):
         return f(*args, **kwargs)
 
     return decorated_function
-
-db = SQL("sqlite:///orderflow.db")
 
 def admin_required(f):
     """

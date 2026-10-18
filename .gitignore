@@ -1,0 +1,14 @@
+# Local database (created from schema.sql on first run)
+orderflow.db
+
+# Server-side session files
+flask_session/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Environment variables
+.env

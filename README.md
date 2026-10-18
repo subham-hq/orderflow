@@ -86,7 +86,7 @@ orderflow/
 
 1. Clone the repository
 ```bash
-git clone https://github.com/yourusername/orderflow.git
+git clone https://github.com/subham-hq/orderflow.git
 cd orderflow
 ```
 
@@ -114,7 +114,7 @@ http://127.0.0.1:5000
 
 OrderFlow currently uses SQLite for local development.
 
-If a database file is not already present, initialize the database according to the project setup instructions and ensure all required tables are created before starting the application.
+The database schema lives in `schema.sql`. If `orderflow.db` does not exist, it is created automatically from that file the first time the app starts, so no manual setup is needed.
 
 ### Configuration
 
