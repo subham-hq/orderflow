@@ -1,0 +1,106 @@
+{% extends "layouts/app.html" %}
+{% from "macros/ui.html" import field, button, link_button, page_header, icon %}
+{% set active_nav = "products" %}
+{% set column_help = {
+  "sku": "Your product code. Letters, numbers and - _ . / only. A SKU you already use updates that product.",
+  "name": "The product name clients see, up to 160 characters.",
+  "price": "Price per unit in rupees, before GST. For example 1250 or 1250.50.",
+  "gst_percent": "The GST rate in percent: " ~ (gst_rates | join(", ")) ~ ".",
+  "category": "For example Packaging. Leave it blank for no category.",
+  "unit": "How you sell it, like box, kg or pack of 100. Blank means unit.",
+  "description": "Optional details, up to 2,000 characters.",
+  "active": "yes to show the product to clients, no to hide it. Blank keeps the current setting; new products are shown.",
+} %}
+{% block title %}Import products{% endblock %}
+{% block topbar_title %}Catalog{% endblock %}
+{% block content %}
+{% call page_header("Import products", "Add new products and update existing ones from a spreadsheet.", eyebrow="Catalog") %}
+  {{ link_button("Download template", url_for('admin.products_import_template'), variant="secondary", icon_name="download") }}
+  {{ link_button("Back to catalog", url_for('admin.products'), variant="ghost") }}
+{% endcall %}
+
+<div class="sidebar-layout">
+  <div class="stack">
+    {% if errors %}
+    <div class="alert alert--danger" role="alert">
+      {{ icon('alert') }}
+      <p class="alert__text">Nothing was imported. Fix the {{ "{:,}".format(error_count) }} problem{{ "" if error_count == 1 else "s" }} below in your spreadsheet, then upload the file again.</p>
+    </div>
+    <div class="card card--flush">
+      <div class="table-wrap">
+        <table class="table">
+          <caption class="visually-hidden">Problems found in the file</caption>
+          <thead>
+            <tr>
+              <th scope="col" class="num">Row</th>
+              <th scope="col">Column</th>
+              <th scope="col">What to fix</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for number, column, message in errors %}
+            <tr>
+              <td class="num">{{ number }}</td>
+              <td class="mono">{{ column or "Whole row" }}</td>
+              <td>{{ message }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if error_count > errors | length %}
+      <div class="card__footer muted">Showing the first {{ errors | length }} of {{ "{:,}".format(error_count) }} problems.</div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="card">
+      <div class="card__header"><h2 class="card__title">Upload a CSV file</h2></div>
+      <form method="post" enctype="multipart/form-data" class="card__body stack" novalidate>
+        {{ form.hidden_tag() }}
+        {{ field(form.file, hint="A .csv file up to 1 MB and " ~ "{:,}".format(max_rows) ~ " products, saved as UTF-8.") }}
+        <div class="cluster">
+          {{ button("Import products", icon_name="check") }}
+        </div>
+      </form>
+    </div>
+
+    <div class="card card--flush">
+      <div class="card__header"><h2 class="card__title">Columns</h2></div>
+      <div class="table-wrap">
+        <table class="table">
+          <caption class="visually-hidden">Columns the import understands</caption>
+          <thead>
+            <tr>
+              <th scope="col">Column</th>
+              <th scope="col">Required</th>
+              <th scope="col">What to put in it</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for column in columns %}
+            <tr>
+              <td class="mono nowrap">{{ column }}</td>
+              <td>{{ "Yes" if column in required_columns else "No" }}</td>
+              <td>{{ column_help[column] }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <aside class="stack" aria-label="How importing works">
+    <div class="card">
+      <div class="card__header"><h2 class="card__title">How it works</h2></div>
+      <div class="card__body stack">
+        <p>Start from the <a class="text-link" href="{{ url_for('admin.products_import_template') }}">template</a>, or <a class="text-link" href="{{ url_for('admin.products_export') }}">export your catalog</a>, edit it, and upload it here.</p>
+        <p>Rows with a SKU you already use update that product. New SKUs become new products.</p>
+        <p>We check every row first. If any row has a problem, nothing is imported and you'll see exactly what to fix.</p>
+        <p class="muted">Leave a column out of the file to keep that detail as it is on existing products.</p>
+      </div>
+    </div>
+  </aside>
+</div>
+{% endblock %}

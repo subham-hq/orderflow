@@ -10,6 +10,7 @@ rates, SKUs) are parsed once during validation and left on the field as
 import re
 
 from flask_wtf import FlaskForm
+from flask_wtf.file import FileAllowed, FileField, FileRequired
 from wtforms import BooleanField, SelectField, StringField, TextAreaField
 from wtforms.validators import DataRequired, Length, Optional, StopValidation
 
@@ -146,3 +147,14 @@ def product_form_data(product):
         "description": product.description or "",
         "is_active": bool(product.is_active),
     }
+
+
+class ProductImportForm(FlaskForm):
+    file = FileField(
+        "CSV file",
+        render_kw={"accept": ".csv,text/csv"},
+        validators=[
+            FileRequired("Choose a CSV file to upload."),
+            FileAllowed(["csv"], "Upload a file that ends in .csv. In Excel, use File > Save As > CSV UTF-8."),
+        ],
+    )

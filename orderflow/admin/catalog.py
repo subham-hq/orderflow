@@ -1,17 +1,32 @@
-"""Product catalog: add, edit, show/hide, and CSV export."""
+"""Product catalog: add, edit, show/hide, and CSV import/export."""
 
 from flask import Response, abort, flash, redirect, render_template, request, url_for
 from flask_login import current_user
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
+from werkzeug.datastructures import MultiDict
+from werkzeug.exceptions import RequestEntityTooLarge
 
-from .. import timeutil
+from .. import money, timeutil
 from ..extensions import db
 from ..models import OrderItem, Product
 from ..permissions import company_select, get_company_object_or_404, safe_next_url, staff_required
 from ..services import catalog
 from . import bp
-from .forms import ProductForm, product_form_data
+from .forms import ProductForm, ProductImportForm, product_form_data
+
+# Which CSV column each form field comes from, for import error messages
+_CSV_COLUMN_FOR_FIELD = {
+    "name": "name",
+    "sku": "sku",
+    "price": "price",
+    "gst_rate": "gst_percent",
+    "category": "category",
+    "unit": "unit",
+    "description": "description",
+    "is_active": "active",
+}
+MAX_LISTED_IMPORT_ERRORS = 200
 
 
 def _company_id():
@@ -151,3 +166,164 @@ def products_export():
 @staff_required
 def products_import_template():
     return _csv_response(catalog.template_csv(), "orderflow-products-template.csv")
+
+
+# CSV import ------------------------------------------------------------------
+
+
+def _row_formdata(values, product, columns):
+    """Form input for one CSV row. Columns left out of the file keep the
+    product's current values (or the defaults for a new product)."""
+    data = product_form_data(product) if product is not None else {"unit": catalog.DEFAULT_UNIT, "is_active": True}
+    for column in ("sku", "name", "price", "category", "unit", "description"):
+        if column in columns:
+            data[column] = values.get(column, "")
+    if "gst_percent" in columns:
+        text = values.get("gst_percent", "").strip().rstrip("%").strip()
+        try:
+            data["gst_rate"] = money.rate_input_value(money.parse_gst_rate(text)) if text else ""
+        except ValueError:
+            data["gst_rate"] = text
+    formdata = MultiDict({key: value for key, value in data.items() if key != "is_active"})
+    if data.get("is_active"):
+        formdata["is_active"] = "y"
+    return formdata
+
+
+def _plan_import(rows, columns):
+    """Validate every row with the product form's rules.
+
+    Returns (plan, errors): plan is a list of (product or None, data); errors
+    a list of (row number, column, message). Nothing is written here.
+    """
+    company_id = _company_id()
+    existing = {product.sku.upper(): product for product in db.session.scalars(company_select(Product))}
+    categories = catalog.Categories.for_company(company_id)
+    plan, errors, seen = [], [], {}
+
+    for row in rows:
+        if row.error:
+            errors.append((row.number, "", row.error))
+            continue
+        try:
+            sku = catalog.normalize_sku(row.values.get("sku"))
+        except catalog.CatalogError:
+            sku = None
+        product = existing.get(sku) if sku else None
+
+        formdata = _row_formdata(row.values, product, columns)
+        active = None
+        if "active" in columns:
+            try:
+                active = catalog.parse_active(row.values.get("active"))
+            except catalog.CatalogError as error:
+                errors.append((row.number, "active", str(error)))
+                continue
+        if active is not None:
+            formdata.pop("is_active", None)
+            if active:
+                formdata["is_active"] = "y"
+
+        form = ProductForm(formdata=formdata, meta={"csrf": False})
+        form.gst_rate.choices = catalog.gst_choices(product.gst_rate_bp if product else None)
+        if not form.validate():
+            for name, messages in form.errors.items():
+                errors.append((row.number, _CSV_COLUMN_FOR_FIELD.get(name, name), messages[0]))
+            continue
+
+        if sku in seen:
+            errors.append((row.number, "sku", f"{sku} is also on row {seen[sku]}. Each SKU can appear only once."))
+            continue
+        seen[sku] = row.number
+        data = form.product_data(categories)
+        if data["category"]:
+            categories.add(data["category"])
+        plan.append((product, data))
+    return plan, errors
+
+
+def _apply_import(plan):
+    created = updated = unchanged = 0
+    for product, data in plan:
+        if product is None:
+            db.session.add(Product(company_id=_company_id(), **data))
+            created += 1
+        elif catalog.apply_product_data(product, data):
+            updated += 1
+        else:
+            unchanged += 1
+    db.session.commit()
+    return created, updated, unchanged
+
+
+def _plural(count, word):
+    return f"{count:,} {word}{'' if count == 1 else 's'}"
+
+
+def _import_summary(created, updated, unchanged):
+    parts = []
+    if created:
+        parts.append(f"added {_plural(created, 'product')}")
+    if updated:
+        parts.append(f"updated {_plural(updated, 'product')}")
+    if not parts:
+        return "Nothing to change: every product in the file already matches your catalog."
+    summary = "Import complete: " + " and ".join(parts) + "."
+    if unchanged:
+        summary += f" {_plural(unchanged, 'row')} already matched and {'was' if unchanged == 1 else 'were'} left as is."
+    return summary
+
+
+@bp.route("/products/import", methods=["GET", "POST"])
+@staff_required
+def products_import():
+    form = ProductImportForm()
+    errors, error_count = [], 0
+    if form.validate_on_submit():
+        try:
+            columns, rows = catalog.read_products_csv(form.file.data.read())
+        except catalog.CatalogError as error:
+            form.file.errors.append(str(error))
+        else:
+            plan, errors = _plan_import(rows, columns)
+            error_count = len(errors)
+            if not errors:
+                try:
+                    counts = _apply_import(plan)
+                except IntegrityError:
+                    db.session.rollback()
+                    form.file.errors.append(
+                        "Someone changed the catalog while this file was importing. Nothing was imported; "
+                        "upload the file again."
+                    )
+                else:
+                    flash(_import_summary(*counts), "success")
+                    return redirect(url_for("admin.products"))
+            errors = errors[:MAX_LISTED_IMPORT_ERRORS]
+    return render_template(
+        "admin/products_import.html",
+        form=form,
+        errors=errors,
+        error_count=error_count,
+        columns=catalog.CSV_COLUMNS,
+        required_columns=catalog.REQUIRED_CSV_COLUMNS,
+        max_rows=catalog.MAX_IMPORT_ROWS,
+        gst_rates=[label for _, label in catalog.gst_choices()],
+    )
+
+
+@bp.errorhandler(RequestEntityTooLarge)
+def upload_too_large(error):
+    """Uploads over MAX_CONTENT_LENGTH: explain on the import page instead of an error page."""
+    if (
+        request.endpoint == "admin.products_import"
+        and current_user.is_authenticated
+        and current_user.is_staff
+        and current_user.is_verified
+    ):
+        flash("That file is larger than 1 MB. Split it into smaller files and import them one at a time.", "danger")
+        return redirect(url_for("admin.products_import"), code=303)
+    from ..errors import ERRORS
+
+    title, message = ERRORS[413]
+    return render_template("errors/error.html", code=413, title=title, message=message), 413
