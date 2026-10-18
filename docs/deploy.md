@@ -94,10 +94,21 @@ service.
   own HTTP request logs, on plans that have them, still record full paths.
 - **Backups:** paid Render Postgres plans take daily backups; check your
   plan's retention in the database's **Backups** tab.
-- **Scaling:** `WEB_CONCURRENCY` sets the number of gunicorn workers. Sign-in
-  rate limits are kept in memory per worker. If you run more than one
-  instance, add a Render Key Value (Redis) instance and set
-  `RATELIMIT_STORAGE_URI` to its connection URL so limits are shared.
+- **Scaling:** the Blueprint runs one gunicorn worker (`WEB_CONCURRENCY`)
+  with eight threads (`GUNICORN_THREADS`). Rate limits on signing in,
+  signing up, password resets and the contact form are counted in memory by
+  each worker, so with one worker every limit is exact; the counts start
+  again after each deploy or restart. Before you raise `WEB_CONCURRENCY` or
+  run more than one instance, share the counts in Redis:
+  1. In Render, choose **New → Key Value**, in the same region as the web
+     service.
+  2. Copy its **Internal Key Value URL** (`redis://red-…:6379`).
+  3. Set `RATELIMIT_STORAGE_URI` on the web service to that URL.
+
+  The Redis client is already in `requirements.txt`. If Key Value can't be
+  reached, the app counts in memory until it's back, rather than failing
+  sign-ins, and logs "Rate limit storage unreachable". With more than one
+  worker and no Redis, the app logs a warning at start-up.
 - **Client IP addresses:** rate limits use the address that Render's proxy
   adds to `X-Forwarded-For`. If Render ever puts a second proxy in front of
   your service (for example a CDN you add yourself), set `PROXY_HOPS` to the

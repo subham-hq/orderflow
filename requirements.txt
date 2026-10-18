@@ -12,6 +12,7 @@ gunicorn==26.2.0
 itsdangerous==2.2.0
 psycopg[binary]==3.3.6
 python-dotenv==1.2.4
+redis==7.4.1
 requests==2.34.2
 tzdata==2026.5
 Werkzeug==3.1.9

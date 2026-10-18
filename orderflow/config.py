@@ -78,10 +78,15 @@ class Config:
     # open for a while still submits.
     WTF_CSRF_TIME_LIMIT = None
 
-    # Rate limiting (memory:// is per process; set a redis:// URL to share limits)
+    # Rate limiting. memory:// counts in each gunicorn worker separately and
+    # starts again on every restart; a redis:// or rediss:// URL (such as
+    # Render Key Value) shares the counts between workers and instances.
     RATELIMIT_STORAGE_URI = os.environ.get("RATELIMIT_STORAGE_URI", "memory://")
     RATELIMIT_HEADERS_ENABLED = True
     RATELIMIT_ENABLED = _bool("RATELIMIT_ENABLED", True)
+    # If Redis can't be reached, count in memory until it's back rather than
+    # failing every sign-in
+    RATELIMIT_IN_MEMORY_FALLBACK_ENABLED = True
 
     # Email
     MAIL_BACKEND = os.environ.get("MAIL_BACKEND", "console")  # console | resend | smtp | memory
@@ -179,6 +184,15 @@ def check_settings(app):
         log.warning(
             "APP_ENV is development outside the flask command: DEBUG is on and cookies aren't marked Secure. "
             "Use APP_ENV=production on a server."
+        )
+    workers = os.environ.get("WEB_CONCURRENCY", "").strip()
+    in_memory = str(config.get("RATELIMIT_STORAGE_URI", "")).startswith("memory://")
+    if not config.get("TESTING") and in_memory and workers.isdigit() and int(workers) > 1:
+        log.warning(
+            "Rate limits are counted separately in each of the %s gunicorn workers, so every limit is %s times "
+            "looser. Run one worker, or set RATELIMIT_STORAGE_URI to a Redis URL to share the counts.",
+            workers,
+            workers,
         )
     if config.get("APP_ENV") == "production":
         uri = str(config.get("SQLALCHEMY_DATABASE_URI") or "")

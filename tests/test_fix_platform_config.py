@@ -1,9 +1,16 @@
 """Start-up settings: what the app refuses to run with, and what it warns about."""
 
+import re
+from importlib.metadata import requires
+from pathlib import Path
+
 import pytest
+from packaging.requirements import Requirement
 
 from orderflow import config, create_app
+from orderflow.extensions import db
 
+ROOT = Path(__file__).resolve().parent.parent
 POSTGRES = "postgresql+psycopg://orderflow:secret@db.internal:5432/orderflow"
 
 
@@ -103,3 +110,49 @@ def test_production_with_postgres_starts_quietly(production, monkeypatch, caplog
 def test_production_on_an_explicit_sqlite_file_is_warned_about(production, caplog):
     create_app("production", SQLALCHEMY_DATABASE_URI="sqlite:////var/data/orderflow.db")
     assert "The database is SQLite" in caplog.text
+
+
+# Rate limit storage ----------------------------------------------------------
+
+
+def test_requirements_pin_a_redis_client_that_flask_limiter_supports():
+    pins = dict(line.split("==", 1) for line in (ROOT / "requirements.txt").read_text().splitlines() if "==" in line)
+    supported = next(
+        requirement
+        for requirement in map(Requirement, requires("limits"))
+        if requirement.name == "redis" and requirement.marker.evaluate({"extra": "redis"})
+    )
+    assert "redis" in pins, "RATELIMIT_STORAGE_URI=redis://... can't work without the client"
+    assert supported.specifier.contains(pins["redis"])
+
+
+def test_a_redis_storage_url_boots_and_falls_back_to_memory_when_redis_is_down(caplog):
+    pytest.importorskip("redis")
+    app = create_app("testing", RATELIMIT_ENABLED=True, RATELIMIT_STORAGE_URI="redis://127.0.0.1:1/0")
+    with app.app_context():
+        db.create_all()
+        try:
+            response = app.test_client().post("/forgot-password", data={"email": "someone@example.com"})
+            assert response.status_code == 200
+            assert "Rate limit storage unreachable" in caplog.text
+        finally:
+            db.session.remove()
+            db.drop_all()
+
+
+def test_more_than_one_worker_without_redis_is_warned_about(production, monkeypatch, caplog):
+    monkeypatch.setattr(config.ProductionConfig, "SQLALCHEMY_DATABASE_URI", POSTGRES)
+    monkeypatch.setenv("WEB_CONCURRENCY", "3")
+    create_app("production")
+    assert "counted separately in each of the 3 gunicorn workers" in caplog.text
+
+    caplog.clear()
+    monkeypatch.setenv("WEB_CONCURRENCY", "1")
+    create_app("production")
+    assert "gunicorn workers" not in caplog.text
+
+
+def test_the_shipped_server_runs_one_worker():
+    render = (ROOT / "render.yaml").read_text()
+    assert re.search(r'- key: WEB_CONCURRENCY\n\s+value: "1"', render)
+    assert '--workers "${WEB_CONCURRENCY:-1}"' in (ROOT / "bin" / "start.sh").read_text()

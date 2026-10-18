@@ -24,8 +24,14 @@ services:
           property: connectionString
       - key: MAIL_BACKEND
         value: resend
+      # One gunicorn worker with eight threads: rate limits are counted in
+      # memory per worker, so one worker keeps every limit exact. To run more
+      # workers or instances, add Render Key Value and set
+      # RATELIMIT_STORAGE_URI (see docs/deploy.md).
       - key: WEB_CONCURRENCY
-        value: "2"
+        value: "1"
+      - key: GUNICORN_THREADS
+        value: "8"
       # Your site address, e.g. https://orderflow.example.com (no trailing slash)
       - key: APP_BASE_URL
         sync: false
