@@ -27,7 +27,7 @@
         {% if not editing %}
         {{ field(form.email, hint="The invitation goes here, and they'll sign in with it.", autocomplete="off", placeholder="name@business.in") }}
         {% elif client.has_accepted_invite %}
-        {{ field(form.email, hint="They sign in with " ~ client.email ~ ". If you change it, we'll email a link to the new address, and it changes once they open the link and sign in.", autocomplete="off") }}
+        {{ field(form.email, hint="They sign in with " ~ client.email ~ ". If you change it, we'll email a link to the new address, and it changes once they open the link, sign in and confirm.", autocomplete="off") }}
         {% else %}
         {{ field(form.email, hint="They haven't accepted their invitation yet. If you change this, we'll send a fresh invitation to the new address.", autocomplete="off") }}
         {% endif %}

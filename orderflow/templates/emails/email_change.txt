@@ -1,6 +1,6 @@
 Hi {{ user.first_name }},
 
-{% if requested_by_self %}You asked to sign in to the {{ user.company.name }} workspace on {{ app_name }} with this email address.{% else %}{{ user.company.name }} asked to change the email you use to sign in to {{ app_name }} to this address.{% endif %} To confirm, open this link and sign in with your current email and password:
+{% if requested_by_self %}You asked to sign in to the {{ user.company.name }} workspace on {{ app_name }} with this email address.{% else %}{{ user.company.name }} asked to change the email you use to sign in to {{ app_name }} to this address.{% endif %} To confirm, open this link, sign in with your current email and password, and press the button to switch:
 
 {{ link }}
 

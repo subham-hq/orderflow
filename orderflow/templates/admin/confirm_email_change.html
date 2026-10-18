@@ -1,0 +1,16 @@
+{% extends "layouts/auth.html" %}
+{% from "macros/ui.html" import button, icon, link_button %}
+{% block title %}Confirm your new email{% endblock %}
+{% block content %}
+<div class="auth__icon">{{ icon('mail') }}</div>
+<h1 class="auth__title">Sign in with a new email?</h1>
+<p class="auth__lead">From now on you'll sign in to {% if user.is_client %}your {{ user.company.name }} account{% else %}the {{ user.company.name }} workspace{% endif %} with <strong>{{ new_email }}</strong> instead of {{ user.email }}.</p>
+<p class="muted">Only confirm if {{ new_email }} is your own address. We'll let {{ user.email }} know about the change.</p>
+<div class="stack">
+  <form method="post" action="{{ url_for('admin.confirm_email_change', token=token) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {{ button("Switch to the new email", class="btn--block") }}
+  </form>
+  {{ link_button("Keep my current email", cancel_url, variant="ghost", class="btn--block") }}
+</div>
+{% endblock %}

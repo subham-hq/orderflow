@@ -11,9 +11,9 @@ invitee) must be plain text without web addresses.
 
 Changing the email someone signs in with takes two steps: a link is sent to
 the new address, and the change happens when the person opens it while
-signed in to their account. Staff can ask for the change on a client's
-behalf, but only the client can confirm it, so staff can't take an account
-over by pointing it at an address they control.
+signed in to their account and confirms. Staff can ask for the change on a
+client's behalf, but only the client can confirm it, so staff can't take an
+account over by pointing it at an address they control.
 """
 
 import logging
@@ -283,16 +283,27 @@ def mask_email(email):
     return f"{local[:1]}***@{domain}"
 
 
+def _taken_since(new_email):
+    return ClientError(
+        f"{new_email} is now used by another OrderFlow account, so we can't switch to it. "
+        "Ask for a new link with a different address."
+    )
+
+
+def email_change_problem(user, new_email):
+    """Why user can't switch to new_email now (someone else has it), or None."""
+    existing = find_user_by_email(new_email)
+    if existing is not None and existing.id != user.id:
+        return str(_taken_since(normalize_email(new_email)))
+    return None
+
+
 def change_email(user, new_email):
     """Move user's sign-in to new_email (they proved they can read it). Returns
     the old address. Raises ClientError if someone else has it now."""
     new_email = normalize_email(new_email)
-    taken = ClientError(
-        f"{new_email} is now used by another OrderFlow account, so we can't switch to it. "
-        "Ask for a new link with a different address."
-    )
-    existing = find_user_by_email(new_email)
-    if existing is not None and existing.id != user.id:
+    taken = _taken_since(new_email)
+    if email_change_problem(user, new_email):
         raise taken
     old_email = user.email
     user.email = new_email

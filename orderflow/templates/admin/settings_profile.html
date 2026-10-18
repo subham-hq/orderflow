@@ -41,7 +41,7 @@
       <div class="card__header"><h2 class="card__title">Sign-in email</h2></div>
       <div class="card__body stack">
         {{ form_errors(email_form) }}
-        <p>To sign in with a different address, enter it with your password. We'll email a link to the new address, and the change happens when you open it.</p>
+        <p>To sign in with a different address, enter it with your password. We'll email a link to the new address, and the change happens once you open it and confirm.</p>
         {{ field(email_form.new_email, autocomplete="email", placeholder="name@business.in") }}
         {{ field(email_form.current_password, autocomplete="current-password") }}
         {{ button("Send confirmation link", variant="secondary", icon_name="send") }}

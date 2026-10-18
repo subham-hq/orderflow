@@ -211,7 +211,7 @@ def _request_email_change(user, changes, new_email):
         client_accounts.count_invitation(user.company_id)
         flash(
             f"{saved}We sent a link to {new_email} to confirm it. {user.first_name}'s sign-in email changes once "
-            f"they open the link and sign in; until then, they keep using {user.email}.",
+            f"they open the link, sign in and confirm; until then, they keep using {user.email}.",
             "success",
         )
     else:

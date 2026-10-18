@@ -41,6 +41,14 @@ def ask_for_new_email(browser, new_email, password=factories.PASSWORD):
     return browser.post("/app/settings/email", data={"new_email": new_email, "current_password": password})
 
 
+def confirm(browser, link):
+    """Open the emailed link, then press the button on the page it shows."""
+    page = browser.get(link)
+    assert page.status_code == 200, page.headers.get("Location")
+    assert "Sign in with a new email?" in text(page)
+    return browser.post(link)
+
+
 # Staff: their own sign-in email ---------------------------------------------------------
 
 
@@ -67,7 +75,12 @@ def test_a_staff_email_changes_only_once_the_link_is_opened(app, owner, mail):
     assert get_user(owner.id).email == "owner@kaveri.example"  # nothing changes yet
     assert can_sign_in(app, "owner@kaveri.example")
 
-    response = browser.get(link_from(message, "/app/email/confirm/"))
+    link = link_from(message, "/app/email/confirm/")
+    page = text(browser.get(link))
+    assert "with <strong>priya@newdomain.example</strong> instead of owner@kaveri.example" in page
+    assert '<a href="/app/" class="btn btn--ghost' in page and "Keep my current email" in page
+    assert get_user(owner.id).email == "owner@kaveri.example"  # opening the link alone changes nothing
+    response = browser.post(link)
     assert response.status_code == 302 and response.headers["Location"] == "/app/"
     assert "Your sign-in email is now priya@newdomain.example." in text(browser.get("/app/"))
     changed = get_user(owner.id)
@@ -107,8 +120,9 @@ def test_a_bad_address_is_refused_and_the_profile_form_keeps_its_values(app, own
 def test_a_link_only_works_for_the_account_it_was_sent_for(app, owner, admin, mail):
     ask_for_new_email(browser_for(app, owner), "priya@newdomain.example")
     link = link_from(mail[-1], "/app/email/confirm/")
-    response = browser_for(app, admin).get(link)
-    assert response.status_code == 403 and "This link is for a different account." in text(response)
+    other = browser_for(app, admin)
+    for response in (other.get(link), other.post(link)):
+        assert response.status_code == 403 and "This link is for a different account." in text(response)
     assert get_user(owner.id).email == "owner@kaveri.example"
 
 
@@ -116,13 +130,14 @@ def test_a_signed_out_person_signs_in_first(app, owner, mail):
     ask_for_new_email(browser_for(app, owner), "priya@newdomain.example")
     link = link_from(mail[-1], "/app/email/confirm/")
     visitor = app.test_client()
-    response = visitor.get(link)
-    assert response.status_code == 302 and response.headers["Location"].startswith("/login?next=/app/email/confirm/")
+    for response in (visitor.get(link), visitor.post(link)):
+        assert response.status_code == 302
+        assert response.headers["Location"].startswith("/login?next=/app/email/confirm/")
     assert get_user(owner.id).email == "owner@kaveri.example"  # opening it signed out changes nothing
 
     response = visitor.post(response.headers["Location"], data={"email": owner.email, "password": factories.PASSWORD})
     assert response.headers["Location"] == link
-    visitor.get(link)
+    confirm(visitor, link)
     assert get_user(owner.id).email == "priya@newdomain.example"
 
 
@@ -130,9 +145,9 @@ def test_a_link_works_once(app, owner, mail):
     browser = browser_for(app, owner)
     ask_for_new_email(browser, "priya@newdomain.example")
     link = link_from(mail[-1], "/app/email/confirm/")
-    browser.get(link)
-    response = browser.get(link)
-    assert response.status_code == 400 and "already been used or is no longer valid" in text(response)
+    confirm(browser, link)
+    for response in (browser.get(link), browser.post(link)):
+        assert response.status_code == 400 and "already been used or is no longer valid" in text(response)
 
 
 def test_a_second_request_replaces_the_first_once_either_is_used(app, owner, mail):
@@ -140,7 +155,7 @@ def test_a_second_request_replaces_the_first_once_either_is_used(app, owner, mai
     ask_for_new_email(browser, "first@newdomain.example")
     ask_for_new_email(browser, "second@newdomain.example")
     first, second = (link_from(message, "/app/email/confirm/") for message in mail[-2:])
-    browser.get(second)
+    confirm(browser, second)
     assert browser.get(first).status_code == 400
     assert get_user(owner.id).email == "second@newdomain.example"
 
@@ -186,9 +201,9 @@ def test_an_address_taken_after_the_link_was_sent_is_refused(app, company, owner
     ask_for_new_email(browser, "priya@newdomain.example")
     link = link_from(mail[-1], "/app/email/confirm/")
     factories.make_client(company, email="priya@newdomain.example")
-    response = browser.get(link)
-    assert response.status_code == 409
-    assert "priya@newdomain.example is now used by another OrderFlow account" in text(response)
+    for response in (browser.get(link), browser.post(link)):
+        assert response.status_code == 409
+        assert "priya@newdomain.example is now used by another OrderFlow account" in text(response)
     assert get_user(owner.id).email == "owner@kaveri.example"
 
 
@@ -196,7 +211,7 @@ def test_old_reset_links_stop_working_after_the_change(app, owner, mail):
     browser = browser_for(app, owner)
     reset = make_token(RESET_PASSWORD, owner)
     ask_for_new_email(browser, "priya@newdomain.example")
-    browser.get(link_from(mail[-1], "/app/email/confirm/"))
+    confirm(browser, link_from(mail[-1], "/app/email/confirm/"))
     assert app.test_client().get(f"/reset-password/{reset}").status_code == 400
 
 
@@ -251,12 +266,15 @@ def test_staff_can_ask_to_change_a_joined_clients_email(app, owner, buyer, mail)
 
     # Staff can't confirm it for them
     link = link_from(message, "/app/email/confirm/")
-    assert staff.get(link).status_code == 403
+    assert staff.get(link).status_code == 403 and staff.post(link).status_code == 403
     assert get_user(buyer.id).email == "buyer@sunrise.example"
 
     # The client confirms it by signing in with their current details
     client_browser = browser_for(app, buyer)
-    response = client_browser.get(link)
+    page = text(client_browser.get(link))
+    assert "your Kaveri Supplies account with <strong>ananya@newshop.example</strong>" in page
+    assert '<a href="/portal/" class="btn btn--ghost' in page
+    response = client_browser.post(link)
     assert response.status_code == 302 and response.headers["Location"] == "/portal/"
     assert "Your sign-in email is now ananya@newshop.example." in text(client_browser.get("/portal/"))
     assert get_user(buyer.id).email == "ananya@newshop.example"

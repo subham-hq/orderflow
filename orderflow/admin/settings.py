@@ -130,7 +130,8 @@ def change_email():
         elif accounts.send_email_change_link(user, new_email, requested_by=user):
             accounts.count_invitation(user.company_id)
             flash(
-                f"Check {new_email} for a link to confirm it. Your sign-in email changes once you open the link; "
+                f"Check {new_email} for a link to confirm it. Your sign-in email changes once you open the link and "
+                f"confirm; "
                 f"until then, keep signing in with {user.email}.",
                 "success",
             )
@@ -142,12 +143,15 @@ def change_email():
     return _render_profile(email_form=form)
 
 
-@bp.route("/email/confirm/<token>")
+@bp.route("/email/confirm/<token>", methods=["GET", "POST"])
 def confirm_email_change(token):
     """Switch the sign-in email to the address the link was sent to.
 
     The person must be signed in to the account the link is for, so a link
     sent to an address someone else controls can't move the account there.
+    Opening the link shows the new address; the switch happens only when
+    they press the button (a POST), never from a link scanner or a click on
+    a link someone forwarded.
     """
     try:
         user, new_email = accounts.load_email_change_token(token)
@@ -162,6 +166,17 @@ def confirm_email_change(token):
             "This link is for a different account. Sign out, then open the link again and sign in "
             "with the account it was sent for.",
             403,
+        )
+    problem = accounts.email_change_problem(user, new_email)
+    if problem:
+        return _link_invalid(problem, 409)
+    if request.method == "GET":
+        return render_template(
+            "admin/confirm_email_change.html",
+            user=user,
+            new_email=new_email,
+            token=token,
+            cancel_url=home_url_for(user),
         )
     try:
         old_email = accounts.change_email(user, new_email)
