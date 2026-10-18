@@ -1,13 +1,14 @@
-"""Product catalog: add, edit and show/hide products."""
+"""Product catalog: add, edit, show/hide, and CSV export."""
 
-from flask import abort, flash, redirect, render_template, request, url_for
+from flask import Response, abort, flash, redirect, render_template, request, url_for
 from flask_login import current_user
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 
+from .. import timeutil
 from ..extensions import db
 from ..models import OrderItem, Product
-from ..permissions import get_company_object_or_404, safe_next_url, staff_required
+from ..permissions import company_select, get_company_object_or_404, safe_next_url, staff_required
 from ..services import catalog
 from . import bp
 from .forms import ProductForm, product_form_data
@@ -125,3 +126,28 @@ def product_status(product_id):
     else:
         flash(f"“{product.name}” is hidden. Clients can't order it, and past orders are unchanged.", "success")
     return redirect(back)
+
+
+# CSV export ------------------------------------------------------------------
+
+
+def _csv_response(text, filename):
+    return Response(
+        text,
+        mimetype="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"', "Cache-Control": "no-store"},
+    )
+
+
+@bp.route("/products/export.csv")
+@staff_required
+def products_export():
+    rows = db.session.scalars(company_select(Product).order_by(func.lower(Product.name), Product.id))
+    today = timeutil.to_local(timeutil.utcnow(), current_user.company.timezone).strftime("%Y-%m-%d")
+    return _csv_response(catalog.products_csv(rows), f"products-{today}.csv")
+
+
+@bp.route("/products/import/template.csv")
+@staff_required
+def products_import_template():
+    return _csv_response(catalog.template_csv(), "orderflow-products-template.csv")
