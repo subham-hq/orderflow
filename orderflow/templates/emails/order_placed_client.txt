@@ -1,9 +1,12 @@
+{# Block tags sit on their own lines: trim_blocks drops the newline after each one #}
 Hi {{ order.client.first_name }},
 
 {{ order.company.name }} has received your order {{ order.number }} and will review it shortly.
 
-{% for item in order.items %}- {{ item.quantity }} x {{ item.name }} ({{ item.sku }}): {{ item.line_subtotal_paise | inr }}
+{% for item in order.items %}
+- {{ item.quantity }} x {{ item.name }} ({{ item.sku }}): {{ item.line_subtotal_paise | inr }}
 {% endfor %}
+
 Subtotal: {{ order.subtotal_paise | inr }}
 GST: {{ order.tax_paise | inr }}
 Total: {{ order.total_paise | inr }}
