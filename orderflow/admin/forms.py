@@ -301,7 +301,7 @@ class BulletinForm(FlaskForm):
 
 
 def timezone_label(name):
-    """ "Asia/Kolkata (UTC+05:30)", using today's offset."""
+    """A label like Asia/Kolkata (UTC+05:30), using today's offset."""
     offset = timeutil.utcnow().astimezone(timeutil.get_zone(name)).strftime("%z")
     return f"{name} (UTC{offset[:3]}:{offset[3:]})"
 

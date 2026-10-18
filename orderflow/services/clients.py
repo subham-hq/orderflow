@@ -67,7 +67,7 @@ def status_counts(stmt):
 
 
 def display_name(user):
-    """ "Ananya Rao (Sunrise Retail LLP)" for clients, the full name otherwise."""
+    """A client's name with their business, like Ananya Rao (Sunrise Retail LLP); staff get their full name."""
     if user.is_client and user.buyer_company:
         return f"{user.full_name} ({user.buyer_company})"
     return user.full_name

@@ -9,6 +9,7 @@ from ..permissions import company_select, staff_required
 from . import bp
 from .forms import CompanySettingsForm, ProfileForm, timezone_choices
 
+COMPANY_FIELDS = ("name", "legal_name", "gstin", "address", "phone", "support_email", "timezone", "order_prefix")
 # Fields that may be left blank (stored as NULL)
 _OPTIONAL_COMPANY_FIELDS = ("legal_name", "gstin", "address", "phone", "support_email")
 
@@ -39,7 +40,7 @@ def settings():
     form = CompanySettingsForm(obj=company if request.method == "GET" else None)
     form.timezone.choices = timezone_choices(company.timezone)
     if can_edit and form.validate_on_submit():
-        changes = {name: field.data for name, field in form._fields.items() if name != "csrf_token"}
+        changes = {name: form[name].data for name in COMPANY_FIELDS}
         for name in _OPTIONAL_COMPANY_FIELDS:
             changes[name] = changes[name] or None
         changed = _apply(company, changes)
