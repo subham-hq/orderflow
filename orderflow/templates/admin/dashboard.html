@@ -70,13 +70,13 @@
           <svg class="chart__svg" viewBox="0 0 {{ chart.width }} {{ chart.height }}" role="img" aria-label="{{ chart.summary }}" focusable="false">
             {% for tick in chart.y_ticks %}
             <line class="chart__axis{% if not loop.first %} chart__axis--grid{% endif %}" x1="{{ chart.left }}" x2="{{ chart.right }}" y1="{{ tick.position }}" y2="{{ tick.position }}"></line>
-            <text class="chart__label chart__label--y" x="{{ chart.left - 8 }}" y="{{ tick.position }}" text-anchor="end" dominant-baseline="middle">{{ tick.label }}</text>
+            <text class="chart__label chart__label--y" x="{{ chart.y_label_x }}" y="{{ tick.position }}" text-anchor="end" dominant-baseline="middle">{{ tick.label }}</text>
             {% endfor %}
             {% for bar in chart.bars %}
             <rect class="chart__bar{% if not bar.revenue_paise %} chart__bar--empty{% elif loop.last %} chart__bar--current{% endif %}" x="{{ bar.x }}" y="{{ bar.y }}" width="{{ bar.width }}" height="{{ bar.height }}" rx="2"><title>{{ bar.label }}</title></rect>
             {% endfor %}
             {% for tick in chart.x_ticks %}
-            <text class="chart__label chart__label--x{% if loop.last %} chart__label--strong{% endif %}" x="{{ tick.position }}" y="{{ chart.bottom + 20 }}" text-anchor="middle">{{ tick.label }}</text>
+            <text class="chart__label chart__label--x{% if loop.last %} chart__label--strong{% endif %}" x="{{ tick.position }}" y="{{ chart.x_label_y }}" text-anchor="middle">{{ tick.label }}</text>
             {% endfor %}
           </svg>
           <table class="visually-hidden">

@@ -297,3 +297,57 @@ def test_checklist_steps_follow_progress(app):
     assert [step.is_next for step in steps] == [True, False, False, False]
     assert [step.is_next for step in later] == [False, False, True, False]
     assert steps[-1].action_url is None
+
+
+# The chart on phones ----------------------------------------------------------
+
+IPHONE = (
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 "
+    "(KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1"
+)
+ANDROID = (
+    "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/128.0.0.0 Mobile Safari/537.36"
+)
+IPAD = (
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) "
+    "Version/17.5 Safari/605.1.15"
+)
+
+
+@pytest.mark.parametrize(
+    ("headers", "height"),
+    [
+        ({"User-Agent": IPHONE}, 440),
+        ({"User-Agent": ANDROID}, 440),
+        ({"User-Agent": "Mozilla/5.0 (Linux; Android 14)", "Sec-CH-UA-Mobile": "?1"}, 440),
+        ({"User-Agent": IPAD}, 240),
+        ({"User-Agent": ANDROID.replace(" Mobile", ""), "Sec-CH-UA-Mobile": "?0"}, 240),
+        ({}, 240),
+    ],
+)
+def test_phones_get_a_taller_chart(client, login, owner, stocked, headers, height):
+    login(owner)
+    response = client.get("/app/", headers=headers)
+    html = response.get_data(as_text=True)
+    assert f'<svg class="chart__svg" viewBox="0 0 720 {height}" role="img"' in html
+    assert html.count('class="chart__bar') == 30
+    assert {"User-Agent", "Sec-CH-UA-Mobile"} <= set(response.vary)
+    assert_no_inline_code(html)
+
+
+def test_phone_chart_layout_leaves_room_for_the_larger_phone_labels():
+    days = [DayRevenue(date(2026, 10, 1) + timedelta(days=n), (n % 4) * 1_00_000_00, 1) for n in range(30)]
+    chart = dashboard_view.build_bar_chart(days, **dashboard_view.PHONE_CHART)
+    desktop = dashboard_view.build_bar_chart(days)
+    assert (chart.width, chart.height) == (720, 440)
+    # About 200px tall in a 326px-wide phone card, against about 110px before
+    assert round(326 * chart.height / chart.width) >= 195
+    assert round(326 * desktop.height / desktop.width) < 115
+    assert chart.bottom - chart.top >= 1.8 * (desktop.bottom - desktop.top)  # the bars themselves
+    assert all(chart.left <= bar.x and bar.x + bar.width <= chart.right for bar in chart.bars)
+    # Labels drawn at the phone sizes (23px dates, 21px amounts) stay inside the drawing
+    assert chart.x_label_y + 6 <= chart.height
+    assert chart.y_label_x >= 6 * 21 * 0.6  # room for an amount like ₹1.2Cr
+    assert chart.width - chart.right >= 30  # room for half of the last date label
+    assert (desktop.x_label_y, desktop.y_label_x) == (desktop.bottom + 20, desktop.left - 8)

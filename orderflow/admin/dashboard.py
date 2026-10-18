@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from datetime import date
 
-from flask import render_template, url_for
+from flask import make_response, render_template, request, url_for
 from flask_login import current_user
 
 from ..models import PENDING
@@ -17,8 +17,21 @@ from . import bp
 CHART_WIDTH = 720
 CHART_HEIGHT = 240
 CHART_PADDING = {"top": 12, "right": 8, "bottom": 30, "left": 60}
+# How far below the plot the date labels sit, and left of it the amounts
+X_LABEL_GAP = 20
+Y_LABEL_GAP = 8
 # Days between date labels on the x axis, counted back from today
 X_LABEL_EVERY = 7
+
+# On a phone the card is about 330px wide, which would squash the 3:1 chart
+# into a strip about 110px tall. Phones get the same width (so the larger
+# phone label sizes in app.css still read at about 10px) but a taller plot,
+# about 200px on screen, with room for those bigger labels.
+PHONE_CHART = {
+    "height": 440,
+    "padding": {"top": 16, "right": 32, "bottom": 46, "left": 84},
+    "x_label_gap": 32,
+}
 
 
 def short_date(day):
@@ -70,6 +83,8 @@ class BarChart:
     right: float
     top: float
     bottom: float
+    x_label_y: float
+    y_label_x: float
     bars: list
     y_ticks: list
     x_ticks: list
@@ -84,7 +99,7 @@ class BarChart:
         return self.total_paise == 0
 
 
-def build_bar_chart(days, width=CHART_WIDTH, height=CHART_HEIGHT, padding=None):
+def build_bar_chart(days, width=CHART_WIDTH, height=CHART_HEIGHT, padding=None, x_label_gap=X_LABEL_GAP):
     """Lay out one bar per day. Zero days get a thin stub on the baseline."""
     pad = padding or CHART_PADDING
     left, right = pad["left"], width - pad["right"]
@@ -139,6 +154,8 @@ def build_bar_chart(days, width=CHART_WIDTH, height=CHART_HEIGHT, padding=None):
         right=right,
         top=top,
         bottom=bottom,
+        x_label_y=bottom + x_label_gap,
+        y_label_x=left - Y_LABEL_GAP,
         bars=bars,
         y_ticks=y_ticks,
         x_ticks=x_ticks,
@@ -148,6 +165,15 @@ def build_bar_chart(days, width=CHART_WIDTH, height=CHART_HEIGHT, padding=None):
         total_orders=orders,
         summary=summary,
     )
+
+
+def is_phone(req):
+    """True when the page is for a phone: the browser's Sec-CH-UA-Mobile hint
+    says so, or its user agent has "Mobi" in it (as phone browsers' do, and
+    tablets' don't)."""
+    if req.headers.get("Sec-CH-UA-Mobile") == "?1":
+        return True
+    return "Mobi" in (req.headers.get("User-Agent") or "")
 
 
 def greeting(local_hour):
@@ -234,13 +260,14 @@ def dashboard():
     progress = analytics.setup_progress(company)
     local_now = to_local(now, company.timezone)
     queue = analytics.pending_queue(company) if kpis.pending_orders else []
-    return render_template(
+    chart_layout = PHONE_CHART if is_phone(request) else {}
+    page = render_template(
         "admin/dashboard.html",
         greeting=greeting(local_now.hour),
         today_label=f"{local_now:%A}, {local_now.day} {local_now:%B}",
         kpis=kpis,
         revenue_hint=revenue_hint(kpis),
-        chart=build_bar_chart(analytics.revenue_by_day(company, now)),
+        chart=build_bar_chart(analytics.revenue_by_day(company, now), **chart_layout),
         queue=queue,
         top_products=analytics.top_products(company, now),
         top_clients=analytics.top_clients(company, now),
@@ -258,3 +285,6 @@ def dashboard():
         portal_login_url=url_for("auth.login", _external=True),
         top_list_days=analytics.TOP_LIST_DAYS,
     )
+    response = make_response(page)
+    response.vary.update(("User-Agent", "Sec-CH-UA-Mobile"))  # the chart's shape depends on them
+    return response
