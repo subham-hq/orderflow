@@ -888,6 +888,21 @@ summary {
   color: var(--danger-text);
 }
 
+/* A destructive action that isn't the main one on the page (reject,
+   cancel, delete): outlined, so it never outshouts the primary button */
+.btn--danger-soft {
+  background: var(--btn-secondary-bg);
+  border-color: var(--danger-line);
+  color: var(--danger-fg);
+  box-shadow: var(--shadow-xs);
+}
+
+.btn--danger-soft:hover {
+  background: var(--danger-bg);
+  border-color: var(--danger-icon);
+  color: var(--danger-fg);
+}
+
 /* Marigold call to action, used on ink (dark indigo) panels */
 .btn--accent {
   background: var(--accent);
@@ -1474,6 +1489,231 @@ a.table__primary.mono:hover,
 
 .table .field {
   gap: 0.25rem;
+}
+
+/* Order lines: names get room before figures do, and long figures wrap
+   between their parts instead of squeezing the name */
+.table--lines td:first-child {
+  min-width: 12rem;
+}
+
+.table--lines td.num {
+  white-space: normal;
+}
+
+.table--lines td.num > .muted {
+  white-space: nowrap;
+}
+
+.table .table__secondary.mono {
+  overflow-wrap: anywhere;
+}
+
+/* --------------------------------------------------------------------------
+   Lists that become stacked rows on phones
+
+   Wide tables scroll sideways on phones, which hides the figures people
+   came for. These tables instead show each row as a small block below
+   640px: the record on the left, the amount and status on the right.
+   -------------------------------------------------------------------------- */
+
+@media screen and (max-width: 639px) {
+  .table-wrap > .table--stack {
+    display: block;
+    min-width: 0 !important;
+  }
+
+  .table--stack thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .table--stack tbody {
+    display: block;
+  }
+
+  .table--stack tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.25rem 1rem;
+    padding: 0.875rem var(--card-pad);
+  }
+
+  .table--stack tbody tr + tr {
+    border-top: 1px solid var(--line-soft);
+  }
+
+  .table--stack.table tbody tr + tr > *,
+  .table--stack.table th,
+  .table--stack.table td {
+    padding: 0;
+    border: 0;
+  }
+
+  .table--stack td {
+    min-width: 0;
+  }
+
+  .table--stack .num {
+    text-align: right;
+  }
+
+  /* Workspace order list: order, client, placed, items, total, status */
+  .table--orders td:nth-child(1) {
+    grid-area: 1 / 1;
+  }
+
+  .table--orders td:nth-child(5) {
+    grid-area: 1 / 2;
+    font-weight: 650;
+  }
+
+  .table--orders td:nth-child(2) {
+    grid-area: 2 / 1;
+  }
+
+  .table--orders td:nth-child(6) {
+    grid-area: 2 / 2;
+    justify-self: end;
+  }
+
+  .table--orders td:nth-child(3) {
+    grid-area: 3 / 1 / 4 / 3;
+    color: var(--muted);
+    font-size: 0.8125rem;
+  }
+
+  .table--orders td:nth-child(3) > span {
+    display: inline;
+  }
+
+  .table--orders td:nth-child(3) > .table__primary {
+    color: var(--muted);
+    font-weight: 400;
+  }
+
+  .table--orders td:nth-child(3) > .table__secondary::before {
+    content: "· ";
+  }
+
+  .table--orders td:nth-child(4) {
+    display: none;
+  }
+
+  /* Client order lists: order, placed, items, total, status */
+  .table--client-orders td:nth-child(1) {
+    grid-area: 1 / 1;
+  }
+
+  .table--client-orders td:nth-child(4) {
+    grid-area: 1 / 2;
+    font-weight: 650;
+  }
+
+  .table--client-orders td:nth-child(2) {
+    grid-area: 2 / 1;
+    color: var(--muted);
+    font-size: 0.8125rem;
+  }
+
+  .table--client-orders td:nth-child(5) {
+    grid-area: 2 / 2;
+    justify-self: end;
+  }
+
+  .table--client-orders td:nth-child(3) {
+    display: none;
+  }
+
+  /* Order lines: item, qty, unit price, GST, amount */
+  .table--lines.table--stack tbody tr {
+    grid-template-columns: auto auto minmax(0, 1fr) auto;
+    column-gap: 0.5rem;
+  }
+
+  .table--lines td:first-child {
+    grid-area: 1 / 1 / 2 / 4;
+    min-width: 0;
+  }
+
+  .table--lines td:nth-child(5) {
+    grid-area: 1 / 4;
+    align-self: start;
+    font-weight: 650;
+  }
+
+  .table--lines td:nth-child(2),
+  .table--lines td:nth-child(3),
+  .table--lines td:nth-child(4) {
+    grid-row: 2;
+    color: var(--muted);
+    font-size: 0.8125rem;
+    text-align: left;
+  }
+
+  .table--lines td:nth-child(2) {
+    grid-column: 1;
+  }
+
+  .table--lines td:nth-child(3) {
+    grid-column: 2;
+  }
+
+  .table--lines td:nth-child(3)::before {
+    content: "× ";
+  }
+
+  .table--lines td:nth-child(4) {
+    grid-column: 3 / 5;
+  }
+
+  .table--lines td:nth-child(4)::before {
+    content: "GST ";
+  }
+
+  /* The cart: item, unit price, quantity, GST, amount, remove */
+  .table--cart td:nth-child(1) {
+    grid-area: 1 / 1;
+  }
+
+  .table--cart td:nth-child(6) {
+    grid-area: 1 / 2;
+    align-self: start;
+    margin: -0.25rem -0.5rem 0 0;
+  }
+
+  .table--cart td:nth-child(3) {
+    grid-area: 2 / 1;
+    padding-top: 0.5rem;
+  }
+
+  .table--cart td:nth-child(5) {
+    grid-area: 2 / 2;
+    padding-top: 0.5rem;
+    font-weight: 650;
+    font-size: 1rem;
+  }
+
+  .table--cart td:nth-child(2) {
+    grid-area: 3 / 1;
+    font-size: 0.8125rem;
+    text-align: left;
+  }
+
+  .table--cart td:nth-child(4) {
+    grid-area: 3 / 2;
+    font-size: 0.8125rem;
+    color: var(--muted);
+  }
+
+  .table--cart td:nth-child(4)::before {
+    content: "GST ";
+  }
 }
 
 /* --------------------------------------------------------------------------
@@ -2206,6 +2446,11 @@ a.stat--info:hover {
   -webkit-appearance: none;
 }
 
+/* In a field the stepper keeps its own width instead of stretching */
+.field > .stepper {
+  align-self: flex-start;
+}
+
 /* Without JavaScript only the input shows; give it its own border radius */
 .no-js .stepper input {
   border-radius: var(--radius);
@@ -2372,6 +2617,19 @@ a.stat--info:hover {
   color: var(--text);
 }
 
+/* The cart's summary stays in view beside the items on wide screens */
+.cart-summary__note {
+  font-size: 0.8125rem;
+  text-align: center;
+}
+
+@media (min-width: 960px) {
+  .sidebar-layout > .cart-summary {
+    position: sticky;
+    top: calc(3.75rem + var(--space-6));
+  }
+}
+
 /* --------------------------------------------------------------------------
    Empty states
    -------------------------------------------------------------------------- */
@@ -2492,6 +2750,53 @@ a.stat--info:hover {
   color: var(--heading);
 }
 
+.page-header__title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem 0.75rem;
+  min-width: 0;
+}
+
+.page-header__title-row > .page-header__title {
+  min-width: 0;
+}
+
+.page-header__title-row > .badge {
+  font-size: 0.8125rem;
+  padding: 0.1875rem 0.625rem;
+}
+
+/* "All orders" and similar links back to the list a page belongs to */
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 0.25rem;
+  margin-left: -0.25rem;
+  padding: 0.125rem 0.375rem 0.125rem 0.25rem;
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.back-link:hover {
+  background: var(--btn-ghost-hover);
+  color: var(--text);
+}
+
+.back-link .icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.main > .back-link + .page-header,
+.portal-main > .container > .back-link + .page-header {
+  margin-top: calc(-1 * var(--space-4));
+}
+
 .page-header__subtitle {
   max-width: 46rem;
   margin: 0.125rem 0 0;
@@ -2508,6 +2813,26 @@ a.stat--info:hover {
 @media (min-width: 640px) {
   .page-header__title {
     font-size: 1.875rem;
+  }
+}
+
+/* On phones the header's buttons share the full width */
+@media (max-width: 559px) {
+  .page-header__actions {
+    flex: 1 1 100%;
+  }
+
+  .page-header__actions > .btn,
+  .page-header__actions > .inline-form {
+    flex: 1 1 auto;
+  }
+
+  .page-header__actions > .inline-form > .btn {
+    width: 100%;
+  }
+
+  .page-header__actions > .btn--ghost {
+    flex-grow: 0;
   }
 }
 
@@ -2763,6 +3088,12 @@ a.pagination__link:hover {
   .toolbar .select {
     flex: 1 1 100%;
     width: 100%;
+  }
+
+  /* A pair of date fields shares one row */
+  .toolbar__field {
+    flex-basis: calc(50% - 0.375rem);
+    width: auto;
   }
 }
 

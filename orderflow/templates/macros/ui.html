@@ -83,11 +83,19 @@
 <span class="money {{ class }}">{{ paise | inr }}</span>
 {%- endmacro %}
 
-{% macro page_header(title, subtitle=None, eyebrow=None) -%}
+{# badge: markup shown beside the title, such as status_badge(order.status) #}
+{% macro page_header(title, subtitle=None, eyebrow=None, badge=None) -%}
 <header class="page-header">
   <div class="page-header__text">
     {% if eyebrow %}<p class="page-header__eyebrow">{{ eyebrow }}</p>{% endif %}
+    {% if badge %}
+    <div class="page-header__title-row">
+      <h1 class="page-header__title">{{ title }}</h1>
+      {{ badge }}
+    </div>
+    {% else %}
     <h1 class="page-header__title">{{ title }}</h1>
+    {% endif %}
     {% if subtitle %}<p class="page-header__subtitle">{{ subtitle }}</p>{% endif %}
   </div>
   {% if caller is defined %}<div class="page-header__actions">{{ caller() }}</div>{% endif %}

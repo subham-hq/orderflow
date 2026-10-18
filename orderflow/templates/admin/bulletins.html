@@ -38,7 +38,7 @@
         {% elif not ended %}
         {{ post_button(url_for('admin.bulletin_status', bulletin_id=bulletin.id), "Publish", variant="secondary", size="sm", icon_name="eye", fields={"published": 1, "next": request.full_path}) }}
         {% endif %}
-        {{ post_button(url_for('admin.bulletin_delete', bulletin_id=bulletin.id), "Delete", variant="danger", size="sm", icon_name="trash", confirm="Delete “" ~ bulletin.title ~ "”? Clients will stop seeing it, and this can't be undone.", confirm_label="Delete bulletin") }}
+        {{ post_button(url_for('admin.bulletin_delete', bulletin_id=bulletin.id), "Delete", variant="danger-soft", size="sm", icon_name="trash", confirm="Delete “" ~ bulletin.title ~ "”? Clients will stop seeing it, and this can't be undone.", confirm_label="Delete bulletin") }}
       </div>
     </div>
   </article>

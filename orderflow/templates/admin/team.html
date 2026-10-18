@@ -50,7 +50,7 @@
                   {{ post_button(url_for('admin.team_status', user_id=member.id), "Reactivate", variant="secondary", size="sm", icon_name="rotate", fields={"active": 1}) }}
                   {% endif %}
                   {% if not member.has_accepted_invite %}
-                  {{ post_button(url_for('admin.team_remove', user_id=member.id), "Withdraw invitation", variant="danger", size="sm", icon_name="trash", confirm="Withdraw the invitation for " ~ member.email ~ "? The link we sent will stop working.", confirm_label="Withdraw invitation") }}
+                  {{ post_button(url_for('admin.team_remove', user_id=member.id), "Withdraw invitation", variant="danger-soft", size="sm", icon_name="trash", confirm="Withdraw the invitation for " ~ member.email ~ "? The link we sent will stop working.", confirm_label="Withdraw invitation") }}
                   {% endif %}
                 </div>
                 {% endif %}

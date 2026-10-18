@@ -6,8 +6,7 @@
 {% block title %}{{ client.buyer_company or client.full_name }}{% endblock %}
 {% block topbar_title %}Clients{% endblock %}
 {% block content %}
-{% call page_header(client.buyer_company or client.full_name, client.full_name if client.buyer_company else client.email, eyebrow="Client") %}
-  {{ account_badge(client) }}
+{% call page_header(client.buyer_company or client.full_name, client.full_name if client.buyer_company else client.email, eyebrow="Client", badge=account_badge(client)) %}
   {{ link_button("Edit details", url_for('admin.client_edit', user_id=client.id), variant="secondary", icon_name="edit") }}
 {% endcall %}
 
@@ -98,7 +97,7 @@
         {{ post_button(url_for('admin.client_status', user_id=client.id), "Reactivate account", variant="primary", icon_name="rotate", fields={"active": 1}) }}
         {% endif %}
         {% if order_count == 0 %}
-        {{ post_button(url_for('admin.client_delete', user_id=client.id), "Delete client", variant="danger", icon_name="trash", confirm="Delete " ~ display ~ " for good? This can't be undone.", confirm_label="Delete client") }}
+        {{ post_button(url_for('admin.client_delete', user_id=client.id), "Delete client", variant="danger-soft", icon_name="trash", confirm="Delete " ~ display ~ " for good? This can't be undone.", confirm_label="Delete client") }}
         {% else %}
         <p class="muted">Clients with orders can't be deleted, so their order history stays complete. Suspend the account instead.</p>
         {% endif %}

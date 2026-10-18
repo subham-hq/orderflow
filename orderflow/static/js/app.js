@@ -22,7 +22,8 @@
       dialog.querySelector(".dialog__text").textContent = message;
       var ok = dialog.querySelector('button[value="ok"]');
       ok.textContent = label || "Confirm";
-      ok.classList.add("btn--" + (variant === "danger" ? "danger" : "primary"));
+      // Destructive actions (danger, danger-soft) confirm with a red button
+      ok.classList.add("btn--" + (/^danger/.test(variant || "") ? "danger" : "primary"));
       document.body.appendChild(dialog);
       dialog.addEventListener("close", function () {
         resolve(dialog.returnValue === "ok");

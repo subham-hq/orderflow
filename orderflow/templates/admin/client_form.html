@@ -7,9 +7,7 @@
 {% block topbar_title %}Clients{% endblock %}
 {% block content %}
 {% if editing %}
-{% call page_header(client.buyer_company or client.full_name, "Update their contact details. Their orders aren't affected.", eyebrow="Edit client") %}
-  {{ account_badge(client) }}
-{% endcall %}
+{{ page_header(client.buyer_company or client.full_name, "Update their contact details. Their orders aren't affected.", eyebrow="Edit client", badge=account_badge(client)) }}
 {% else %}
 {{ page_header("Invite a client", "We'll email them a link to set a password and open their ordering portal.", eyebrow="Clients") }}
 {% endif %}

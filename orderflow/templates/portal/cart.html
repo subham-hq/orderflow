@@ -35,16 +35,17 @@
 {% endif %}
 
 {# One form: "Update cart" and the remove buttons post to cart_update, "Place order" posts the same fields to checkout #}
-<form method="post" action="{{ url_for('portal.cart_update') }}" id="cart-form" class="stack" novalidate>
+<form method="post" action="{{ url_for('portal.cart_update') }}" id="cart-form" novalidate>
   {{ form.hidden_tag() }}
   {# Pressing Enter in a quantity box uses the first submit button: make that "Update cart", not a Remove button #}
   <button type="submit" class="visually-hidden" tabindex="-1" aria-hidden="true">Update cart</button>
+  <div class="sidebar-layout">
   <section class="card card--flush" aria-labelledby="cart-items-title">
     <header class="card__header">
       <h2 class="card__title" id="cart-items-title">Items</h2>
     </header>
     <div class="table-wrap">
-      <table class="table">
+      <table class="table table--stack table--cart">
         <thead>
           <tr>
             <th scope="col">Item</th>
@@ -95,19 +96,20 @@
     </footer>
   </section>
 
-  <section class="card" aria-labelledby="cart-summary-title">
-    <div class="card__body stack">
+  <section class="card cart-summary" aria-labelledby="cart-summary-title">
+    <div class="card__header">
       <h2 class="card__title" id="cart-summary-title">Summary</h2>
+    </div>
+    <div class="card__body stack">
       {% with order = priced %}{% include "shared/_order_totals.html" %}{% endwith %}
       {{ field(form.notes, hint="Optional. Add a PO number, delivery instructions or anything else " ~ supplier ~ " should know.", rows=4) }}
-      <div class="split">
-        <p class="muted">{{ supplier }} reviews every order before it's confirmed. You can cancel it while it's pending review.</p>
-        <button type="submit" class="btn btn--primary btn--lg" formaction="{{ url_for('portal.checkout') }}">
-          {{ icon('check') }}<span>Place order</span>
-        </button>
-      </div>
+      <button type="submit" class="btn btn--primary btn--lg btn--block" formaction="{{ url_for('portal.checkout') }}">
+        {{ icon('check') }}<span>Place order</span>
+      </button>
+      <p class="cart-summary__note muted">{{ supplier }} reviews every order before it's confirmed. You can cancel it while it's pending review.</p>
     </div>
   </section>
+  </div>
 </form>
 {% endif %}
 {% endblock %}

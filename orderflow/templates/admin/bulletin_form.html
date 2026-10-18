@@ -7,9 +7,7 @@
 {% block topbar_title %}Bulletins{% endblock %}
 {% block content %}
 {% if editing %}
-{% call page_header(bulletin.title, "Changes show on client dashboards as soon as you save.", eyebrow="Edit bulletin") %}
-  {{ state_badge(state) }}
-{% endcall %}
+{{ page_header(bulletin.title, "Changes show on client dashboards as soon as you save.", eyebrow="Edit bulletin", badge=state_badge(state)) }}
 {% else %}
 {{ page_header("New bulletin", "Write an announcement for every client's portal dashboard.", eyebrow="Bulletins") }}
 {% endif %}

@@ -6,9 +6,7 @@
 {% block topbar_title %}Catalog{% endblock %}
 {% block content %}
 {% if editing %}
-{% call page_header(product.name, "Changes apply to new orders. Past orders and invoices keep the details they were placed with.", eyebrow="Edit product") %}
-  {% if product.is_active %}{{ badge("Active", "success") }}{% else %}{{ badge("Hidden", "neutral") }}{% endif %}
-{% endcall %}
+{{ page_header(product.name, "Changes apply to new orders. Past orders and invoices keep the details they were placed with.", eyebrow="Edit product", badge=(badge("Active", "success") if product.is_active else badge("Hidden", "neutral"))) }}
 {% else %}
 {{ page_header("New product", "Add something your clients can order. You can edit it any time.", eyebrow="Catalog") }}
 {% endif %}

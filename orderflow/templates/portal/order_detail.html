@@ -4,15 +4,15 @@
 {% set supplier = order.company.name %}
 {% block title %}Order {{ order.number }}{% endblock %}
 {% block content %}
-<p><a class="text-link" href="{{ url_for('portal.orders') }}">{{ icon('chevron-left') }}<span>All orders</span></a></p>
-{% call page_header("Order " ~ order.number, "Placed " ~ (order.placed_at | datetime), eyebrow=supplier) %}
+<a class="back-link" href="{{ url_for('portal.orders') }}">{{ icon('chevron-left') }}<span>All orders</span></a>
+{% call page_header("Order " ~ order.number, "Placed " ~ (order.placed_at | datetime), eyebrow=supplier, badge=status_badge(order.status)) %}
   {{ link_button("Proforma invoice", url_for('portal.invoice', number=order.number), variant="ghost", icon_name="receipt") }}
   {{ post_button(url_for('portal.order_reorder', number=order.number), "Reorder", variant="secondary", icon_name="rotate") }}
   {% if can_cancel %}
   {{ post_button(
     url_for('portal.order_cancel', number=order.number),
     "Cancel order",
-    variant="danger",
+    variant="danger-soft",
     confirm="Cancel order " ~ order.number ~ "? " ~ supplier ~ " won't process it, and you can't undo this.",
     confirm_label="Yes, cancel it",
     icon_name="ban"
