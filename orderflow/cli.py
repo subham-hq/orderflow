@@ -1,12 +1,14 @@
 """Command-line tools: `flask seed-demo`, `flask leads` and `flask delete-old-leads`."""
 
 import random
+import re
 from datetime import timedelta
 
 import click
 
 from .extensions import db
 from .models import ADMIN, CLIENT, OWNER, Bulletin, Company, Lead, Order, OrderEvent, Product, User
+from .services.accounts import normalize_email
 from .services.orders import price_cart
 from .timeutil import format_datetime, utcnow
 
@@ -34,6 +36,21 @@ DEMO_CLIENTS = [
     ("Fatima", "Sheikh", "fatima@greenleaf-foods.example", "Greenleaf Foods"),
     ("Joseph", "Mathew", "joseph@coastline-hotels.example", "Coastline Hotels"),
 ]
+DEMO_OWNER_EMAIL = "owner@orderflow.example"
+
+
+def demo_client_emails(owner_email):
+    """Sign-in emails for the demo clients of the company owned by owner_email.
+
+    The first demo company uses the plain addresses above. Another one tags
+    them with its owner's address (ananya+rival-example-com@...), since an
+    email can only belong to one account.
+    """
+    emails = [email for _, _, email, _ in DEMO_CLIENTS]
+    if owner_email == DEMO_OWNER_EMAIL:
+        return emails
+    tag = re.sub(r"[^a-z0-9]+", "-", owner_email.lower())[:40].strip("-")
+    return [email.replace("@", f"+{tag}@") for email in emails]
 
 
 def init_cli(app):
@@ -70,12 +87,27 @@ def init_cli(app):
         click.echo(f"Deleted {deleted} {noun} received more than {days} days ago.")
 
     @app.cli.command("seed-demo")
-    @click.option("--email", default="owner@orderflow.example", show_default=True, help="Owner sign-in email.")
-    @click.option("--force", is_flag=True, help="Add the demo company even if that email exists.")
-    def seed_demo(email, force):
-        """Create a demo company with products, clients and orders."""
-        if db.session.scalar(db.select(User).where(User.email == email)) and not force:
-            raise click.ClickException(f"{email} already exists. Use --force with a different --email.")
+    @click.option("--email", default=DEMO_OWNER_EMAIL, show_default=True, help="Owner sign-in email.")
+    def seed_demo(email):
+        """Create a demo company with products, clients and orders.
+
+        Run it again with a different --email to add another demo company.
+        """
+        email = normalize_email(email)
+        if "@" not in email.strip("@"):
+            raise click.BadParameter("Enter an email address, like owner@example.com.", param_hint="--email")
+        client_emails = demo_client_emails(email)
+        # Every email is unique across companies, so check them all before adding anything
+        wanted = [email, f"ops.{email}", *client_emails]
+        taken = db.session.scalars(db.select(User.email).where(User.email.in_(wanted))).all()
+        if taken:
+            listed = ", ".join(sorted(taken))
+            what = (
+                f"{listed} already has an account"
+                if len(taken) == 1
+                else f"These emails already have accounts: {listed}"
+            )
+            raise click.ClickException(f"{what}. Use a different --email to add another demo company.")
 
         rng = random.Random(42)
         now = utcnow()
@@ -111,7 +143,7 @@ def init_cli(app):
         db.session.add_all(products)
 
         clients = []
-        for first, last, client_email, buyer in DEMO_CLIENTS:
+        for (first, last, _, buyer), client_email in zip(DEMO_CLIENTS, client_emails, strict=True):
             client = User(
                 company=company,
                 email=client_email,
@@ -199,4 +231,7 @@ def init_cli(app):
             )
         )
         db.session.commit()
-        click.echo(f"Demo company created. Sign in as {email} or any client with password: {DEMO_PASSWORD}")
+        click.echo(
+            f"Demo company created. Sign in as {email}, or as a client such as {client_emails[0]}, "
+            f"with password: {DEMO_PASSWORD}"
+        )
