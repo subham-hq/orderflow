@@ -123,5 +123,6 @@ def _register_template_helpers(app):
     def inject_now():
         local_now = timeutil.to_local(timeutil.utcnow(), _tz())
         return {"current_year": local_now.year}
+
     app.jinja_env.trim_blocks = True
     app.jinja_env.lstrip_blocks = True

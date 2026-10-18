@@ -85,9 +85,7 @@ class Company(db.Model):
 
 class User(UserMixin, db.Model):
     __tablename__ = "users"
-    __table_args__ = (
-        CheckConstraint(_status_check("role", ROLES), name="role"),
-    )
+    __table_args__ = (CheckConstraint(_status_check("role", ROLES), name="role"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     company_id: Mapped[int] = mapped_column(ForeignKey("companies.id", ondelete="CASCADE"), index=True)
@@ -246,9 +244,7 @@ class OrderItem(db.Model):
     so later edits to the catalog never change past orders or invoices."""
 
     __tablename__ = "order_items"
-    __table_args__ = (
-        CheckConstraint("quantity > 0", name="quantity_positive"),
-    )
+    __table_args__ = (CheckConstraint("quantity > 0", name="quantity_positive"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     order_id: Mapped[int] = mapped_column(ForeignKey("orders.id", ondelete="CASCADE"), index=True)

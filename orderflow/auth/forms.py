@@ -28,7 +28,10 @@ class SignupForm(FlaskForm):
     company_name = StringField("Company name", filters=[_strip], validators=[DataRequired(), Length(max=120)])
     email = EmailField("Work email", filters=[_strip], validators=[DataRequired(), Email(), Length(max=254)])
     password = PasswordField("Password", validators=[DataRequired(), StrongPassword()])
-    accept_terms = BooleanField("I agree to the Terms of Service and Privacy Policy", validators=[DataRequired(message="Please accept the terms to continue.")])
+    accept_terms = BooleanField(
+        "I agree to the Terms of Service and Privacy Policy",
+        validators=[DataRequired(message="Please accept the terms to continue.")],
+    )
 
 
 class LoginForm(FlaskForm):
@@ -43,10 +46,14 @@ class ForgotPasswordForm(FlaskForm):
 
 class SetPasswordForm(FlaskForm):
     password = PasswordField("New password", validators=[DataRequired(), StrongPassword()])
-    confirm = PasswordField("Confirm new password", validators=[DataRequired(), EqualTo("password", message="The passwords don't match.")])
+    confirm = PasswordField(
+        "Confirm new password", validators=[DataRequired(), EqualTo("password", message="The passwords don't match.")]
+    )
 
 
 class ChangePasswordForm(FlaskForm):
     current_password = PasswordField("Current password", validators=[DataRequired(), Length(max=128)])
     password = PasswordField("New password", validators=[DataRequired(), StrongPassword()])
-    confirm = PasswordField("Confirm new password", validators=[DataRequired(), EqualTo("password", message="The passwords don't match.")])
+    confirm = PasswordField(
+        "Confirm new password", validators=[DataRequired(), EqualTo("password", message="The passwords don't match.")]
+    )

@@ -66,7 +66,12 @@ def test_external_url_uses_base_url_outside_requests(app):
 def test_contact_form_stores_lead_and_emails_sales(client, mail, app):
     response = client.post(
         "/contact",
-        data={"name": "Kiran", "email": "Kiran@Shop.example", "company": "Kiran Stores", "message": "We sell to 40 retailers."},
+        data={
+            "name": "Kiran",
+            "email": "Kiran@Shop.example",
+            "company": "Kiran Stores",
+            "message": "We sell to 40 retailers.",
+        },
     )
     assert response.status_code == 302
     lead = app.extensions["sqlalchemy"].session.scalar(factories.db.select(Lead))

@@ -55,7 +55,12 @@ def test_place_order_snapshots_lines_and_numbers_orders_per_company(app, company
     assert order.notes == "PO#:4512"  # the colon text that crashed v1
     assert order.total_paise == 3 * 4_250 + 2_295
     item = order.items[0]
-    assert (item.sku, item.name, item.unit_price_paise, item.gst_rate_bp) == ("CTN", catalog["carton"].name, 4_250, 1800)
+    assert (item.sku, item.name, item.unit_price_paise, item.gst_rate_bp) == (
+        "CTN",
+        catalog["carton"].name,
+        4_250,
+        1800,
+    )
     assert [e.to_status for e in order.events] == [PENDING]
 
     second, _ = place(buyer, {catalog["rice"].id: 1})

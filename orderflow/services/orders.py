@@ -123,9 +123,7 @@ def _next_order_number(company_id):
     Row-locks the company on Postgres so two orders can't get the same
     number; SQLite serialises writes anyway.
     """
-    company = db.session.execute(
-        db.select(Company).where(Company.id == company_id).with_for_update()
-    ).scalar_one()
+    company = db.session.execute(db.select(Company).where(Company.id == company_id).with_for_update()).scalar_one()
     seq = company.next_order_seq or 1
     company.next_order_seq = seq + 1
     return f"{company.order_prefix or 'ORD'}-{seq:06d}"

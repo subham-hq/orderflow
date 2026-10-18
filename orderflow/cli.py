@@ -55,15 +55,26 @@ def init_cli(app):
             phone="+91 80 4000 1234",
             support_email="orders@kaveri.example",
         )
-        owner = User(company=company, email=email, first_name="Priya", last_name="Nair", role=OWNER, email_verified_at=now)
+        owner = User(
+            company=company, email=email, first_name="Priya", last_name="Nair", role=OWNER, email_verified_at=now
+        )
         owner.set_password(DEMO_PASSWORD)
-        staff = User(company=company, email=f"ops.{email}", first_name="Arjun", last_name="Das", role=ADMIN, email_verified_at=now)
+        staff = User(
+            company=company,
+            email=f"ops.{email}",
+            first_name="Arjun",
+            last_name="Das",
+            role=ADMIN,
+            email_verified_at=now,
+        )
         staff.set_password(DEMO_PASSWORD)
         db.session.add_all([company, owner, staff])
 
         products = []
         for sku, name, category, unit, price, gst in DEMO_PRODUCTS:
-            product = Product(company=company, sku=sku, name=name, category=category, unit=unit, price_paise=price, gst_rate_bp=gst)
+            product = Product(
+                company=company, sku=sku, name=name, category=category, unit=unit, price_paise=price, gst_rate_bp=gst
+            )
             products.append(product)
         db.session.add_all(products)
 
@@ -125,14 +136,24 @@ def init_cli(app):
                 to = "rejected" if status == "rejected" else "approved"
                 message = "Out of stock on the 5-ply cartons this week." if to == "rejected" else None
                 order.rejection_reason = message
-                order.events.append(OrderEvent(actor_id=owner.id, from_status="pending", to_status=to, message=message, created_at=decided))
+                order.events.append(
+                    OrderEvent(
+                        actor_id=owner.id, from_status="pending", to_status=to, message=message, created_at=decided
+                    )
+                )
             if status == "fulfilled":
                 done = order.decided_at + timedelta(days=rng.randint(1, 3))
                 order.fulfilled_at, order.fulfilled_by_id = done, staff.id
-                order.events.append(OrderEvent(actor_id=staff.id, from_status="approved", to_status="fulfilled", created_at=done))
+                order.events.append(
+                    OrderEvent(actor_id=staff.id, from_status="approved", to_status="fulfilled", created_at=done)
+                )
             if status == "cancelled":
                 order.cancelled_at = placed + timedelta(hours=2)
-                order.events.append(OrderEvent(actor_id=client.id, from_status="pending", to_status="cancelled", created_at=order.cancelled_at))
+                order.events.append(
+                    OrderEvent(
+                        actor_id=client.id, from_status="pending", to_status="cancelled", created_at=order.cancelled_at
+                    )
+                )
             db.session.add(order)
         company.next_order_seq = len(statuses) + 1
 

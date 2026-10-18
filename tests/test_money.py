@@ -23,7 +23,16 @@ def test_every_two_decimal_price_converts_exactly():
 
 @pytest.mark.parametrize(
     "text, expected",
-    [("0.29", 29), ("19.99", 1999), ("1,250.50", 125050), (" 10 ", 1000), ("1e3", 100000), ("0.005", 1), ("2.675", 268), (Decimal("4.35"), 435)],
+    [
+        ("0.29", 29),
+        ("19.99", 1999),
+        ("1,250.50", 125050),
+        (" 10 ", 1000),
+        ("1e3", 100000),
+        ("0.005", 1),
+        ("2.675", 268),
+        (Decimal("4.35"), 435),
+    ],
 )
 def test_to_paise(text, expected):
     assert to_paise(text) == expected

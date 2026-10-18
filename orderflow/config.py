@@ -30,7 +30,7 @@ def database_url():
     # needs the dialect name and the psycopg 3 driver spelled out.
     for prefix in ("postgres://", "postgresql://"):
         if url.startswith(prefix):
-            return "postgresql+psycopg://" + url[len(prefix):]
+            return "postgresql+psycopg://" + url[len(prefix) :]
     return url
 
 

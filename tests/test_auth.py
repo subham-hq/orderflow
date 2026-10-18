@@ -135,7 +135,10 @@ def test_password_reset_link_works_once_and_signs_out_other_sessions(app, client
     assert response.headers["Location"].endswith("/app/")
 
     assert other_device.get("/app/").status_code == 302
-    assert client.post(link, data={"password": "yet another password", "confirm": "yet another password"}).status_code == 400
+    assert (
+        client.post(link, data={"password": "yet another password", "confirm": "yet another password"}).status_code
+        == 400
+    )
     client.post("/logout")
     login(owner, password="a brand new password")
 
@@ -166,12 +169,19 @@ def test_change_password_requires_current_password_and_ends_other_sessions(app, 
     other = app.test_client()
     other.post("/login", data={"email": owner.email, "password": factories.PASSWORD})
 
-    wrong = client.post("/account/password", data={"current_password": "nope", "password": "a different password", "confirm": "a different password"})
+    wrong = client.post(
+        "/account/password",
+        data={"current_password": "nope", "password": "a different password", "confirm": "a different password"},
+    )
     assert "isn&#39;t your current password" in wrong.get_data(as_text=True)
 
     response = client.post(
         "/account/password",
-        data={"current_password": factories.PASSWORD, "password": "a different password", "confirm": "a different password"},
+        data={
+            "current_password": factories.PASSWORD,
+            "password": "a different password",
+            "confirm": "a different password",
+        },
     )
     assert response.status_code == 302
     assert client.get("/app/").status_code == 200  # this device stays signed in
