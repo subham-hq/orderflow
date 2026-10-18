@@ -1,0 +1,12 @@
+{
+  "name": "OrderFlow",
+  "short_name": "OrderFlow",
+  "icons": [
+    { "src": "/static/img/favicon.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "/static/img/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }
+  ],
+  "theme_color": "#1b2a6b",
+  "background_color": "#f6f7fb",
+  "display": "standalone",
+  "start_url": "/start"
+}

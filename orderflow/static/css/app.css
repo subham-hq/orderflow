@@ -1,0 +1,27 @@
+/* Placeholder styles. Replaced by the full design system. */
+:root { --ink: #141936; --primary: #1b2a6b; --accent: #f2a93b; --paper: #f6f7fb; --line: #e3e5f0; --muted: #5b6280; }
+* { box-sizing: border-box; }
+body { margin: 0; font-family: "Instrument Sans", system-ui, sans-serif; color: var(--ink); background: var(--paper); line-height: 1.5; }
+.icon { width: 1.15em; height: 1.15em; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.visually-hidden, .skip-link:not(:focus) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.container { max-width: 1120px; margin: 0 auto; padding: 0 20px; }
+.btn { display: inline-flex; gap: 8px; align-items: center; padding: 10px 16px; border-radius: 10px; border: 1px solid var(--line); background: #fff; color: var(--ink); text-decoration: none; font: inherit; cursor: pointer; }
+.btn--primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+.btn--danger { background: #b4232a; color: #fff; border-color: #b4232a; }
+.shell { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+.sidebar { background: #fff; border-right: 1px solid var(--line); padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+.nav-link { display: flex; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 8px; color: inherit; text-decoration: none; background: none; border: 0; font: inherit; cursor: pointer; }
+.nav-link.is-active { background: var(--paper); font-weight: 600; }
+.main, .portal-main { padding: 24px; }
+.field { display: grid; gap: 4px; margin-bottom: 12px; }
+.input, .select, .textarea { padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; font: inherit; }
+.field__error { color: #b4232a; margin: 0; }
+.alert { display: flex; gap: 8px; padding: 12px; border-radius: 10px; background: #fff; border: 1px solid var(--line); margin-bottom: 12px; }
+.card { background: #fff; border: 1px solid var(--line); border-radius: 14px; }
+.card__body { padding: 20px; }
+.stack > * + * { margin-top: 12px; }
+.grid--2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.split { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.auth { display: grid; place-items: center; min-height: 100vh; }
+.auth__panel { width: min(440px, 100%); padding: 24px; }
+.brand { display: inline-flex; gap: 8px; align-items: center; color: inherit; text-decoration: none; font-weight: 700; }

@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block body_class %}page-marketing{% endblock %}
+{% block body %}
+<header class="site-header">
+  <div class="container site-header__inner">
+    <a class="brand" href="{{ url_for('public.index') }}" aria-label="{{ APP_NAME }} home">
+      <img class="brand__mark" src="{{ url_for('static', filename='img/logo-mark.svg') }}" alt="" width="28" height="28">
+      <span class="brand__name">{{ APP_NAME }}</span>
+    </a>
+    <button type="button" class="site-header__toggle" data-nav-toggle aria-expanded="false" aria-controls="site-nav">
+      {{ icon('menu') }}<span class="visually-hidden">Menu</span>
+    </button>
+    <nav class="site-nav" id="site-nav" aria-label="Main">
+      <a href="{{ url_for('public.index') }}#features">Product</a>
+      <a href="{{ url_for('public.index') }}#how-it-works">How it works</a>
+      <a href="{{ url_for('public.index') }}#pricing">Pricing</a>
+      <a href="{{ url_for('public.index') }}#faq">FAQ</a>
+      <span class="site-nav__spacer"></span>
+      {% if current_user.is_authenticated %}
+        <a class="btn btn--primary btn--sm" href="{{ url_for('public.start') }}">Open {{ APP_NAME }}</a>
+      {% else %}
+        <a href="{{ url_for('auth.login') }}">Sign in</a>
+        <a class="btn btn--primary btn--sm" href="{{ url_for('auth.signup') }}">Start free</a>
+      {% endif %}
+    </nav>
+  </div>
+</header>
+<main id="main" class="site-main">
+  <div class="container">{{ flashes() }}</div>
+  {% block content %}{% endblock %}
+</main>
+<footer class="site-footer">
+  <div class="container site-footer__inner">
+    <div class="site-footer__brand">
+      <a class="brand" href="{{ url_for('public.index') }}">
+        <img class="brand__mark" src="{{ url_for('static', filename='img/logo-mark.svg') }}" alt="" width="24" height="24">
+        <span class="brand__name">{{ APP_NAME }}</span>
+      </a>
+      <p class="muted">Ordering software for suppliers and the businesses they sell to.</p>
+    </div>
+    <nav class="site-footer__nav" aria-label="Footer">
+      <a href="{{ url_for('public.index') }}#features">Product</a>
+      <a href="{{ url_for('public.index') }}#pricing">Pricing</a>
+      <a href="{{ url_for('public.index') }}#contact">Contact</a>
+      <a href="{{ url_for('public.privacy') }}">Privacy</a>
+      <a href="{{ url_for('public.terms') }}">Terms</a>
+    </nav>
+    <p class="site-footer__legal muted">© {{ current_year }} {{ config.LEGAL_NAME }}</p>
+  </div>
+</footer>
+{% endblock %}

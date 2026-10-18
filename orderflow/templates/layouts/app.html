@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{# Staff workspace: sidebar navigation. Pages set active_nav to highlight their item. #}
+{% block body_class %}page-app{% endblock %}
+{% block body %}
+{% set nav = [
+  ('dashboard', 'admin.dashboard', 'Dashboard', 'dashboard'),
+  ('orders', 'admin.orders', 'Orders', 'orders'),
+  ('products', 'admin.products', 'Catalog', 'box'),
+  ('clients', 'admin.clients', 'Clients', 'users'),
+  ('bulletins', 'admin.bulletins', 'Bulletins', 'megaphone'),
+] %}
+{% if current_user.is_owner %}{% set nav = nav + [('team', 'admin.team', 'Team', 'team')] %}{% endif %}
+{% set nav = nav + [('settings', 'admin.settings', 'Settings', 'settings')] %}
+<div class="shell">
+  <aside class="sidebar" id="sidebar" data-sidebar>
+    <div class="sidebar__top">
+      <a class="brand" href="{{ url_for('admin.dashboard') }}">
+        <img class="brand__mark" src="{{ url_for('static', filename='img/logo-mark.svg') }}" alt="" width="26" height="26">
+        <span class="brand__name">{{ APP_NAME }}</span>
+      </a>
+      <p class="sidebar__company" title="{{ current_user.company.name }}">{{ current_user.company.name }}</p>
+    </div>
+    <nav class="sidebar__nav" aria-label="Workspace">
+      {% for key, endpoint, label, icon_name in nav %}
+      <a class="nav-link{% if active_nav == key %} is-active{% endif %}" href="{{ url_for(endpoint) }}"{% if active_nav == key %} aria-current="page"{% endif %}>
+        {{ icon(icon_name) }}<span>{{ label }}</span>
+      </a>
+      {% endfor %}
+    </nav>
+    <div class="sidebar__bottom">
+      <div class="user-chip">
+        <span class="avatar" aria-hidden="true">{{ current_user.initials }}</span>
+        <span class="user-chip__text">
+          <span class="user-chip__name">{{ current_user.full_name }}</span>
+          <span class="user-chip__role">{{ 'Owner' if current_user.is_owner else 'Admin' }}</span>
+        </span>
+      </div>
+      <form method="post" action="{{ url_for('auth.logout') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="nav-link nav-link--button">{{ icon('logout') }}<span>Sign out</span></button>
+      </form>
+    </div>
+  </aside>
+  <div class="shell__main">
+    <header class="topbar">
+      <button type="button" class="topbar__menu" data-sidebar-toggle aria-expanded="false" aria-controls="sidebar">
+        {{ icon('menu') }}<span class="visually-hidden">Open navigation</span>
+      </button>
+      <div class="topbar__title">{% block topbar_title %}{% endblock %}</div>
+      <div class="topbar__actions">{% block topbar_actions %}{% endblock %}</div>
+    </header>
+    <main id="main" class="main">
+      {{ flashes() }}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+{% endblock %}
