@@ -211,20 +211,39 @@
     if (control && control.form) control.form.requestSubmit ? control.form.requestSubmit() : control.form.submit();
   });
 
-  // Copy buttons: <button data-copy="text">. The label reads "Copied" for a moment.
+  // Copy buttons: <button data-copy="text">. The label reads "Copied" for a
+  // moment, or "Couldn't copy" when the browser refuses (no clipboard access,
+  // a page that isn't secure, a denied permission), so a click is never silent.
+  function showCopyResult(button, label, duration) {
+    if (button.dataset.copying) return;
+    button.dataset.copying = "yes";
+    var original = button.innerHTML;
+    button.textContent = label;
+    window.setTimeout(function () {
+      button.innerHTML = original;
+      delete button.dataset.copying;
+    }, duration);
+  }
+
   document.addEventListener("click", function (event) {
     var button = event.target.closest("[data-copy]");
-    if (!button || !navigator.clipboard) return;
-    navigator.clipboard.writeText(button.dataset.copy).then(function () {
-      if (button.dataset.copying) return;
-      button.dataset.copying = "yes";
-      var original = button.innerHTML;
-      button.textContent = "Copied";
-      window.setTimeout(function () {
-        button.innerHTML = original;
-        delete button.dataset.copying;
-      }, 1500);
-    });
+    if (!button) return;
+    var failed = function () {
+      showCopyResult(button, "Couldn't copy", 3000);
+    };
+    var copying = null;
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) copying = navigator.clipboard.writeText(button.dataset.copy);
+    } catch (error) {
+      // Some browsers throw instead of rejecting; handled as a refusal below
+    }
+    if (!copying || typeof copying.then !== "function") {
+      failed();
+      return;
+    }
+    copying.then(function () {
+      showCopyResult(button, "Copied", 1500);
+    }, failed);
   });
 
   // [data-reveal] blocks on the landing page ease into view as they scroll in.

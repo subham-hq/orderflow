@@ -29,6 +29,7 @@ const fs = require("fs");
 
 const config = JSON.parse(fs.readFileSync(process.argv[3], "utf8"));
 const unhandled = [];
+const errors = [];
 process.on("unhandledRejection", (reason) => {
   unhandled.push(reason && reason.name ? reason.name + ": " + reason.message : String(reason));
 });
@@ -243,7 +244,13 @@ class Element {
     for (let node = this; node; node = node.parentNode) path.push(node);
     for (const node of event.bubbles ? path : [this]) {
       event.currentTarget = node;
-      for (const listener of [...(node.listeners[event.type] || [])]) listener.call(node, event);
+      for (const listener of [...(node.listeners[event.type] || [])]) {
+        try {
+          listener.call(node, event);
+        } catch (error) {
+          errors.push(String(error)); // as in a browser: reported, and the other listeners still run
+        }
+      }
       if (event.stopped) break;
     }
     return !event.defaultPrevented;
@@ -397,7 +404,7 @@ const h = {
   await new AsyncFunction("h", config.script)(h);
   await h.flush();
   await h.flush();
-  process.stdout.write(JSON.stringify({ out, unhandled }));
+  process.stdout.write(JSON.stringify({ out, unhandled, errors }));
 })().catch((error) => {
   process.stderr.write(String(error && error.stack ? error.stack : error));
   process.exit(1);
@@ -406,7 +413,12 @@ const h = {
 
 
 def run_js(tmp_path, body, script, clipboard="resolve", app_js=APP_JS):
-    """Load app.js into a document with this body, run the async script, return what it reported."""
+    """Load app.js into a document with this body, run the async script, return what it reported.
+
+    The result has the script's reports under "out", plus any errors app.js
+    threw in an event handler ("errors") and promise rejections nothing
+    handled ("unhandled").
+    """
     harness = tmp_path / "harness.js"
     harness.write_text(HARNESS)
     config = tmp_path / "config.json"
@@ -415,7 +427,10 @@ def run_js(tmp_path, body, script, clipboard="resolve", app_js=APP_JS):
         [NODE, str(harness), str(app_js), str(config)], capture_output=True, text=True, timeout=30, check=False
     )
     assert result.returncode == 0, result.stderr
-    return json.loads(result.stdout)
+    data = json.loads(result.stdout)
+    assert data["errors"] == [], data["errors"]  # app.js never throws in a handler
+    assert data["unhandled"] == [], data["unhandled"]  # nor leaves a promise rejection unhandled
+    return data
 
 
 DELETE_FORM = (

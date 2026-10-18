@@ -210,7 +210,7 @@ properties, never a literal colour.
 | `data-confirm="Message"` on a form | Confirm in a dialog before submitting. Screen readers hear the message as the dialog opens; with `data-confirm-variant="danger…"` the confirm button is red and focus starts on Cancel |
 | `data-stepper` with `data-step="±1"` buttons | Quantity stepper |
 | `data-autosubmit` on a select or checkbox | Submit its form on change |
-| `data-copy="text"` on a button | Copy to clipboard |
+| `data-copy="text"` on a button | Copy to clipboard. The label reads "Copied", or "Couldn't copy" when the browser refuses, so also show the text on the page for people to copy by hand |
 | `data-print` on a button | Open the print dialog |
 | `data-nav-toggle` / `data-sidebar-toggle` with `aria-controls` | Open and close menus (Escape or a click outside closes them) |
 | `data-allow-resubmit` on a form | Don't disable its buttons after submit |
