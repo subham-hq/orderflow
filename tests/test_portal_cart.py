@@ -255,10 +255,15 @@ def test_update_changes_quantities_and_removes_zero_lines(shopper, catalog):
     ]
 
 
-def test_an_empty_quantity_removes_the_line(shopper, catalog):
-    set_cart(shopper, {catalog["carton"].id: 3})
-    shopper.post("/portal/cart", data={f"qty-{catalog['carton'].id}": "  "})
-    assert get_cart(shopper) == {}
+def test_an_empty_quantity_is_an_error_and_keeps_the_line(shopper, catalog):
+    # A number box the browser can't read ("5-", "1e") is sent empty: that's a typo, not "remove"
+    carton = catalog["carton"]
+    set_cart(shopper, {carton.id: 3})
+    response = shopper.post("/portal/cart", data={f"qty-{carton.id}": "  "})
+    assert response.status_code == 200
+    page = response.get_data(as_text=True)
+    assert "Enter a quantity as a whole number, or 0 to remove this line." in page
+    assert get_cart(shopper) == {str(carton.id): 3}
 
 
 def test_remove_button_removes_only_that_line_and_keeps_other_edits(shopper, catalog):

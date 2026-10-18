@@ -15,6 +15,8 @@ from ..services.orders import OrderError, place_order, price_cart
 from . import bp
 from .forms import AddToCartForm, CheckoutForm, read_quantity
 
+BLANK_QUANTITY_MESSAGE = "Enter a quantity as a whole number, or 0 to remove this line."
+
 
 def priced_session_cart():
     """Price the session cart, taking out anything that can't be ordered and saying so."""
@@ -51,7 +53,9 @@ def read_cart_form(cart, formdata):
     """Apply the quantity fields and remove button of the cart form to a copy of the cart.
 
     Only lines already in the cart can be changed here; fields for anything
-    else (a stale tab, a tampered form) are ignored. Returns
+    else (a stale tab, a tampered form) are ignored. A line is removed only by
+    a quantity of 0 or its remove button; a blank or unreadable quantity is an
+    error, so a typo never empties a line. Returns
     (new_cart, values, errors): values are what the client typed, by product
     id, so the form can be shown again exactly as they left it.
     """
@@ -64,6 +68,11 @@ def read_cart_form(cart, formdata):
             continue
         raw = formdata.get(key, "")
         values[product_id] = raw
+        if not raw.strip():
+            # Browsers send a number box they can't read ("5-", "1e", a letter) as
+            # an empty value, so a blank is a typo to fix, never a request to remove
+            errors[product_id] = BLANK_QUANTITY_MESSAGE
+            continue
         try:
             quantity = read_quantity(raw)
         except OrderError as error:
