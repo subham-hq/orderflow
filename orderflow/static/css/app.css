@@ -1501,10 +1501,6 @@ a.table__primary.mono:hover,
   white-space: normal;
 }
 
-.table--lines td.num > .muted {
-  white-space: nowrap;
-}
-
 .table .table__secondary.mono {
   overflow-wrap: anywhere;
 }
@@ -5820,7 +5816,33 @@ a.pagination__link:hover {
   font-size: 0.8125rem;
 }
 
+.invoice__parties .muted {
+  font-size: 0.9375rem;
+}
+
+/* The order's number, date and status: labels on the left, values on the right */
+.invoice__title-block .kv {
+  text-align: left;
+}
+
+/* No notes: the totals move up instead of leaving a gap */
+.invoice__notes:not(:has(*)) {
+  display: none;
+}
+
 @media (min-width: 640px) {
+  .invoice__title-block .kv__value {
+    text-align: right;
+  }
+
+  /* Supplier on the left, the invoice's title and details on the right, even
+     when the supplier's name runs long */
+  .invoice__header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+  }
+
   .invoice__title-block {
     align-items: flex-end;
     text-align: right;
@@ -5828,6 +5850,10 @@ a.pagination__link:hover {
 
   .invoice__footer {
     grid-template-columns: minmax(0, 1fr) minmax(15rem, 20rem);
+  }
+
+  .invoice__footer > .summary {
+    grid-column: 2;
   }
 }
 
@@ -5974,12 +6000,30 @@ a.pagination__link:hover {
   }
 
   .invoice__header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
     border-bottom-color: #000000;
   }
 
   .invoice__footer {
     grid-template-columns: minmax(0, 1fr) 70mm;
     break-inside: avoid;
+  }
+
+  .invoice__parties,
+  .invoice__disclaimer {
+    break-inside: avoid;
+  }
+
+  /* Long product names get the room; figures wrap between their parts */
+  .table--lines td:first-child {
+    min-width: 9rem;
+  }
+
+  .table--lines th,
+  .table--lines td {
+    padding-inline: 0.5rem;
   }
 
   .invoice__title-block {
