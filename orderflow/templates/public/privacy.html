@@ -1,0 +1,49 @@
+{% extends "layouts/marketing.html" %}
+{% block title %}Privacy Policy{% endblock %}
+{% block content %}
+<article class="container prose legal">
+  <p class="legal__updated">Last updated 18 October 2026</p>
+  <h1>Privacy Policy</h1>
+  <p>This policy explains what information {{ config.LEGAL_NAME }} ("we") collects when you use {{ APP_NAME }}, why we collect it, and the choices you have.</p>
+
+  <h2>Who this applies to</h2>
+  <p>{{ APP_NAME }} is used by suppliers (who create a workspace) and by their business clients (who are invited by a supplier to place orders). A supplier decides which clients to invite and what data to add about them; for that data the supplier is responsible and we process it on their behalf.</p>
+
+  <h2>What we collect</h2>
+  <ul>
+    <li><strong>Account details:</strong> your name, email address, company name, and optionally a phone number. We store a one-way hash of your password, never the password itself.</li>
+    <li><strong>Business data you add:</strong> products, prices, tax rates, announcements, client details, and orders with their line items, notes and status history.</li>
+    <li><strong>Enquiries:</strong> if you use the contact form on our website, the name, email, company and message you send.</li>
+    <li><strong>Technical data:</strong> your IP address is used briefly to limit repeated sign-in attempts and to protect the service. Our hosting provider keeps standard server logs.</li>
+  </ul>
+
+  <h2>Cookies</h2>
+  <p>We use only the cookies needed to run the service: a session cookie that keeps you signed in and protects forms against cross-site request forgery, and, if you choose "Keep me signed in", a remember-me cookie. We don't use advertising or tracking cookies.</p>
+
+  <h2>How we use information</h2>
+  <ul>
+    <li>To provide the service: show catalogs, place and manage orders, and send the emails the service depends on (confirming your email, password resets, invitations and order updates).</li>
+    <li>To keep the service secure and to fix problems.</li>
+    <li>To reply to enquiries you send us.</li>
+  </ul>
+  <p>We don't sell personal information and don't use it for advertising.</p>
+
+  <h2>Who we share it with</h2>
+  <p>Data in a supplier's workspace is visible to that supplier's team and, for their own orders, to the client who placed them. We use a small number of service providers to run {{ APP_NAME }}: a cloud hosting provider for the application and database, and an email delivery provider for transactional email. They process data only to provide those services to us.</p>
+
+  <h2>How long we keep it</h2>
+  <p>We keep account and business data while the workspace is active. Orders are kept as business records. When a workspace owner asks us to delete their workspace, we delete its data within 30 days, except where we must keep it by law.</p>
+
+  <h2>Your choices</h2>
+  <p>You can update your name and password from your account settings. To get a copy of your data, correct it, or delete your account, email us at {{ config.CONTACT_EMAIL or '[contact email]' }}. If you're a client of a supplier, you can also ask the supplier directly.</p>
+
+  <h2>Security</h2>
+  <p>Connections are encrypted with HTTPS, passwords are hashed, and each supplier's data is kept separate from every other supplier's. No system is perfectly secure, so please use a strong, unique password.</p>
+
+  <h2>Changes</h2>
+  <p>If we change this policy in a way that matters, we'll update the date above and, for significant changes, tell workspace owners by email.</p>
+
+  <h2>Contact</h2>
+  <p>Questions about privacy: {{ config.CONTACT_EMAIL or '[contact email]' }}.</p>
+</article>
+{% endblock %}

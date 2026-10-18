@@ -1,0 +1,9 @@
+{% extends "layouts/marketing.html" %}
+{% block title %}{{ APP_NAME }} · B2B ordering for suppliers{% endblock %}
+{% block content %}
+<section class="container section">
+  <h1>Take purchase orders from your business clients, online.</h1>
+  <p>{{ APP_NAME }} gives your clients a private catalog to order from, and gives you one place to approve, fulfil and invoice those orders.</p>
+  <p><a class="btn btn--primary" href="{{ url_for('auth.signup') }}">Start free</a></p>
+</section>
+{% endblock %}
