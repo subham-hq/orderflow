@@ -101,7 +101,7 @@ def client_invite():
     form = ClientForm()
     if form.validate_on_submit():
         try:
-            user = invite_user(
+            user, sent = invite_user(
                 current_user.company,
                 current_user._get_current_object(),
                 form.email.data,
@@ -118,11 +118,18 @@ def client_invite():
             db.session.rollback()
             form.email.errors.append(EMAIL_TAKEN)
         else:
-            flash(
-                f"Invitation sent to {user.email}. {user.first_name} will show as Invited until they "
-                "accept it and set a password.",
-                "success",
-            )
+            if sent:
+                flash(
+                    f"Invitation sent to {user.email}. {user.first_name} will show as Invited until they "
+                    "accept it and set a password.",
+                    "success",
+                )
+            else:
+                flash(
+                    f"We added {user.full_name}, but couldn't send the invitation email to {user.email} just now. "
+                    "Use Resend invitation on this page to try again.",
+                    "warning",
+                )
             return redirect(url_for("admin.client_detail", user_id=user.id))
     return render_template("admin/client_form.html", form=form, client=None)
 

@@ -131,7 +131,12 @@ def mark_verified(user):
 
 
 def invite_user(company, inviter, email, role, first_name, last_name=None, buyer_company=None, phone=None):
-    """Create an invited user (no password yet) and email them a link to join."""
+    """Create an invited user (no password yet) and email them a link to join.
+
+    Returns (user, sent): sent is False when the invitation email couldn't be
+    handed to the mail service. The account is created either way, so the
+    invitation can be sent again later.
+    """
     if role not in (ADMIN, CLIENT):
         raise AccountError("Choose a valid role.")
     email = normalize_email(email)
@@ -150,20 +155,19 @@ def invite_user(company, inviter, email, role, first_name, last_name=None, buyer
     )
     db.session.add(user)
     db.session.flush()
-    send_invite_email(user)
+    sent = send_invite_email(user)
     db.session.commit()
-    return user
+    return user, sent
 
 
 def send_invite_email(user):
     token = make_token(ACCEPT_INVITE, user)
-    user.invite_sent_at = utcnow()
     inviter_name = user.invited_by.full_name if user.invited_by else user.company.name
     if user.role == CLIENT:
         subject = f"{user.company.name} invited you to order on OrderFlow"
     else:
         subject = f"{inviter_name} invited you to join {user.company.name} on OrderFlow"
-    return send_email(
+    sent = send_email(
         user.email,
         subject,
         "invite",
@@ -171,6 +175,9 @@ def send_invite_email(user):
         inviter_name=inviter_name,
         link=external_url("auth.accept_invite", token=token),
     )
+    if sent:
+        user.invite_sent_at = utcnow()
+    return sent
 
 
 def accept_invite(user, password):

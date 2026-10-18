@@ -149,7 +149,7 @@ def test_reset_link_for_tampered_token_is_rejected(client):
 
 def test_invite_acceptance_sets_password_verifies_and_is_single_use(client, company, owner, mail):
     with client.application.test_request_context():
-        invited = invite_user(company, owner, "New.Buyer@Example.com", "client", "Ravi", buyer_company="Ravi Stores")
+        invited, _ = invite_user(company, owner, "New.Buyer@Example.com", "client", "Ravi", buyer_company="Ravi Stores")
     assert invited.email == "new.buyer@example.com"
     link = link_from(mail[-1], "/invite/")
 

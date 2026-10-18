@@ -131,7 +131,7 @@ def test_invalid_links_get_a_clear_page(client):
 
 
 def test_accept_invite_page(client, owner, mail):
-    invited = invite_user(owner.company, owner, "new@sunrise.example", "client", "Ravi", buyer_company="Ravi Stores")
+    invited, _ = invite_user(owner.company, owner, "new@sunrise.example", "client", "Ravi", buyer_company="Ravi Stores")
     html = page(client.get(link_from(mail[-1], "/invite/")))
     assert "Welcome, Ravi" in html.text
     assert owner.company.name in html.text and invited.email in html.text

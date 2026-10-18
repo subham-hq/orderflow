@@ -63,7 +63,7 @@ def team_invite():
     form = TeamInviteForm()
     if form.validate_on_submit():
         try:
-            user = invite_user(
+            user, sent = invite_user(
                 current_user.company,
                 current_user._get_current_object(),
                 form.email.data,
@@ -77,11 +77,18 @@ def team_invite():
             db.session.rollback()
             form.email.errors.append(EMAIL_TAKEN)
         else:
-            flash(
-                f"Invitation sent to {user.email}. Once {user.first_name} sets a password, they can manage orders, "
-                "the catalog, clients and bulletins. Only you can manage the team and company settings.",
-                "success",
-            )
+            if sent:
+                flash(
+                    f"Invitation sent to {user.email}. Once {user.first_name} sets a password, they can manage "
+                    "orders, the catalog, clients and bulletins. Only you can manage the team and company settings.",
+                    "success",
+                )
+            else:
+                flash(
+                    f"We added {user.full_name} to the team, but couldn't send the invitation email to {user.email} "
+                    "just now. Use Resend invitation to try again.",
+                    "warning",
+                )
             return redirect(url_for("admin.team"))
     return _render_team(form)
 
