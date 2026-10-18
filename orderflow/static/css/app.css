@@ -1575,7 +1575,7 @@ a.table__primary.mono:hover,
   .table--stack tbody tr {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
+    align-items: start;
     gap: 0.25rem 1rem;
     padding: 0.875rem var(--card-pad);
   }
@@ -1766,6 +1766,7 @@ a.table__primary.mono:hover,
      the right, so neither widens the figures column */
   .table--products td:nth-child(6) {
     grid-area: 3 / 1 / 4 / 3;
+    align-self: center;
     justify-self: start;
     padding-top: 0.375rem;
   }
