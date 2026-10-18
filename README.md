@@ -1,145 +1,117 @@
-🚀 OrderFlow
+# OrderFlow
 
-Multi-tenant B2B Order Management System
+**B2B ordering for suppliers and the businesses they sell to.**
 
-🎥 Video Demo: https://youtu.be/xvPRFuExpm0
+OrderFlow gives a supplier (a manufacturer, distributor or wholesaler) a
+private online catalog for their business clients. Clients sign in to their
+own portal, build a cart and place purchase orders. The supplier's team
+reviews, approves and fulfils those orders in one place, with GST worked out
+on every line and a full history of who did what.
 
-⸻
+## Features
 
-🧠 Overview
+**For suppliers**
 
-OrderFlow is a multi-tenant B2B order management system designed to help companies manage product catalogs, clients, and purchase orders within a secure, centralized platform.
+- Dashboard with revenue for the month, orders waiting for review, a 30-day
+  revenue chart, top products and top clients
+- Order management with status filters, search, date ranges and CSV export
+- A clear order workflow: pending → approved → fulfilled, or rejected with a
+  reason, with a timeline of every change
+- Product catalog with GST slabs, units and categories, plus CSV import and
+  export
+- Invite clients and teammates by email; suspend or reactivate them at any
+  time (suspension signs them out everywhere)
+- Bulletins shown on client dashboards, with expiry dates in your time zone
+- Company settings: legal name, GSTIN, address, support contact, time zone
+  and order number prefix
 
-Built using Flask and SQLite, the system simulates a real-world SaaS product where multiple companies operate independently with strict data isolation.
+**For their clients**
 
-Each company maintains its own dataset (users, products, orders), enforced via company-level scoping across all queries.
+- A private portal with the supplier's live catalog, search and categories
+- Cart with quantities, GST and totals; protected against double submits
+- Order history, status updates by email, cancel while pending, one-click
+  reorder, and printable proforma invoices
 
-⸻
+**Security**
 
-✨ Key Features
+- Every supplier's data is isolated; records from another company are never
+  reachable
+- Email verification, password reset by email, invite-only client accounts
+- Passwords hashed, strength-checked; sign-in is rate limited
+- Changing a password or suspending an account ends every other session
+- CSRF protection on every form, a strict Content Security Policy, secure
+  cookies and HSTS in production
 
-* 🔐 Role-based authentication (Admin & Client)
-* 🏢 Multi-tenant architecture with strict data isolation
-* 📦 Product catalog management
-* 🧾 Order lifecycle: Pending → Approved → Fulfilled / Rejected
-* 📊 Client dashboard with analytics and order tracking
-* 📢 Bulletin system for announcements
-* 💰 Financial accuracy using integer-based currency (paise)
-* 🛡️ Server-side validation to prevent tampering
+## Tech stack
 
-⸻
+- Python 3.12, Flask 3, SQLAlchemy 2 with Alembic migrations
+- PostgreSQL in production, SQLite for local development and tests
+- Server-rendered Jinja templates with a custom CSS design system and a small
+  amount of plain JavaScript (pages work without it)
+- Email through Resend (or any SMTP server)
+- Deployed on Render with gunicorn; tested with pytest on GitHub Actions
+  against both SQLite and Postgres
 
-🧩 Tech Stack
-
-<p align="left">
-  <img src="https://skillicons.dev/icons?i=python,flask,sqlite,html,css" />
-</p>
-
-* Backend: Flask (Python)
-* Database: SQLite
-* Frontend: HTML, CSS (Jinja Templates)
-* Security: Werkzeug (Password Hashing), Flask-Session
-
-⸻
-
-🏗️ Architecture Highlights
-
-* Multi-Tenancy:
-    All data is scoped using company_id to ensure complete isolation.
-* RBAC (Role-Based Access Control):
-    Custom decorators (admin_required, client_required) enforce permissions.
-* Order State Machine:
-    Controlled transitions:
-  pending → approved → fulfilled
-       ↘ rejected
-  * Server-Side Validation:
-    Prices and quantities are always validated on the server to prevent manipulation.
-
-⸻
-
-🔐 Security Features
-
-* Password hashing using Werkzeug
-* Server-side session management (Flask-Session)
-* Company-level data isolation
-* Protected routes using decorators
-* Cache-control headers to prevent sensitive data caching
-
-⸻
-
-📁 Project Structure
+## Project layout
 
 ```
 orderflow/
-│
-├── app.py              # Main application logic
-├── helpers.py          # Utility functions & decorators
-├── requirements.txt    # Dependencies
-├── README.md
-│
-├── templates/          # HTML templates (UI)
-├── static/             # CSS, images, assets
+  __init__.py        app factory
+  config.py          settings from environment variables
+  models.py          database models
+  services/          business logic (orders, accounts, analytics, catalog, cart)
+  auth/              sign up, sign in, verification, invites, password reset
+  admin/             supplier workspace
+  portal/            client portal
+  public/            landing page, legal pages, health check
+  templates/         Jinja templates (layouts, macros, pages, emails)
+  static/            CSS, JavaScript, icons
+migrations/          Alembic migrations
+tests/               pytest suite
+docs/                UI building blocks and deployment guide
 ```
-⸻
 
-⚙️ How to Run Locally
+## Running locally
 
-1. Clone the repository
 ```bash
-git clone https://github.com/subham-hq/orderflow.git
-cd orderflow
+python3.12 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements-dev.txt
+cp .env.example .env
+flask --app wsgi db upgrade
+flask --app wsgi seed-demo
+flask --app wsgi run --debug
 ```
 
-2. Create virtual environment
+Open <http://127.0.0.1:5000>. `seed-demo` creates a demo supplier with
+products, clients and two months of orders; it prints the sign-in details.
+Emails are printed to the terminal while `MAIL_BACKEND=console`.
+
+## Tests
+
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate   # Mac/Linux
+ruff check .
+ruff format --check .
+pytest --cov=orderflow
 ```
 
-3. Install dependencies
-```bash
-pip install -r requirements.txt
-```
+To run the suite against Postgres, set
+`TEST_DATABASE_URL=postgresql+psycopg://user:password@localhost:5432/orderflow_test`.
 
-4. Run the application
-```bash
-flask run
-```
+## Deployment
 
-5. Open in browser
-```bash
-http://127.0.0.1:5000
-```
-### Database Setup
+See [docs/deploy.md](docs/deploy.md) for deploying to Render with a custom
+domain and Resend for email.
 
-OrderFlow currently uses SQLite for local development.
+## Versions
 
-The database schema lives in `schema.sql`. If `orderflow.db` does not exist, it is created automatically from that file the first time the app starts, so no manual setup is needed.
+| Version | What it is |
+| --- | --- |
+| [v1.0](https://github.com/subham-hq/orderflow/tree/v1.0) | The original CS50x final project, as submitted ([video demo](https://youtu.be/xvPRFuExpm0)) |
+| [v1.0.1](https://github.com/subham-hq/orderflow/tree/v1.0.1) | v1.0 with its four most serious bugs fixed |
+| v2.0 | This version: a rebuilt, production-ready OrderFlow |
 
-### Configuration
-
-Review any configuration values used by the application, including:
-
-- Secret keys
-- Database paths
-- Environment-specific settings
-- Security-related configuration
-
-Store sensitive values outside of source control whenever possible.
-
-### Running the Application
-
-Start the Flask development server and verify that:
-
-- Authentication works correctly
-- User roles load as expected
-- Product, client, and order workflows operate normally
-
-### Recommended Development Workflow
-
-- Create a dedicated branch for each feature or bug fix.
-- Keep pull requests focused on a single logical change.
-- Test functionality locally before opening a pull request.
-- Update documentation when introducing significant features.
-
-This approach helps maintain a clean project history and simplifies future collaboration.
+v1 was a single Flask file using the CS50 SQL library and Bootstrap. v2 keeps
+the same idea (multi-company ordering with an approval workflow) and rebuilds
+it as a modular application with migrations, email-based accounts, GST-aware
+orders, a client portal, analytics, a new design and a full test suite.
