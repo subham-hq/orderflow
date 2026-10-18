@@ -1,11 +1,24 @@
 {% extends "emails/_layout.html" %}
+{% set tones = {
+  'pending': ('#fdf0d8', '#8a5300'),
+  'approved': ('#e4e8f9', '#24378a'),
+  'fulfilled': ('#e0f3e8', '#11643a'),
+  'rejected': ('#fbe6e6', '#a1232b'),
+  'cancelled': ('#eceef4', '#4b5272'),
+} %}
+{% set tone = tones.get(to_status, tones['cancelled']) %}
+{% block preheader %}{{ order.company.name }}: order {{ order.number }} is now {{ status_label | lower }}.{% endblock %}
 {% block content %}
-<h1 style="margin:0 0 12px;font-size:22px;line-height:1.3;">Order {{ order.number }}: {{ status_label | lower }}</h1>
-<p style="margin:0;font-size:15px;line-height:1.6;">Hi {{ order.client.first_name }},
+<p style="margin:0 0 14px;"><span style="display:inline-block;padding:3px 10px;border-radius:999px;background-color:{{ tone[0] }};color:{{ tone[1] }};font-size:12px;font-weight:600;line-height:1.5;">{{ status_label }}</span></p>
+<h1 style="margin:0 0 12px;font-size:22px;line-height:1.3;color:#0c1440;">Order {{ order.number }}: {{ status_label | lower }}</h1>
+<p style="margin:0;">Hi {{ order.client.first_name }},
 {% if to_status == 'approved' %}{{ order.company.name }} approved your order for {{ order.total_paise | inr }}. They'll let you know when it has been fulfilled.
 {% elif to_status == 'fulfilled' %}{{ order.company.name }} has fulfilled your order {{ order.number }}.
 {% elif to_status == 'rejected' %}{{ order.company.name }} couldn't accept your order {{ order.number }}.
 {% else %}your order {{ order.number }} was cancelled by {{ order.company.name }}.{% endif %}</p>
-{% if message %}<p style="margin:16px 0 0;padding:12px 14px;background:#f6f7fb;border-radius:10px;font-size:14px;line-height:1.5;white-space:pre-line;">{{ message }}</p>{% endif %}
+{% if message %}
+<p style="margin:16px 0 0;font-size:13px;font-weight:600;color:#5a6182;">Note from {{ order.company.name }}</p>
+{% with note=message %}{% include "emails/_note.html" %}{% endwith %}
+{% endif %}
 {% with label="View order" %}{% include "emails/_button.html" %}{% endwith %}
 {% endblock %}

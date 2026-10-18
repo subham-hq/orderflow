@@ -1,11 +1,29 @@
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0;border-collapse:collapse;font-size:14px;">
+{#- Items and totals for an order. Expects `order`. -#}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:20px 0 4px;border-collapse:collapse;font-size:14px;line-height:1.45;">
+  <tr>
+    <td style="padding:0 0 8px;border-bottom:1px solid #e1e4ef;font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:#5a6182;">Item</td>
+    <td align="right" style="padding:0 0 8px;border-bottom:1px solid #e1e4ef;font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:#5a6182;">Amount</td>
+  </tr>
   {% for item in order.items %}
   <tr>
-    <td style="padding:8px 0;border-bottom:1px solid #eceef6;">{{ item.name }}<br><span style="font-size:12px;color:#6b7194;">{{ item.sku }} · {{ item.quantity }} × {{ item.unit_price_paise | inr }}</span></td>
-    <td align="right" style="padding:8px 0;border-bottom:1px solid #eceef6;white-space:nowrap;">{{ item.line_subtotal_paise | inr }}</td>
+    <td style="padding:10px 12px 10px 0;border-bottom:1px solid #eceef6;vertical-align:top;">
+      <span style="font-weight:600;color:#121735;">{{ item.name }}</span><br>
+      <span style="font-size:12px;color:#5a6182;font-family:Menlo,Consolas,monospace;">{{ item.sku }}</span>
+      <span style="font-size:12px;color:#5a6182;"> · {{ item.quantity }} {{ item.unit }} × {{ item.unit_price_paise | inr }} + {{ item.gst_rate_bp | gst }} GST</span>
+    </td>
+    <td align="right" style="padding:10px 0;border-bottom:1px solid #eceef6;vertical-align:top;white-space:nowrap;">{{ item.line_subtotal_paise | inr }}</td>
   </tr>
   {% endfor %}
-  <tr><td style="padding:8px 0 2px;color:#6b7194;">Subtotal</td><td align="right" style="padding:8px 0 2px;">{{ order.subtotal_paise | inr }}</td></tr>
-  <tr><td style="padding:2px 0;color:#6b7194;">GST</td><td align="right" style="padding:2px 0;">{{ order.tax_paise | inr }}</td></tr>
-  <tr><td style="padding:8px 0 0;font-weight:700;">Total</td><td align="right" style="padding:8px 0 0;font-weight:700;">{{ order.total_paise | inr }}</td></tr>
+  <tr>
+    <td style="padding:12px 0 2px;color:#5a6182;">Subtotal</td>
+    <td align="right" style="padding:12px 0 2px;white-space:nowrap;">{{ order.subtotal_paise | inr }}</td>
+  </tr>
+  <tr>
+    <td style="padding:2px 0 10px;color:#5a6182;">GST</td>
+    <td align="right" style="padding:2px 0 10px;white-space:nowrap;">{{ order.tax_paise | inr }}</td>
+  </tr>
+  <tr>
+    <td style="padding:10px 0 0;border-top:1px solid #e1e4ef;font-size:16px;font-weight:700;">Total</td>
+    <td align="right" style="padding:10px 0 0;border-top:1px solid #e1e4ef;font-size:16px;font-weight:700;white-space:nowrap;">{{ order.total_paise | inr }}</td>
+  </tr>
 </table>
