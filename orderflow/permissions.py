@@ -9,10 +9,12 @@ signed-in user's company. A record from another company is a 404, never a
 from functools import wraps
 from urllib.parse import urlsplit
 
-from flask import abort, flash, redirect, request, url_for
+from flask import abort, current_app, flash, redirect, request, url_for
 from flask_login import current_user
+from werkzeug.exceptions import HTTPException
+from werkzeug.routing import RequestRedirect
 
-from .extensions import db
+from .extensions import db, login_manager
 from .models import MAX_ID
 
 
@@ -23,12 +25,46 @@ def home_url_for(user):
     return url_for("portal.home")
 
 
+SESSION_ENDED_MESSAGE = "You were signed out, so that didn't go through. Sign in and try again."
+
+
+def _sign_in_first():
+    """Send someone who isn't signed in to the sign-in page, and back here afterwards.
+
+    Their session may have ended (it timed out, they changed their password
+    on another device, or they were suspended), so say why they're here.
+    """
+    if request.method in ("GET", "HEAD"):
+        next_url = request.full_path.rstrip("?")
+        if request.method == "GET":
+            flash(login_manager.login_message, login_manager.login_message_category)
+    else:
+        # A form sent after the session ended. Sign-in can't repeat it, and
+        # its address only accepts POST, so come back to the page it was on.
+        next_url = _referring_page()
+        flash(SESSION_ENDED_MESSAGE, "warning")
+    return redirect(url_for("auth.login", next=next_url))
+
+
+def _referring_page():
+    """The page on this site the request came from, as a path, or None."""
+    referrer = request.referrer
+    if not referrer:
+        return None
+    parts = urlsplit(referrer)
+    here = urlsplit(request.host_url)
+    if (parts.scheme, parts.netloc) != (here.scheme, here.netloc):
+        return None
+    path = parts.path + (f"?{parts.query}" if parts.query else "")
+    return path if is_safe_next_url(path) and _is_page(path) else None
+
+
 def _require(check):
     def decorator(view):
         @wraps(view)
         def wrapped(*args, **kwargs):
             if not current_user.is_authenticated:
-                return redirect(url_for("auth.login", next=request.full_path.rstrip("?")))
+                return _sign_in_first()
             if not current_user.is_verified:
                 return redirect(url_for("auth.verify_pending"))
             if not check(current_user):
@@ -85,6 +121,19 @@ def is_safe_next_url(target):
     return not parts.scheme and not parts.netloc
 
 
+def _is_page(path):
+    """True if a browser can open path, i.e. it has a GET route (not a POST-only action)."""
+    adapter = current_app.create_url_adapter(request)
+    try:
+        adapter.match(urlsplit(path).path, method="GET")
+    except RequestRedirect:
+        return True  # the page exists at a slightly different address, e.g. with a trailing slash
+    except HTTPException:
+        return False  # no such page, or an address that only accepts POST
+    return True
+
+
 def safe_next_url(default):
+    """The request's ?next= (or form next) page if it's safe to redirect to, otherwise default."""
     target = request.values.get("next")
-    return target if is_safe_next_url(target) else default
+    return target if is_safe_next_url(target) and _is_page(target) else default
