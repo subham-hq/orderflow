@@ -162,8 +162,16 @@ def verify_email(token):
     if not user.is_verified:
         mark_verified(user)
         db.session.commit()
+    if current_user.is_authenticated and current_user.id != user.id:
+        # Someone else's link opened while signed in here: say whose email it was
+        flash(
+            f"We confirmed {user.email}. You're still signed in as {current_user.email}; "
+            "sign out to use the other account.",
+            "info",
+        )
+        return redirect(home_url_for(current_user))
     flash("Your email is confirmed. Welcome to OrderFlow!", "success")
-    if current_user.is_authenticated and current_user.id == user.id:
+    if current_user.is_authenticated:
         return redirect(home_url_for(user))
     return redirect(url_for("auth.login"))
 
