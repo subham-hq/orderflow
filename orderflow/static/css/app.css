@@ -153,6 +153,9 @@
   --brand-ink: #1b2a6b;
   --monogram-bg: #1b2a6b;
   --monogram-fg: #f2a93b;
+  --hero-glow: rgba(48, 68, 176, 0.1);
+  --hero-glow-2: rgba(242, 169, 59, 0.14);
+  --band-dot: rgba(242, 169, 59, 0.2);
 
   /* Shadows */
   --shadow-xs: 0 1px 0 rgba(18, 23, 53, 0.04);
@@ -345,6 +348,9 @@
     --brand-ink: #c9cffc;
     --monogram-bg: #f2a93b;
     --monogram-fg: #0c1440;
+    --hero-glow: rgba(122, 140, 240, 0.16);
+    --hero-glow-2: rgba(242, 169, 59, 0.08);
+    --band-dot: rgba(242, 169, 59, 0.16);
 
     --shadow-xs: 0 1px 0 rgba(0, 0, 0, 0.25);
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
@@ -4740,6 +4746,10 @@ a.pagination__link:hover {
 .hero {
   padding-block: var(--space-10) var(--space-12);
   overflow: hidden;
+  /* A soft indigo glow behind the example order, and a warmer one below the copy */
+  background:
+    radial-gradient(44rem 30rem at 92% 12%, var(--hero-glow), transparent 70%),
+    radial-gradient(32rem 24rem at 4% 100%, var(--hero-glow-2), transparent 70%);
 }
 
 .hero__inner {
@@ -4784,8 +4794,39 @@ a.pagination__link:hover {
 .hero__highlight {
   padding-inline: 0.04em;
   background-image: linear-gradient(transparent 62%, var(--highlight) 62%, var(--highlight) 92%, transparent 92%);
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
   -webkit-box-decoration-break: clone;
   box-decoration-break: clone;
+}
+
+/* On arrival the marker sweeps under "approved in a click" and the example
+   order rises into place. Without motion both are simply there. */
+@media (prefers-reduced-motion: no-preference) {
+  .hero__highlight {
+    animation: marker-sweep 0.9s var(--ease) 0.35s both;
+  }
+
+  .hero-order {
+    animation: hero-rise 0.8s var(--ease) 0.1s both;
+  }
+
+  .hero-mail {
+    animation: hero-rise 0.8s var(--ease) 0.3s both;
+  }
+}
+
+@keyframes marker-sweep {
+  from {
+    background-size: 0% 100%;
+  }
+}
+
+@keyframes hero-rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
 }
 
 .hero__lead {
@@ -5190,6 +5231,58 @@ a.pagination__link:hover {
   }
 }
 
+/* Landing blocks ease up into view as they scroll in (app.js adds
+   reveal-ready only when motion is welcome), with grid items one after
+   another */
+@media (prefers-reduced-motion: no-preference) {
+  .reveal-ready [data-reveal] {
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 0.7s var(--ease), transform 0.7s var(--ease);
+  }
+
+  .reveal-ready [data-reveal].is-revealed {
+    opacity: 1;
+    transform: none;
+  }
+
+  .reveal-ready [data-reveal="stagger"] {
+    opacity: 1;
+    transform: none;
+  }
+
+  .reveal-ready [data-reveal="stagger"] > * {
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 0.6s var(--ease), transform 0.6s var(--ease);
+  }
+
+  .reveal-ready [data-reveal="stagger"].is-revealed > * {
+    opacity: 1;
+    transform: none;
+  }
+
+  .reveal-ready [data-reveal="stagger"] > :nth-child(2) {
+    transition-delay: 0.07s;
+  }
+
+  .reveal-ready [data-reveal="stagger"] > :nth-child(3) {
+    transition-delay: 0.14s;
+  }
+
+  .reveal-ready [data-reveal="stagger"] > :nth-child(4) {
+    transition-delay: 0.21s;
+  }
+
+  .reveal-ready [data-reveal="stagger"] > :nth-child(5) {
+    transition-delay: 0.28s;
+  }
+
+  .reveal-ready [data-reveal="stagger"] > :nth-child(n + 6) {
+    transition-delay: 0.35s;
+  }
+}
+
 /* Who it's for */
 .audience {
   border-block: 1px solid var(--line);
@@ -5428,7 +5521,13 @@ a.pagination__link:hover {
 
 .band--ink {
   border-block: 1px solid var(--ink-line);
-  background: var(--ink-bg);
+  background-color: var(--ink-bg);
+  /* Marigold knots, like the woven brand panels, fading towards the edges */
+  background-image:
+    linear-gradient(to bottom, var(--ink-bg), transparent 30%, transparent 70%, var(--ink-bg)),
+    radial-gradient(circle, var(--band-dot) 1.2px, transparent 1.7px);
+  background-size: auto, 28px 28px;
+  background-position: center;
   color: var(--ink-text);
 }
 
@@ -6033,6 +6132,12 @@ a.pagination__link:hover {
     background: #ffffff !important;
     color: #000000 !important;
     font-size: 10.5pt;
+  }
+
+  [data-reveal],
+  [data-reveal] > * {
+    opacity: 1 !important;
+    transform: none !important;
   }
 
   .no-print,

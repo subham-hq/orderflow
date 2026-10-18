@@ -211,6 +211,7 @@ properties, never a literal colour.
 | `data-nav-toggle` / `data-sidebar-toggle` with `aria-controls` | Open and close menus (Escape or a click outside closes them) |
 | `data-allow-resubmit` on a form | Don't disable its buttons after submit |
 | `data-dismiss` inside an alert | Remove the alert |
+| `data-reveal` (or `data-reveal="stagger"` on a list) | Ease a landing-page block (or its items, one after another) into view as it scrolls in; nothing is hidden without JavaScript or for people who prefer less motion |
 
 Password inputs rendered with `field()` get a Show / Hide button
 automatically. Controls with `data-dismiss`, `data-print`, `data-copy` and

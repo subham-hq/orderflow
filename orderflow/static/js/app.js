@@ -200,6 +200,29 @@
     });
   });
 
+  // [data-reveal] blocks on the landing page ease into view as they scroll in.
+  // Nothing is hidden unless this runs, and never for people who prefer less motion.
+  var revealed = document.querySelectorAll("[data-reveal]");
+  var calm = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (revealed.length && "IntersectionObserver" in window && !calm) {
+    var onScreen = new IntersectionObserver(
+      function (entries) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting) return;
+          entry.target.classList.add("is-revealed");
+          onScreen.unobserve(entry.target);
+        });
+      },
+      { rootMargin: "0px 0px -10% 0px" }
+    );
+    revealed.forEach(function (block) {
+      // Already on screen (or scrolled past): show it now, without a flicker
+      if (block.getBoundingClientRect().top < window.innerHeight) block.classList.add("is-revealed");
+      else onScreen.observe(block);
+    });
+    document.documentElement.classList.add("reveal-ready");
+  }
+
   // Print buttons
   document.addEventListener("click", function (event) {
     if (event.target.closest("[data-print]")) window.print();

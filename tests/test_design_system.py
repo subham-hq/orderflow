@@ -469,6 +469,21 @@ def test_workspace_and_portal_pages_dont_use_the_public_section_band():
     assert not offenders, offenders
 
 
+def test_scroll_reveal_never_hides_content_without_js_or_with_reduced_motion():
+    # Content is only hidden once app.js has marked the page reveal-ready,
+    # and app.js skips that when people prefer less motion
+    assert '"(prefers-reduced-motion: reduce)"' in JS and 'classList.add("reveal-ready")' in JS
+    hiding = [m.start() for m in re.finditer(r"\[data-reveal[^\]]*\][^{]*\{\s*opacity: 0", CSS)]
+    assert len(hiding) >= 2
+    for start in hiding:
+        rule_start = CSS.rindex("}", 0, start) + 1
+        assert ".reveal-ready" in CSS[rule_start:start]
+        nearest_media = CSS[CSS.rindex("@media", 0, start) :]
+        assert nearest_media.startswith("@media (prefers-reduced-motion: no-preference)")
+    print_block = token_block("@media print")
+    assert "[data-reveal]" in print_block
+
+
 def test_app_content_is_spaced_by_the_layout():
     flow = CSS[CSS.index(".main,\n.portal-main > .container {") :]
     assert "gap: var(--space-6);" in flow[: flow.index("}")]
