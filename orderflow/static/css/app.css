@@ -1845,6 +1845,41 @@ a.table__primary.mono:hover,
     font-size: 0.8125rem;
   }
 
+  /* Dashboard top lists: product, sold, revenue / client, orders, revenue.
+     Revenue and its meter sit on the right of both lines. */
+  .table--top-products td:nth-child(1),
+  .table--top-clients td:nth-child(1) {
+    grid-area: 1 / 1;
+  }
+
+  .table--top-products td:nth-child(3),
+  .table--top-clients td:nth-child(3) {
+    grid-area: 1 / 2 / 3 / 3;
+    align-self: start;
+    min-width: 6.5rem;
+  }
+
+  .table--top-products td:nth-child(2),
+  .table--top-clients td:nth-child(2) {
+    grid-area: 2 / 1;
+    color: var(--muted);
+    font-size: 0.8125rem;
+    text-align: left;
+  }
+
+  .table--top-products td:nth-child(2)::before {
+    content: "Sold ";
+  }
+
+  .table--top-products td:nth-child(2) > .table__secondary {
+    display: inline;
+    margin-left: 0.25rem;
+  }
+
+  .table--top-clients td:nth-child(2)::before {
+    content: "Orders: ";
+  }
+
   /* The cart: item, unit price, quantity, GST, amount, remove */
   .table--cart td:nth-child(1) {
     grid-area: 1 / 1;

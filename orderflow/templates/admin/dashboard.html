@@ -136,7 +136,7 @@
       {% if top_products %}
       {% set best = top_products[0].revenue_paise or 1 %}
       <div class="table-wrap">
-        <table class="table">
+        <table class="table table--stack table--top-products">
           <thead><tr><th scope="col">Product</th><th scope="col" class="num">Sold</th><th scope="col" class="num">Revenue</th></tr></thead>
           <tbody>
             {% for product in top_products %}
@@ -173,7 +173,7 @@
       {% if top_clients %}
       {% set best = top_clients[0].revenue_paise or 1 %}
       <div class="table-wrap">
-        <table class="table">
+        <table class="table table--stack table--top-clients">
           <thead><tr><th scope="col">Client</th><th scope="col" class="num">Orders</th><th scope="col" class="num">Revenue</th></tr></thead>
           <tbody>
             {% for row in top_clients %}

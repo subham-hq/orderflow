@@ -331,6 +331,8 @@ STACKED_COLUMNS = {
     "table--products": ["Product", "Category", "Unit", "Price", "GST", "Status", "Actions"],
     "table--clients": ["Client", "Email", "Status", "Orders", "Last sign-in", "Actions"],
     "table--team": ["Name", "Role", "Status", "Last sign-in", "Actions"],
+    "table--top-products": ["Product", "Sold", "Revenue"],
+    "table--top-clients": ["Client", "Orders", "Revenue"],
 }
 
 
@@ -347,15 +349,17 @@ def stacked_tables(body):
 
 
 def test_stacked_tables_keep_the_column_order_their_phone_layout_expects(client, login, company, owner, buyer):
-    from orderflow.services.orders import place_order
+    from orderflow.services.orders import place_order, transition_order
 
     product = factories.make_product(company, sku="CTN-1", name="Carton", category="Packaging")
     order, _ = place_order(buyer, {product.id: 3})
+    approved, _ = place_order(buyer, {product.id: 5})
+    transition_order(approved, owner, "approved")  # so the dashboard's top lists have rows
     db.session.commit()
 
     seen = {}
     login(owner)
-    for path in ("/app/orders", f"/app/orders/{order.number}", "/app/products", "/app/clients", "/app/team"):
+    for path in ("/app/", "/app/orders", f"/app/orders/{order.number}", "/app/products", "/app/clients", "/app/team"):
         seen.update(stacked_tables(client.get(path).get_data(as_text=True)))
     client.post("/logout")
     login(buyer)

@@ -110,8 +110,10 @@ Components:
   `table--lines` (item, qty, unit price, GST, amount; the order lines),
   `table--cart` (item, unit price, quantity, GST, amount, remove),
   `table--products` (product, category, unit, price, GST, status, actions),
-  `table--clients` (client, email, status, orders, last sign-in, actions)
-  and `table--team` (name, role, status, last sign-in, actions). Keep the
+  `table--clients` (client, email, status, orders, last sign-in, actions),
+  `table--team` (name, role, status, last sign-in, actions),
+  `table--top-products` (product, sold, revenue) and `table--top-clients`
+  (client, orders, revenue) on the dashboard. Keep the
   columns in that order. In a `text-right` actions cell, wrap buttons in a
   `cluster` and they line up on the right.
 - `results-count` ("24 orders" above a list), `section-label` (a small
