@@ -1,0 +1,229 @@
+{% extends "layouts/app.html" %}
+{% from "macros/ui.html" import icon, page_header, link_button, stat, status_badge, money %}
+{% set active_nav = "dashboard" %}
+{% block title %}Dashboard{% endblock %}
+{% block topbar_title %}Dashboard{% endblock %}
+{% block content %}
+{# What each status change reads like in the activity feed: (verb, words after the order number) #}
+{% set phrases = {'pending': ('placed', ''), 'approved': ('approved', ''), 'rejected': ('rejected', ''), 'fulfilled': ('marked', ' as fulfilled'), 'cancelled': ('cancelled', '')} %}
+{% call page_header(greeting ~ ", " ~ current_user.first_name, "Here's how " ~ current_user.company.name ~ " is doing in " ~ kpis.month.label ~ ".", eyebrow=today_label) %}
+  {{ link_button("View orders", url_for('admin.orders'), variant="secondary", icon_name="orders") }}
+{% endcall %}
+
+<div class="stack stack--lg">
+  {% if steps %}
+  <section class="card checklist" aria-labelledby="checklist-title">
+    <div class="card__header">
+      <h2 class="card__title" id="checklist-title">Get your workspace ready</h2>
+      <p class="checklist__progress muted">{{ progress.done }} of {{ progress.total }} done</p>
+    </div>
+    <div class="card__body">
+      <ol class="checklist__list">
+        {% for step in steps %}
+        <li class="checklist__item">
+          <span class="checklist__marker" aria-hidden="true"></span>
+          <div class="checklist__body">
+            <p class="checklist__title">{{ step.title }}</p>
+            <p class="checklist__text muted">{{ step.text }}</p>
+          </div>
+          {% if step.action_url %}
+          {{ link_button(step.action_label, step.action_url, variant="secondary", size="sm") }}
+          {% else %}
+          <button type="button" class="btn btn--ghost btn--sm" data-copy="{{ portal_login_url }}">Copy client sign-in link</button>
+          {% endif %}
+        </li>
+        {% endfor %}
+      </ol>
+    </div>
+  </section>
+  {% endif %}
+
+  <section aria-labelledby="kpi-title">
+    <h2 class="visually-hidden" id="kpi-title">{{ kpis.month.label }} at a glance</h2>
+    <div class="grid grid--4">
+      {{ stat("Revenue in " ~ kpis.month.label, kpis.revenue_paise | inr_compact, revenue_hint, tone=("success" if kpis.revenue_change and kpis.revenue_change > 0 else None)) }}
+      {{ stat("Awaiting review", "{:,}".format(kpis.pending_orders), (("Oldest placed " ~ (queue[0].placed_at | timeago)) if queue else "You're all caught up"), tone=("warning" if kpis.pending_orders else None), href=pending_url) }}
+      {{ stat("Orders in " ~ kpis.month.label, "{:,}".format(kpis.orders_this_month), "{:,}".format(kpis.orders_previous_period) ~ " by this time in " ~ kpis.month.previous_label, href=month_orders_url) }}
+      {{ stat("Active clients", "{:,}".format(kpis.active_clients), (("{:,}".format(kpis.invited_clients) ~ (" invitation" if kpis.invited_clients == 1 else " invitations") ~ " not accepted yet") if kpis.invited_clients else "Clients who can sign in and order"), href=url_for('admin.clients')) }}
+    </div>
+  </section>
+
+  <div class="sidebar-layout">
+    <section class="card" aria-labelledby="revenue-title">
+      <div class="card__header">
+        <h2 class="card__title" id="revenue-title">Revenue, last 30 days</h2>
+        {% if not chart.is_empty %}<p class="muted">{{ chart.total_paise | inr }} from {{ "{:,}".format(chart.total_orders) }} order{{ "s" if chart.total_orders != 1 }}</p>{% endif %}
+      </div>
+      <div class="card__body">
+        {% if chart.is_empty %}
+        <div class="empty-state empty-state--compact">
+          <div class="empty-state__icon">{{ icon('chart') }}</div>
+          <p class="empty-state__text">No approved orders in the last 30 days. Once you approve orders, you'll see revenue for each day here.</p>
+        </div>
+        {% else %}
+        <figure class="chart">
+          <svg class="chart__svg" viewBox="0 0 {{ chart.width }} {{ chart.height }}" role="img" aria-label="{{ chart.summary }}" focusable="false">
+            {% for tick in chart.y_ticks %}
+            <line class="chart__axis{% if not loop.first %} chart__axis--grid{% endif %}" x1="{{ chart.left }}" x2="{{ chart.right }}" y1="{{ tick.position }}" y2="{{ tick.position }}"></line>
+            <text class="chart__label chart__label--y" x="{{ chart.left - 8 }}" y="{{ tick.position }}" text-anchor="end" dominant-baseline="middle">{{ tick.label }}</text>
+            {% endfor %}
+            {% for bar in chart.bars %}
+            <rect class="chart__bar{% if not bar.revenue_paise %} chart__bar--empty{% endif %}" x="{{ bar.x }}" y="{{ bar.y }}" width="{{ bar.width }}" height="{{ bar.height }}" rx="2"><title>{{ bar.label }}</title></rect>
+            {% endfor %}
+            {% for tick in chart.x_ticks %}
+            <text class="chart__label chart__label--x" x="{{ tick.position }}" y="{{ chart.bottom + 20 }}" text-anchor="middle">{{ tick.label }}</text>
+            {% endfor %}
+          </svg>
+          <table class="visually-hidden">
+            <caption>Revenue per day for the last 30 days</caption>
+            <thead><tr><th scope="col">Date</th><th scope="col">Revenue</th><th scope="col">Orders</th></tr></thead>
+            <tbody>
+              {% for day in chart.days %}
+              <tr><th scope="row">{{ day.day.strftime("%d %b %Y").lstrip("0") }}</th><td>{{ day.revenue_paise | inr }}</td><td>{{ day.orders }}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </figure>
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="card card--flush" aria-labelledby="queue-title">
+      <div class="card__header">
+        <h2 class="card__title" id="queue-title">Needs your attention</h2>
+        {% if kpis.pending_orders > queue | length %}<a class="text-link" href="{{ pending_url }}">View all {{ "{:,}".format(kpis.pending_orders) }}</a>{% endif %}
+      </div>
+      {% if queue %}
+      <ul class="queue">
+        {% for order in queue %}
+        <li class="queue__item">
+          <a class="queue__link" href="{{ url_for('admin.order_detail', number=order.number) }}">
+            <span class="queue__main">
+              <span class="table__primary">{{ order.client.buyer_company or order.client.full_name }}</span>
+              <span class="table__secondary"><span class="mono">{{ order.number }}</span> · placed {{ order.placed_at | timeago }}</span>
+            </span>
+            {{ money(order.total_paise, class="queue__amount") }}
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <div class="card__body">
+        <div class="empty-state empty-state--compact">
+          <div class="empty-state__icon">{{ icon('check-circle') }}</div>
+          <p class="empty-state__text">No orders are waiting for review. New orders from your clients will show up here.</p>
+        </div>
+      </div>
+      {% endif %}
+      {% if kpis.approved_orders %}
+      <div class="card__footer">
+        <a class="text-link" href="{{ url_for('admin.orders', status='approved') }}">{{ icon('truck') }} {{ "{:,}".format(kpis.approved_orders) }} approved order{{ "s" if kpis.approved_orders != 1 }} to fulfil</a>
+      </div>
+      {% endif %}
+    </section>
+  </div>
+
+  <div class="grid grid--2">
+    <section class="card card--flush" aria-labelledby="top-products-title">
+      <div class="card__header">
+        <h2 class="card__title" id="top-products-title">Top products</h2>
+        <p class="muted">Last {{ top_list_days }} days</p>
+      </div>
+      {% if top_products %}
+      {% set best = top_products[0].revenue_paise or 1 %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th scope="col">Product</th><th scope="col" class="num">Sold</th><th scope="col" class="num">Revenue</th></tr></thead>
+          <tbody>
+            {% for product in top_products %}
+            <tr>
+              <td>
+                <span class="table__primary">{{ product.name }}</span>
+                <span class="table__secondary mono">{{ product.sku }}</span>
+              </td>
+              <td class="num nowrap">{{ "{:,}".format(product.quantity) }} <span class="muted">{{ product.unit }}</span></td>
+              <td class="num">
+                {{ money(product.revenue_paise) }}
+                <svg class="meter" viewBox="0 0 100 4" preserveAspectRatio="none" aria-hidden="true" focusable="false"><rect class="meter__track" width="100" height="4" rx="2"></rect><rect class="meter__fill" width="{{ [(product.revenue_paise * 100 // best), 2] | max }}" height="4" rx="2"></rect></svg>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="card__body">
+        <div class="empty-state empty-state--compact">
+          <div class="empty-state__icon">{{ icon('box') }}</div>
+          <p class="empty-state__text">Your best sellers will appear here once you approve some orders.</p>
+        </div>
+      </div>
+      {% endif %}
+    </section>
+
+    <section class="card card--flush" aria-labelledby="top-clients-title">
+      <div class="card__header">
+        <h2 class="card__title" id="top-clients-title">Top clients</h2>
+        <p class="muted">Last {{ top_list_days }} days</p>
+      </div>
+      {% if top_clients %}
+      {% set best = top_clients[0].revenue_paise or 1 %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th scope="col">Client</th><th scope="col" class="num">Orders</th><th scope="col" class="num">Revenue</th></tr></thead>
+          <tbody>
+            {% for row in top_clients %}
+            <tr>
+              <td>
+                <span class="table__primary">{{ row.client.buyer_company or row.client.full_name }}</span>
+                {% if row.client.buyer_company %}<span class="table__secondary">{{ row.client.full_name }}</span>{% endif %}
+              </td>
+              <td class="num">{{ "{:,}".format(row.orders) }}</td>
+              <td class="num">
+                {{ money(row.revenue_paise) }}
+                <svg class="meter" viewBox="0 0 100 4" preserveAspectRatio="none" aria-hidden="true" focusable="false"><rect class="meter__track" width="100" height="4" rx="2"></rect><rect class="meter__fill" width="{{ [(row.revenue_paise * 100 // best), 2] | max }}" height="4" rx="2"></rect></svg>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="card__body">
+        <div class="empty-state empty-state--compact">
+          <div class="empty-state__icon">{{ icon('users') }}</div>
+          <p class="empty-state__text">Clients who order the most will appear here once you approve some orders.</p>
+        </div>
+      </div>
+      {% endif %}
+    </section>
+  </div>
+
+  <section class="card" aria-labelledby="activity-title">
+    <div class="card__header">
+      <h2 class="card__title" id="activity-title">Recent activity</h2>
+    </div>
+    <div class="card__body">
+      {% if activity %}
+      <ol class="timeline timeline--compact">
+        {% for event in activity %}
+        {% set order = event.order %}
+        <li class="timeline__item timeline__item--{{ event.to_status }}">
+          <span class="timeline__dot" aria-hidden="true"></span>
+          <div class="timeline__body">
+            <p class="timeline__title">{% if event.actor %}{{ event.actor.full_name }}{% else %}A former user{% endif %} {% set phrase = phrases.get(event.to_status, (event.to_status, '')) %}{{ phrase[0] }} <a class="text-link mono" href="{{ url_for('admin.order_detail', number=order.number) }}">{{ order.number }}</a>{{ phrase[1] }}</p>
+            <p class="timeline__meta">{{ order.client.buyer_company or order.client.full_name }} · <time datetime="{{ event.created_at | datetime('%Y-%m-%dT%H:%M%z') }}" title="{{ event.created_at | datetime }}">{{ event.created_at | timeago }}</time></p>
+          </div>
+        </li>
+        {% endfor %}
+      </ol>
+      {% else %}
+      <div class="empty-state empty-state--compact">
+        <div class="empty-state__icon">{{ icon('clock') }}</div>
+        <p class="empty-state__text">When clients place orders and your team reviews them, each step is listed here.</p>
+      </div>
+      {% endif %}
+    </div>
+  </section>
+</div>
+{% endblock %}
