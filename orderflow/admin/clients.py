@@ -12,6 +12,7 @@ from ..services import clients as client_accounts
 from ..services.accounts import AccountError, email_taken, find_user_by_email, invite_user, send_invite_email
 from . import bp
 from .forms import ClientForm, like_pattern, page_number, paginate, search_text
+from .throttle import per_person
 
 EMAIL_TAKEN = "Someone with this email already has an OrderFlow account."
 
@@ -46,6 +47,13 @@ def _email_problem(email, default):
 
 def _back_to(user):
     return safe_next_url(url_for("admin.client_detail", user_id=user.id))
+
+
+def _refused(form, problem):
+    """Show a problem above the form; True if there was one."""
+    if problem:
+        form.form_errors.append(problem)
+    return bool(problem)
 
 
 # List ------------------------------------------------------------------------
@@ -97,9 +105,12 @@ def clients():
 
 @bp.route("/clients/invite", methods=["GET", "POST"])
 @staff_required
+@per_person("10 per minute")
 def client_invite():
     form = ClientForm()
-    if form.validate_on_submit():
+    if form.validate_on_submit() and not _refused(
+        form, client_accounts.invitation_blocked(current_user.company, current_user)
+    ):
         try:
             user, sent = invite_user(
                 current_user.company,
@@ -119,6 +130,7 @@ def client_invite():
             form.email.errors.append(EMAIL_TAKEN)
         else:
             if sent:
+                client_accounts.count_invitation(current_user.company_id)
                 flash(
                     f"Invitation sent to {user.email}. {user.first_name} will show as Invited until they "
                     "accept it and set a password.",
@@ -153,6 +165,7 @@ def client_detail(user_id):
 
 @bp.route("/clients/<int:user_id>/edit", methods=["GET", "POST"])
 @staff_required
+@per_person("20 per minute")
 def client_edit(user_id):
     user = _get_client_or_404(user_id)
     email_editable = not user.has_accepted_invite
@@ -168,9 +181,12 @@ def client_edit(user_id):
             "phone": form.phone.data or None,
         }
         new_email = form.email.data if email_editable else user.email
-        if new_email != user.email and email_taken(new_email):
+        if new_email == user.email:
+            return _save_client(user, form, changes, new_email)
+        if email_taken(new_email):
             form.email.errors.append(_email_problem(new_email, EMAIL_TAKEN))
-        else:
+        elif not user.active or not _refused(form, client_accounts.invitation_blocked(user.company, user.invited_by)):
+            # A fresh invitation goes to the new address (unless they're suspended)
             return _save_client(user, form, changes, new_email)
     return render_template("admin/client_form.html", form=form, client=user, email_editable=email_editable)
 
@@ -207,6 +223,7 @@ def _save_client(user, form, changes, new_email):
             )
         elif send_invite_email(user):
             db.session.commit()
+            client_accounts.count_invitation(user.company_id)
             message += f" We sent a new invitation to {user.email}; the link in the old one no longer works."
         else:
             db.session.rollback()
@@ -249,6 +266,7 @@ def client_status(user_id):
 
 @bp.route("/clients/<int:user_id>/resend-invite", methods=["POST"])
 @staff_required
+@per_person("10 per minute")
 def client_resend_invite(user_id):
     user = _get_client_or_404(user_id)
     category, message = client_accounts.resend_invitation(user)

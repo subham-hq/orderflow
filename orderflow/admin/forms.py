@@ -18,6 +18,7 @@ from wtforms.validators import DataRequired, Email, Length, Optional, Regexp, St
 from .. import money, timeutil
 from ..extensions import db
 from ..services import catalog
+from ..services.clients import has_link_or_markup
 
 PER_PAGE = 25
 SEARCH_MAX_LENGTH = 100
@@ -115,6 +116,18 @@ class Phone:
             raise ValidationError("Enter a phone number using digits, spaces and + - ( ), like +91 98450 12345.")
 
 
+class PlainText:
+    """Names that appear in emails (people, businesses, the company): no web
+    addresses or < >, so an invitation can't be made to carry a link."""
+
+    def __init__(self, what):
+        self.what = what
+
+    def __call__(self, form, field):
+        if has_link_or_markup(field.data):
+            raise ValidationError(f"{self.what} can't include a web address or the symbols < and >.")
+
+
 class InChoices:
     """For selects that skip WTForms' own choice check: a clear message instead."""
 
@@ -136,12 +149,16 @@ def _email_validators(required=True, what="an email address"):
 
 def _first_name(what="their"):
     return StringField(
-        "First name", filters=[squash], validators=[DataRequired(f"Enter {what} first name."), _length(80, "the name")]
+        "First name",
+        filters=[squash],
+        validators=[DataRequired(f"Enter {what} first name."), _length(80, "the name"), PlainText("A name")],
     )
 
 
 def _last_name():
-    return StringField("Last name", filters=[squash], validators=[Optional(), _length(80, "the name")])
+    return StringField(
+        "Last name", filters=[squash], validators=[Optional(), _length(80, "the name"), PlainText("A name")]
+    )
 
 
 def _phone():
@@ -292,7 +309,11 @@ class ClientForm(FlaskForm):
     buyer_company = StringField(
         "Business name",
         filters=[squash],
-        validators=[DataRequired("Enter the name of the business they buy for."), _length(160, "the business name")],
+        validators=[
+            DataRequired("Enter the name of the business they buy for."),
+            _length(160, "the business name"),
+            PlainText("The business name"),
+        ],
     )
     email = EmailField("Email", filters=[lower], validators=_email_validators(what="their email address"))
     phone = _phone()
@@ -403,7 +424,7 @@ class CompanySettingsForm(FlaskForm):
     name = StringField(
         "Company name",
         filters=[squash],
-        validators=[DataRequired("Enter your company name."), _length(120, "the name")],
+        validators=[DataRequired("Enter your company name."), _length(120, "the name"), PlainText("The company name")],
     )
     legal_name = StringField("Legal name", filters=[squash], validators=[Optional(), _length(160, "the legal name")])
     gstin = StringField(

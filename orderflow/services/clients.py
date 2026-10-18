@@ -4,17 +4,26 @@ An account is Invited until the person accepts their invitation and sets a
 password, Active after that, and Suspended whenever staff turn it off.
 Suspending ends every session at once (User.end_all_sessions), so a
 suspended person loses access on their very next request.
+
+Invitations go to addresses staff type in, so each workspace can send only
+INVITATIONS_PER_DAY of them, and the names they carry (company, inviter,
+invitee) must be plain text without web addresses.
 """
 
-from datetime import timedelta
+import logging
+import re
+from datetime import UTC, datetime, timedelta
 
+from limits import parse as parse_rate_limit
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 
-from ..extensions import db
+from ..extensions import db, limiter
 from ..models import CLIENT, REVENUE_STATUSES, Order, User
-from ..timeutil import as_utc, utcnow
+from ..timeutil import as_utc, format_datetime, utcnow
 from .accounts import send_invite_email
+
+log = logging.getLogger(__name__)
 
 ACTIVE = "active"
 INVITED = "invited"
@@ -23,6 +32,22 @@ ACCOUNT_STATUSES = (ACTIVE, INVITED, SUSPENDED)
 
 # A second "Resend invitation" within this window doesn't send another email
 INVITE_RESEND_COOLDOWN = timedelta(minutes=1)
+
+# Emails a workspace may send to addresses its staff type in (invitations,
+# resent invitations and email-change links), per day
+INVITATIONS_PER_DAY = 30
+_DAILY_INVITATIONS = parse_rate_limit(f"{INVITATIONS_PER_DAY} per day")
+
+# Text a mail app would show as a link: a scheme (https://), www., or a
+# dotted name ending in a common top-level domain (pay-fees.com, x.co.in).
+_LINK_TLDS = (
+    "com|net|org|info|biz|in|co|io|ai|app|dev|xyz|online|site|website|shop|store|top|link|click|live|ly|gl|"
+    "ru|cn|tk|ml|ga|cf|gq|cc|ws|pw|icu|buzz|club|vip|help|support|pay|money|bank|finance|tech|space|page|"
+    "email|digital|cloud|pro|uk|eu|us"
+)
+_WEB_ADDRESS = re.compile(
+    rf"[a-z][a-z0-9+.-]*://|\bwww\.|\b[a-z0-9-]+(?:\.[a-z0-9-]+)*\.(?:{_LINK_TLDS})\b", re.IGNORECASE
+)
 
 
 class ClientError(ValueError):
@@ -123,6 +148,80 @@ def set_active(user, active):
     return True
 
 
+# Invitation limits ------------------------------------------------------------
+
+
+def has_link_or_markup(text):
+    """True for text that could carry a link or markup into an email."""
+    return bool(text) and ("<" in text or ">" in text or _WEB_ADDRESS.search(text) is not None)
+
+
+def invitation_text_problem(company, inviter=None, invitee=None):
+    """Why an invitation from this company and inviter (to this invitee) can't be
+    sent because a name in it looks like a web address, or None."""
+    if has_link_or_markup(company.name):
+        return (
+            "Your company name in Settings includes a web address or the symbols < and >. "
+            "Remove it before sending invitations, so they can't be mistaken for spam."
+        )
+    if inviter is not None and has_link_or_markup(inviter.full_name):
+        return (
+            f"The inviter's name ({inviter.full_name}) includes a web address or the symbols < and >. "
+            "Change it in their profile before sending invitations."
+        )
+    if invitee is not None and any(has_link_or_markup(text) for text in (invitee.first_name, invitee.buyer_company)):
+        return (
+            f"{display_name(invitee)} has a web address or the symbols < and > in their name or business name. "
+            "Edit their details before sending the invitation."
+        )
+    return None
+
+
+def _allowance_key(company_id):
+    return ("invitation-emails", f"company:{company_id}")
+
+
+def invitations_allowed(company_id):
+    """True while the company may still send invitation emails today (always when rate limits are off)."""
+    if not limiter.enabled:
+        return True
+    try:
+        return limiter.limiter.test(_DAILY_INVITATIONS, *_allowance_key(company_id))
+    except Exception:  # the limit store is down: don't block invitations
+        log.exception("Couldn't check the invitation allowance for company %s", company_id)
+        return True
+
+
+def count_invitation(company_id):
+    """Count one email sent against the company's daily allowance."""
+    if not limiter.enabled:
+        return
+    try:
+        limiter.limiter.hit(_DAILY_INVITATIONS, *_allowance_key(company_id))
+    except Exception:
+        log.exception("Couldn't count an invitation for company %s", company_id)
+
+
+def invitation_limit_message(company):
+    """What to tell staff once the daily allowance is used up."""
+    message = f"Your workspace has sent its {_DAILY_INVITATIONS.amount:,} invitation emails for today."
+    try:
+        reset = limiter.limiter.get_window_stats(_DAILY_INVITATIONS, *_allowance_key(company.id)).reset_time
+    except Exception:
+        return message + " You can send more tomorrow."
+    when = format_datetime(datetime.fromtimestamp(reset, UTC), company.timezone)
+    return message + f" You can send more after {when}."
+
+
+def invitation_blocked(company, inviter=None, invitee=None):
+    """Why an invitation email can't go out now (a link in a name it would
+    carry, or today's allowance used up), or None."""
+    problem = invitation_text_problem(company, inviter, invitee)
+    if problem is None and not invitations_allowed(company.id):
+        problem = invitation_limit_message(company)
+    return problem
+
+
 def invite_recently_sent(user, now=None):
     if user.invite_sent_at is None:
         return False
@@ -141,8 +240,12 @@ def resend_invitation(user):
             f"We sent an invitation to {user.email} less than a minute ago. Give it a few minutes to arrive, "
             "and ask them to check their spam folder."
         )
+    problem = invitation_blocked(user.company, user.invited_by, user)
+    if problem:
+        return "warning", problem
     if send_invite_email(user):
         db.session.commit()
+        count_invitation(user.company_id)
         return "success", f"Sent a new invitation to {user.email}."
     db.session.rollback()
     return "danger", f"We couldn't send the invitation to {user.email} just now. Please try again in a few minutes."

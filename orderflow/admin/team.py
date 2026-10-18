@@ -17,6 +17,7 @@ from ..services import clients as accounts
 from ..services.accounts import AccountError, find_user_by_email, invite_user
 from . import bp
 from .forms import TeamInviteForm
+from .throttle import per_person
 
 EMAIL_TAKEN = "Someone with this email already has an OrderFlow account."
 
@@ -59,9 +60,15 @@ def team():
 
 @bp.route("/team/invite", methods=["POST"])
 @owner_required
+@per_person("10 per minute")
 def team_invite():
     form = TeamInviteForm()
+    company = current_user.company
     if form.validate_on_submit():
+        problem = accounts.invitation_blocked(company, current_user)
+        if problem:
+            form.form_errors.append(problem)
+            return _render_team(form)
         try:
             user, sent = invite_user(
                 current_user.company,
@@ -78,6 +85,7 @@ def team_invite():
             form.email.errors.append(EMAIL_TAKEN)
         else:
             if sent:
+                accounts.count_invitation(company.id)
                 flash(
                     f"Invitation sent to {user.email}. Once {user.first_name} sets a password, they can manage "
                     "orders, the catalog, clients and bulletins. Only you can manage the team and company settings.",
@@ -104,6 +112,7 @@ def _email_problem(email, default):
 
 @bp.route("/team/<int:user_id>/resend-invite", methods=["POST"])
 @owner_required
+@per_person("10 per minute")
 def team_resend_invite(user_id):
     user = _get_member_or_404(user_id)
     category, message = accounts.resend_invitation(user)
