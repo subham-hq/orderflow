@@ -1,10 +1,12 @@
-"""Order management: the order list with filters, order details and status changes."""
+"""Order management: the order list with filters, order details, status changes and CSV export."""
 
+import csv
+import io
 import re
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 
-from flask import abort, flash, redirect, render_template, request, url_for
+from flask import Response, abort, flash, redirect, render_template, request, stream_with_context, url_for
 from flask_login import current_user
 from flask_wtf import FlaskForm
 from sqlalchemy import func, or_, select
@@ -28,6 +30,7 @@ from ..models import (
 from ..permissions import staff_required
 from ..services.analytics import local_midnight
 from ..services.orders import STATUS_LABELS, OrderError, allowed_transitions, transition_order
+from ..timeutil import to_local, utcnow
 from . import bp
 
 PER_PAGE = 25
@@ -162,18 +165,17 @@ def filter_conditions(company, filters):
     return conditions
 
 
-def filtered_orders(company, filters):
-    """SELECT for the orders matching the filters, newest first, with the client loaded."""
-    stmt = (
-        select(Order)
-        .join(User, User.id == Order.client_id)
-        .where(*filter_conditions(company, filters))
-        .options(contains_eager(Order.client))
-        .order_by(Order.placed_at.desc(), Order.id.desc())
-    )
+def apply_filters(stmt, company, filters):
+    """Narrow a SELECT over Order to the filtered orders (joining the client), newest first."""
+    stmt = stmt.join(User, User.id == Order.client_id).where(*filter_conditions(company, filters))
     if filters.status:
         stmt = stmt.where(Order.status == filters.status)
-    return stmt
+    return stmt.order_by(Order.placed_at.desc(), Order.id.desc())
+
+
+def filtered_orders(company, filters):
+    """SELECT for the orders matching the filters, newest first, with the client loaded."""
+    return apply_filters(select(Order).options(contains_eager(Order.client)), company, filters)
 
 
 def status_counts(company, filters):
@@ -419,4 +421,129 @@ def invoice(number):
         "shared/invoice.html",
         order=order,
         back_url=url_for("admin.order_detail", number=order.number),
+    )
+
+
+# CSV export ------------------------------------------------------------------------
+
+CSV_COLUMNS = (
+    "Order number",
+    "Placed",
+    "Status",
+    "Client",
+    "Buyer company",
+    "Client email",
+    "Items",
+    "Subtotal (₹)",
+    "GST (₹)",
+    "Total (₹)",
+    "Decided at",
+    "Fulfilled at",
+)
+# Spreadsheets run a cell that starts with one of these as a formula
+FORMULA_PREFIXES = ("=", "+", "-", "@", "\t", "\r")
+EXPORT_BATCH_ROWS = 500
+EXPORT_FLUSH_BYTES = 64 * 1024
+
+
+def csv_cell(value):
+    """Text for one cell, made inert if a spreadsheet would treat it as a formula."""
+    text = "" if value is None else str(value)
+    if text.startswith(FORMULA_PREFIXES):
+        return "'" + text
+    return text
+
+
+def rupees(paise):
+    """12345 -> "123.45": plain decimal rupees for spreadsheets (no symbol or separators)."""
+    paise = int(paise or 0)
+    whole, rem = divmod(abs(paise), 100)
+    return f"{'-' if paise < 0 else ''}{whole}.{rem:02d}"
+
+
+def local_iso(value, tz_name):
+    """A stored UTC time as ISO 8601 in the company time zone, e.g. 2026-10-31T23:30:00+05:30."""
+    local = to_local(value, tz_name)
+    return local.isoformat(timespec="seconds") if local else ""
+
+
+def export_rows(company, filters):
+    """The orders matching the filters as CSV rows (header first), read from the database in batches."""
+    tz_name = company.timezone
+    lines = (
+        select(func.count(OrderItem.id))
+        .where(OrderItem.order_id == Order.id)
+        .correlate(Order)
+        .scalar_subquery()
+        .label("lines")
+    )
+    stmt = apply_filters(
+        select(
+            Order.number,
+            Order.placed_at,
+            Order.status,
+            User.first_name,
+            User.last_name,
+            User.buyer_company,
+            User.email,
+            lines,
+            Order.subtotal_paise,
+            Order.tax_paise,
+            Order.total_paise,
+            Order.decided_at,
+            Order.fulfilled_at,
+        ),
+        company,
+        filters,
+    )
+    return _export_rows(stmt.execution_options(yield_per=EXPORT_BATCH_ROWS), tz_name)
+
+
+def _export_rows(stmt, tz_name):
+    yield CSV_COLUMNS
+    for row in db.session.execute(stmt):
+        name = " ".join(part for part in (row.first_name, row.last_name) if part)
+        yield tuple(
+            csv_cell(value)
+            for value in (
+                row.number,
+                local_iso(row.placed_at, tz_name),
+                STATUS_LABELS.get(row.status, row.status),
+                name,
+                row.buyer_company,
+                row.email,
+                row.lines,
+                rupees(row.subtotal_paise),
+                rupees(row.tax_paise),
+                rupees(row.total_paise),
+                local_iso(row.decided_at, tz_name),
+                local_iso(row.fulfilled_at, tz_name),
+            )
+        )
+
+
+def stream_csv(rows):
+    """Encode rows as CSV text in chunks, starting with a BOM so Excel reads the file as UTF-8."""
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+    buffer.write("\ufeff")
+    for row in rows:
+        writer.writerow(row)
+        if buffer.tell() >= EXPORT_FLUSH_BYTES:
+            yield buffer.getvalue()
+            buffer.seek(0)
+            buffer.truncate()
+    yield buffer.getvalue()
+
+
+@bp.route("/orders/export.csv")
+@staff_required
+def orders_export():
+    company = current_user.company
+    filters = parse_order_filters(request.args)
+    today = to_local(utcnow(), company.timezone).date()
+    return Response(
+        stream_with_context(stream_csv(export_rows(company, filters))),
+        mimetype="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="orders-{today.isoformat()}.csv"'},
     )

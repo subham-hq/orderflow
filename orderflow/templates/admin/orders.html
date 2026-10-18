@@ -4,7 +4,13 @@
 {% block title %}Orders{% endblock %}
 {% block topbar_title %}Orders{% endblock %}
 {% block content %}
+{% if has_orders %}
+{% call page_header("Orders", "Review, approve and fulfil the purchase orders your clients place.") %}
+  {{ link_button("Export CSV", url_for('admin.orders_export', **filters.args()), variant="secondary", icon_name="download") }}
+{% endcall %}
+{% else %}
 {{ page_header("Orders", "Review, approve and fulfil the purchase orders your clients place.") }}
+{% endif %}
 
 {% if not has_orders %}
 <div class="card">
