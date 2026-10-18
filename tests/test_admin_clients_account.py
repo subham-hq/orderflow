@@ -416,3 +416,19 @@ def test_delete_keeps_records_that_mention_the_client(client, signed_in, company
 def test_delete_service_refuses_staff(app, owner):
     with pytest.raises(client_service.ClientError):
         client_service.delete_client(owner)
+
+
+def test_unexpected_database_errors_on_edit_are_not_hidden(client, signed_in, buyer, monkeypatch):
+    from sqlalchemy.exc import IntegrityError
+
+    def failing_commit():
+        raise IntegrityError("UPDATE", {}, Exception("unexpected"))
+
+    monkeypatch.setattr(db.session, "commit", failing_commit)
+    data = {"first_name": "Renamed", "buyer_company": "Buyer Pvt Ltd"}
+    # Tests propagate errors; in production this is the logged 500 page
+    with pytest.raises(IntegrityError, match="unexpected"):
+        client.post(f"/app/clients/{buyer.id}/edit", data=data)
+    monkeypatch.undo()
+    db.session.rollback()
+    assert get_user(buyer.id).first_name == "Ananya"
