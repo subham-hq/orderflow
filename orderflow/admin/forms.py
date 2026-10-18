@@ -148,6 +148,12 @@ def _phone():
     return StringField("Phone", filters=[squash], validators=[Optional(), _length(32, "the phone number"), Phone()])
 
 
+# What a checkbox reads as unticked. Browsers send "y" when it's ticked and
+# nothing when it isn't; a script may send "0", "false", "off" or "no".
+# (WTForms on its own treats only "false" and blank as unticked.)
+CHECKBOX_FALSE_VALUES = (False, "", "0", "false", "False", "FALSE", "off", "Off", "OFF", "no", "No", "NO", "n", "N")
+
+
 # Catalog -------------------------------------------------------------------
 
 
@@ -178,7 +184,9 @@ class ProductForm(FlaskForm):
     description = TextAreaField(
         "Description", filters=[strip_text], validators=[Optional(), _length(2000, "the description")]
     )
-    is_active = BooleanField("Show this product in the client catalog", default=True)
+    is_active = BooleanField(
+        "Show this product in the client catalog", default=True, false_values=CHECKBOX_FALSE_VALUES
+    )
 
     def product_data(self, categories):
         """Validated values, ready for services.catalog.apply_product_data().
@@ -263,7 +271,7 @@ class BulletinForm(FlaskForm):
         filters=[strip_text],
         validators=[DataRequired("Write the message your clients will see."), _length(4000, "the message")],
     )
-    publish = BooleanField("Publish it so clients can see it", default=True)
+    publish = BooleanField("Publish it so clients can see it", default=True, false_values=CHECKBOX_FALSE_VALUES)
     expires_at = StringField("Take it down at (optional)", filters=[strip])
 
     def __init__(self, *args, timezone=timeutil.DEFAULT_TZ, current_expiry=None, **kwargs):
