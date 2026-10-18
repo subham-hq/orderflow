@@ -25,6 +25,7 @@
           <div class="checklist__body">
             <p class="checklist__title">{{ step.title }}</p>
             <p class="checklist__text muted">{{ step.text }}</p>
+            {% if not step.action_url %}<p class="checklist__text muted">Clients sign in at <span class="mono">{{ portal_login_url }}</span></p>{% endif %}
           </div>
           {% if step.action_url %}
           {{ link_button(step.action_label, step.action_url, variant="secondary", size="sm") }}

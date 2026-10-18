@@ -141,6 +141,8 @@ def test_new_company_sees_the_getting_started_checklist_and_empty_states(client,
         assert title in html and f'href="{link}"' in html
     assert "Receive your first order" in html
     assert 'data-copy="http://localhost/login"' in html
+    # The address is on the page too, for browsers that can't copy
+    assert 'Clients sign in at <span class="mono">http://localhost/login</span>' in html
 
     assert "₹0" in html
     assert "No approved orders placed this month yet" in html
