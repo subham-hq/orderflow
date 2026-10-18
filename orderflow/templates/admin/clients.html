@@ -15,6 +15,12 @@
 </div>
 {% else %}
 <section class="stack" aria-label="Clients">
+  <nav class="tabs" aria-label="Filter by status">
+    {% for key, label in [("", "All"), ("active", "Active"), ("invited", "Invited"), ("suspended", "Suspended")] %}
+    <a class="tab{% if status == key %} is-active{% endif %}" href="{{ url_for('admin.clients', q=q or None, status=key or None) }}"{% if status == key %} aria-current="page"{% endif %}>{{ label }} <span class="muted">{{ counts[key] }}</span></a>
+    {% endfor %}
+  </nav>
+
   <form method="get" action="{{ url_for('admin.clients') }}" class="toolbar" role="search">
     <div class="search">
       {{ icon('search') }}
@@ -25,12 +31,6 @@
     {{ button("Search", variant="secondary") }}
     {% if filtering %}<a class="text-link" href="{{ url_for('admin.clients') }}">Clear filters</a>{% endif %}
   </form>
-
-  <nav class="tabs" aria-label="Filter by status">
-    {% for key, label in [("", "All"), ("active", "Active"), ("invited", "Invited"), ("suspended", "Suspended")] %}
-    <a class="tab{% if status == key %} is-active{% endif %}" href="{{ url_for('admin.clients', q=q or None, status=key or None) }}"{% if status == key %} aria-current="page"{% endif %}>{{ label }} <span class="muted">{{ counts[key] }}</span></a>
-    {% endfor %}
-  </nav>
 
   {% if page.items %}
   <div class="card card--flush">

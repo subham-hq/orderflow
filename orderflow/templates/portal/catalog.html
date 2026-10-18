@@ -46,7 +46,7 @@
 </form>
 
 {% if page.items %}
-<p class="muted">
+<p class="results-count muted">
   {{ "{:,}".format(page.total) }} {{ "product" if page.total == 1 else "products" }}
   {%- if q %} matching “{{ q }}”{% endif %}
   {%- if category %} in {{ category }}{% endif %}
@@ -58,11 +58,15 @@
   {% set in_cart_now = in_cart.get(product.id) %}
   <article class="product-card" id="product-{{ product.id }}" aria-labelledby="product-{{ product.id }}-name">
     <div class="product-card__body">
-      <p class="product-card__meta"><span class="mono">{{ product.sku }}</span>{% if product.category %} · {{ product.category }}{% endif %}</p>
+      {% if product.category %}<p class="product-card__category">{{ product.category }}</p>{% endif %}
       <h2 class="product-card__name" id="product-{{ product.id }}-name">{{ product.name }}</h2>
+      <p class="product-card__sku">{{ product.sku }}</p>
       {% if product.description %}<p class="product-card__description muted">{{ product.description | truncate(160) }}</p>{% endif %}
-      <p class="product-card__price"><span class="money">{{ product.price_paise | inr }}</span> <span class="muted">per {{ product.unit }}</span></p>
-      <p class="product-card__tax muted">GST {{ product.gst_rate_bp | gst }}</p>
+      <p class="product-card__price"><span class="money">{{ product.price_paise | inr }}</span> <span class="product-card__unit">per {{ product.unit }}</span></p>
+      <p class="product-card__tax">GST {{ product.gst_rate_bp | gst }}</p>
+      {% if in_cart_now %}
+      <p class="product-card__in-cart">{{ icon('check-circle') }}<span>In cart: {{ "{:,}".format(in_cart_now) }}</span> <a class="text-link" href="{{ url_for('portal.cart') }}">View cart</a></p>
+      {% endif %}
     </div>
     <form method="post" action="{{ url_for('portal.cart_add') }}" class="product-card__form" novalidate>
       {{ csrf() }}
@@ -76,9 +80,6 @@
       </div>
       <button type="submit" class="btn btn--primary">{{ icon('cart') }}<span>Add<span class="visually-hidden"> {{ product.name }} to cart</span></span></button>
     </form>
-    {% if in_cart_now %}
-    <p class="product-card__in-cart">{{ badge("In cart: " ~ "{:,}".format(in_cart_now), "info") }} <a class="text-link" href="{{ url_for('portal.cart') }}">View cart</a></p>
-    {% endif %}
   </article>
   {% endfor %}
 </div>

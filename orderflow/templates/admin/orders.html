@@ -48,7 +48,7 @@
   {% endfor %}
 
   {% if page.items %}
-  <p class="muted">
+  <p class="results-count muted">
     {% if page.pages > 1 %}Showing {{ "{:,}".format(page.first) }}–{{ "{:,}".format(page.last) }} of {{ "{:,}".format(page.total) }} orders{% else %}{{ "{:,}".format(page.total) }} order{{ "s" if page.total != 1 }}{% endif %}
   </p>
   <div class="card card--flush">
