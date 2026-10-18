@@ -1,0 +1,86 @@
+{% extends "layouts/app.html" %}
+{% from "macros/ui.html" import field, form_errors, button, page_header %}
+{% set active_nav = "settings" %}
+{% set settings_tab = "company" %}
+{% block title %}Company settings{% endblock %}
+{% block topbar_title %}Settings{% endblock %}
+{% block content %}
+{{ page_header("Settings", "How your business appears to clients, on orders and on invoices.") }}
+{% include "admin/settings_tabs.html" %}
+
+{% if can_edit %}
+<div class="sidebar-layout">
+  <form method="post" class="stack" novalidate>
+    {{ form.hidden_tag() }}
+    {{ form_errors(form) }}
+    <div class="card">
+      <div class="card__header"><h2 class="card__title">Business details</h2></div>
+      <div class="card__body stack">
+        {{ field(form.name, hint="Shown to clients in their portal and in emails.", autocomplete="organization") }}
+        {{ field(form.legal_name, hint="Optional. The registered name for invoices, like Kaveri Supplies Private Limited.") }}
+        {{ field(form.gstin, hint="Optional. Your 15-character GST number. It's printed on invoices.", placeholder="29ABCDE1234F1Z5", autocomplete="off") }}
+        {{ field(form.address, rows=4, hint="Optional. Printed on invoices.") }}
+      </div>
+    </div>
+    <div class="card">
+      <div class="card__header"><h2 class="card__title">Contact for clients</h2></div>
+      <div class="card__body stack">
+        <div class="grid grid--2">
+          {{ field(form.support_email, hint="Shown at the bottom of every portal page so clients can reach you.", placeholder="orders@yourbusiness.in") }}
+          {{ field(form.phone, hint="Optional. Also shown in the portal footer.", inputmode="tel", placeholder="+91 80 4000 1234") }}
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card__header"><h2 class="card__title">Orders and time</h2></div>
+      <div class="card__body stack">
+        <div class="grid grid--2">
+          {{ field(form.order_prefix, hint="2 to 8 letters or numbers. Applies to new orders only; the next one will be " ~ next_order_number ~ ".", autocomplete="off") }}
+          {{ field(form.timezone, hint="Every date and time in your workspace and your clients' portal uses this time zone.") }}
+        </div>
+      </div>
+    </div>
+    <div class="cluster">{{ button("Save settings") }}</div>
+  </form>
+
+  <aside class="stack" aria-label="About these settings">
+    <div class="card">
+      <div class="card__header"><h2 class="card__title">Good to know</h2></div>
+      <div class="card__body stack">
+        <p>Only you, as the account owner, can change these settings. Admins on your team can see them.</p>
+        <p class="muted">Orders that already exist keep their numbers and invoice details.</p>
+      </div>
+    </div>
+  </aside>
+</div>
+{% else %}
+<div class="alert alert--info">
+  <p class="alert__text">Only the account owner{% if owners %} ({{ owners | map(attribute="full_name") | join(", ") }}){% endif %} can change company settings. Ask them if something here needs updating.</p>
+</div>
+<div class="card">
+  <div class="card__header"><h2 class="card__title">Company</h2></div>
+  <div class="card__body">
+    <dl class="kv">
+      {% for label, value in [
+        ("Company name", company.name),
+        ("Legal name", company.legal_name),
+        ("GSTIN", company.gstin),
+        ("Address", company.address),
+        ("Support email", company.support_email),
+        ("Phone", company.phone),
+        ("Time zone", company.timezone),
+        ("Order number prefix", company.order_prefix),
+        ("Next order number", next_order_number),
+      ] %}
+      <div class="kv__row">
+        <dt class="kv__label">{{ label }}</dt>
+        <dd class="kv__value{% if label in ('GSTIN', 'Order number prefix', 'Next order number') and value %} mono{% endif %}">
+          {%- if value %}{% for line in value.split("\n") %}{{ line }}{% if not loop.last %}<br>{% endif %}{% endfor %}{% else %}<span class="muted">Not set</span>{% endif -%}
+        </dd>
+      </div>
+      {% endfor %}
+    </dl>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -13,7 +13,7 @@ from datetime import timedelta
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileAllowed, FileField, FileRequired
 from wtforms import BooleanField, EmailField, SelectField, StringField, TextAreaField
-from wtforms.validators import DataRequired, Email, Length, Optional, StopValidation, ValidationError
+from wtforms.validators import DataRequired, Email, Length, Optional, Regexp, StopValidation, ValidationError
 
 from .. import money, timeutil
 from ..extensions import db
@@ -22,6 +22,9 @@ from ..services import catalog
 PER_PAGE = 25
 SEARCH_MAX_LENGTH = 100
 BULLETIN_MAX_YEARS_AHEAD = 5
+
+GSTIN_PATTERN = r"^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$"
+ORDER_PREFIX_PATTERN = r"^[A-Z0-9]{2,8}$"
 
 _CURRENCY_PREFIX = re.compile(r"^(?:₹|rs\.?|inr)\s*", re.IGNORECASE)
 _PHONE_CHARS = re.compile(r"[0-9+()\-. ]+")
@@ -49,6 +52,11 @@ def strip_text(value):
 def lower(value):
     """Emails: trimmed and lower-cased, like services.accounts.normalize_email."""
     return value.strip().lower() if isinstance(value, str) else value
+
+
+def upper_compact(value):
+    """Upper-case and drop all spaces (GSTIN, order number prefix)."""
+    return "".join(value.split()).upper() if isinstance(value, str) else value
 
 
 def price_text(value):
@@ -105,6 +113,17 @@ class Phone:
         digits = sum(char.isdigit() for char in value)
         if value and (not _PHONE_CHARS.fullmatch(value) or not 6 <= digits <= 15):
             raise ValidationError("Enter a phone number using digits, spaces and + - ( ), like +91 98450 12345.")
+
+
+class InChoices:
+    """For selects that skip WTForms' own choice check: a clear message instead."""
+
+    def __init__(self, message):
+        self.message = message
+
+    def __call__(self, form, field):
+        if field.data not in [value for value, _ in field.choices]:
+            raise StopValidation(self.message)
 
 
 def _email_validators(required=True, what="an email address"):
@@ -279,6 +298,53 @@ class BulletinForm(FlaskForm):
 
 
 # Settings --------------------------------------------------------------------
+
+
+def timezone_label(name):
+    """ "Asia/Kolkata (UTC+05:30)", using today's offset."""
+    offset = timeutil.utcnow().astimezone(timeutil.get_zone(name)).strftime("%z")
+    return f"{name} (UTC{offset[:3]}:{offset[3:]})"
+
+
+def timezone_choices(current=None):
+    """The common time zones, plus the company's current one if it isn't listed."""
+    names = list(timeutil.COMMON_TIMEZONES)
+    if current and current not in names:
+        names.insert(0, current)
+    return [(name, timezone_label(name)) for name in names]
+
+
+class CompanySettingsForm(FlaskForm):
+    name = StringField(
+        "Company name",
+        filters=[squash],
+        validators=[DataRequired("Enter your company name."), _length(120, "the name")],
+    )
+    legal_name = StringField("Legal name", filters=[squash], validators=[Optional(), _length(160, "the legal name")])
+    gstin = StringField(
+        "GSTIN",
+        filters=[upper_compact],
+        validators=[
+            Optional(),
+            Regexp(GSTIN_PATTERN, message="Enter a 15-character GSTIN, like 29ABCDE1234F1Z5."),
+        ],
+    )
+    address = TextAreaField("Address", filters=[strip_text], validators=[Optional(), _length(500, "the address")])
+    phone = _phone()
+    support_email = EmailField("Support email", filters=[lower], validators=_email_validators(required=False))
+    timezone = SelectField(
+        "Time zone",
+        validate_choice=False,
+        validators=[DataRequired("Choose a time zone."), InChoices("Choose a time zone from the list.")],
+    )
+    order_prefix = StringField(
+        "Order number prefix",
+        filters=[upper_compact],
+        validators=[
+            DataRequired("Enter a prefix for order numbers, like ORD."),
+            Regexp(ORDER_PREFIX_PATTERN, message="Use 2 to 8 letters or numbers, like ORD or KS24."),
+        ],
+    )
 
 
 class ProfileForm(FlaskForm):
