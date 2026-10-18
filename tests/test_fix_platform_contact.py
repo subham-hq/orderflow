@@ -2,7 +2,7 @@
 
 import logging
 import re
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from orderflow import config, create_app
 from orderflow.extensions import db
@@ -136,3 +136,47 @@ def test_flask_leads_lists_enquiries_newest_first(app):
         "\n"
     )
     assert runner.invoke(args=["leads", "--limit", "1"]).output.startswith("#2 ")
+
+
+# What the Privacy Policy says about them --------------------------------------
+
+
+def policy_text(client):
+    body = client.get("/privacy").get_data(as_text=True).replace("&#39;", "'")
+    return re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", body))
+
+
+def test_the_privacy_policy_names_google_fonts_which_every_page_loads(client):
+    assert "fonts.googleapis.com" in client.get("/").get_data(as_text=True)  # so the policy must say so
+    text = policy_text(client)
+    assert "Our pages use fonts from Google Fonts" in text
+    assert "Google receives your IP address and details of your browser" in text
+    assert 'href="https://developers.google.com/fonts/faq/privacy"' in client.get("/privacy").get_data(as_text=True)
+
+
+def test_the_privacy_policy_says_how_long_enquiries_are_kept(client):
+    text = policy_text(client)
+    assert "Enquiries sent through the contact form are kept for up to 12 months after we receive them" in text
+
+
+def test_flask_delete_old_leads_keeps_the_last_twelve_months(app):
+    now = datetime.now(UTC)
+    db.session.add_all(
+        [
+            Lead(name="Old", email="old@example.com", created_at=now - timedelta(days=400)),
+            Lead(name="Older", email="older@example.com", created_at=now - timedelta(days=366)),
+            Lead(name="Recent", email="recent@example.com", created_at=now - timedelta(days=30)),
+        ]
+    )
+    db.session.commit()
+    runner = app.test_cli_runner()
+
+    result = runner.invoke(args=["delete-old-leads"])
+    assert result.exit_code == 0
+    assert result.output == "Deleted 2 enquiries received more than 365 days ago.\n"
+    assert db.session.scalars(db.select(Lead.name)).all() == ["Recent"]
+
+    assert runner.invoke(args=["delete-old-leads", "--days", "7"]).output == (
+        "Deleted 1 enquiry received more than 7 days ago.\n"
+    )
+    assert runner.invoke(args=["delete-old-leads", "--days", "0"]).exit_code != 0

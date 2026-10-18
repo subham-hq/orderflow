@@ -1,4 +1,4 @@
-"""Command-line tools: `flask seed-demo` and `flask leads`."""
+"""Command-line tools: `flask seed-demo`, `flask leads` and `flask delete-old-leads`."""
 
 import random
 from datetime import timedelta
@@ -52,6 +52,22 @@ def init_cli(app):
             for line in (lead.message or "").splitlines():
                 click.echo(f"    {line}")
             click.echo()
+
+    @app.cli.command("delete-old-leads")
+    @click.option(
+        "--days",
+        default=365,
+        show_default=True,
+        type=click.IntRange(min=1),
+        help="Delete enquiries received more than this many days ago.",
+    )
+    def delete_old_leads(days):
+        """Delete old contact-form enquiries. The Privacy Policy keeps them for up to 12 months."""
+        cutoff = utcnow() - timedelta(days=days)
+        deleted = db.session.execute(db.delete(Lead).where(Lead.created_at < cutoff)).rowcount
+        db.session.commit()
+        noun = "enquiry" if deleted == 1 else "enquiries"
+        click.echo(f"Deleted {deleted} {noun} received more than {days} days ago.")
 
     @app.cli.command("seed-demo")
     @click.option("--email", default="owner@orderflow.example", show_default=True, help="Owner sign-in email.")

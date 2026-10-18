@@ -77,7 +77,9 @@ Your sender address must be on the verified domain, for example
 - Send a test enquiry from the contact form and check it reaches
   `CONTACT_EMAIL`.
 - Read through the Privacy Policy and Terms (`/privacy`, `/terms`) and adjust
-  them for your business if you need to.
+  them for your business if you need to. The policy names Google Fonts,
+  which every page loads fonts from, and keeps contact-form enquiries for 12
+  months (see **Enquiries** below).
 
 Don't run `flask seed-demo` on production; it creates a demo company with
 sample data and known passwords. Use it locally or on a separate staging
@@ -91,7 +93,9 @@ service.
   set, or the email can't be sent, the log says so; the app also warns at
   start-up when `CONTACT_EMAIL` is missing. To read them in full, run
   `flask leads` (add `--limit 50` for more) from the web service's **Shell**
-  tab.
+  tab. The Privacy Policy says enquiries are kept for up to 12 months, so
+  run `flask delete-old-leads` there once a month (it deletes those older
+  than 365 days), or change the policy to match what you do.
 - **Email:** if Resend times out, is rate limiting or has a server error,
   each email is tried once more after a short pause; an email that still
   can't be sent is logged with the message "Could not send". To use another
