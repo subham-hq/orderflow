@@ -22,18 +22,6 @@ def catalog():
     return _placeholder("Catalog")
 
 
-@bp.route("/orders")
-@client_required
-def orders():
-    return _placeholder("Orders")
-
-
-@bp.route("/orders/<number>")
-@client_required
-def order_detail(number):
-    return _placeholder(f"Order {number}")
-
-
 @bp.route("/account")
 @client_required
 def account():

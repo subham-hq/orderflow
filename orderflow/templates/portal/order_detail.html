@@ -1,0 +1,96 @@
+{% extends "layouts/portal.html" %}
+{% from "macros/ui.html" import icon, link_button, post_button, page_header, status_badge, money %}
+{% set active_nav = "orders" %}
+{% set supplier = order.company.name %}
+{% block title %}Order {{ order.number }}{% endblock %}
+{% block content %}
+<p><a class="text-link" href="{{ url_for('portal.orders') }}">{{ icon('chevron-left') }}<span>All orders</span></a></p>
+{% call page_header("Order " ~ order.number, "Placed " ~ (order.placed_at | datetime), eyebrow=supplier) %}
+  {{ link_button("Proforma invoice", url_for('portal.invoice', number=order.number), variant="ghost", icon_name="receipt") }}
+  {{ post_button(url_for('portal.order_reorder', number=order.number), "Reorder", variant="secondary", icon_name="rotate") }}
+  {% if can_cancel %}
+  {{ post_button(
+    url_for('portal.order_cancel', number=order.number),
+    "Cancel order",
+    variant="danger",
+    confirm="Cancel order " ~ order.number ~ "? " ~ supplier ~ " won't process it, and you can't undo this.",
+    confirm_label="Yes, cancel it",
+    icon_name="ban"
+  ) }}
+  {% endif %}
+{% endcall %}
+
+{% set status_notes = {
+  'pending': ('info', 'clock', supplier ~ " hasn't reviewed this order yet. You can cancel it until they do."),
+  'approved': ('success', 'check-circle', supplier ~ " approved this order and is getting it ready."),
+  'fulfilled': ('success', 'truck', supplier ~ " has fulfilled this order."),
+  'rejected': ('danger', 'alert', supplier ~ " couldn't accept this order."),
+  'cancelled': ('warning', 'ban', "This order was cancelled, so " ~ supplier ~ " won't process it."),
+} %}
+{% set tone, note_icon, note = status_notes.get(order.status, ('info', 'info', '')) %}
+{% if note %}
+<div class="alert alert--{{ tone }}">
+  {{ icon(note_icon) }}
+  <div class="alert__text">
+    <p>{{ note }}</p>
+    {% if order.status == 'rejected' and order.rejection_reason %}
+    <p><strong>Reason:</strong> <span class="text-pre-line">{{ order.rejection_reason }}</span></p>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+<div class="sidebar-layout">
+  <div class="stack">
+    <section class="card card--flush" aria-labelledby="order-items-title">
+      <header class="card__header">
+        <h2 class="card__title" id="order-items-title">Items</h2>
+      </header>
+      {% include "shared/_order_lines.html" %}
+      <footer class="card__footer">
+        {% include "shared/_order_totals.html" %}
+      </footer>
+    </section>
+
+    {% if order.notes %}
+    <section class="card" aria-labelledby="order-notes-title">
+      <div class="card__body stack">
+        <h2 class="card__title" id="order-notes-title">Your notes</h2>
+        <p class="text-pre-line">{{ order.notes }}</p>
+      </div>
+    </section>
+    {% endif %}
+  </div>
+
+  <aside class="stack" aria-label="Order details">
+    <section class="card" aria-labelledby="order-details-title">
+      <div class="card__body stack">
+        <h2 class="card__title" id="order-details-title">Details</h2>
+        <dl class="kv">
+          <div class="kv__row"><dt class="kv__label">Status</dt><dd class="kv__value">{{ status_badge(order.status) }}</dd></div>
+          <div class="kv__row"><dt class="kv__label">Order number</dt><dd class="kv__value mono">{{ order.number }}</dd></div>
+          <div class="kv__row"><dt class="kv__label">Placed</dt><dd class="kv__value">{{ order.placed_at | datetime }}</dd></div>
+          {% if order.decided_at %}
+          <div class="kv__row"><dt class="kv__label">{{ "Rejected" if order.status == 'rejected' else "Approved" }}</dt><dd class="kv__value">{{ order.decided_at | datetime }}</dd></div>
+          {% endif %}
+          {% if order.fulfilled_at %}
+          <div class="kv__row"><dt class="kv__label">Fulfilled</dt><dd class="kv__value">{{ order.fulfilled_at | datetime }}</dd></div>
+          {% endif %}
+          {% if order.cancelled_at %}
+          <div class="kv__row"><dt class="kv__label">Cancelled</dt><dd class="kv__value">{{ order.cancelled_at | datetime }}</dd></div>
+          {% endif %}
+          <div class="kv__row"><dt class="kv__label">Total</dt><dd class="kv__value">{{ money(order.total_paise) }}</dd></div>
+        </dl>
+        <p class="muted">Times are shown in {{ order.company.timezone or "Asia/Kolkata" }} time.</p>
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="order-history-title">
+      <div class="card__body stack">
+        <h2 class="card__title" id="order-history-title">History</h2>
+        {% include "shared/_timeline.html" %}
+      </div>
+    </section>
+  </aside>
+</div>
+{% endblock %}
