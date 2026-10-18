@@ -10,12 +10,6 @@ def _placeholder(title):
     return render_template("placeholder.html", title=title, layout="layouts/portal.html")
 
 
-@bp.route("/")
-@client_required
-def home():
-    return _placeholder("Home")
-
-
 @bp.route("/account")
 @client_required
 def account():

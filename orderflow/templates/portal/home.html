@@ -1,0 +1,86 @@
+{% extends "layouts/portal.html" %}
+{% from "macros/ui.html" import icon, link_button, page_header, stat, status_badge %}
+{% set active_nav = "home" %}
+{% set supplier = current_user.company.name %}
+{% block title %}Home{% endblock %}
+{% block content %}
+{% set greeting = ("Welcome back, " if total_orders else "Welcome, ") ~ current_user.first_name %}
+{% call page_header(greeting, "You're ordering from " ~ supplier ~ ".", eyebrow=current_user.buyer_company) %}
+  {% if cart_items %}
+  {{ link_button("View cart (" ~ "{:,}".format(cart_items) ~ ")", url_for('portal.cart'), variant="secondary", icon_name="cart") }}
+  {% endif %}
+  {{ link_button("Browse the catalog", url_for('portal.catalog'), variant="primary", icon_name="box") }}
+{% endcall %}
+
+{% if bulletins %}
+<section class="section stack" aria-labelledby="bulletins-title">
+  <h2 class="card__title" id="bulletins-title">{{ "Announcement" if bulletins | length == 1 else "Announcements" }} from {{ supplier }}</h2>
+  {% for bulletin in bulletins %}
+  <article class="card" aria-labelledby="bulletin-{{ bulletin.id }}-title">
+    <div class="card__body stack">
+      <p class="eyebrow">{{ icon('megaphone') }} <span>Posted {{ bulletin.created_at | date }}{% if bulletin.expires_at %} · until {{ bulletin.expires_at | datetime }}{% endif %}</span></p>
+      <h3 class="card__title" id="bulletin-{{ bulletin.id }}-title">{{ bulletin.title }}</h3>
+      <p class="text-pre-line">{{ bulletin.body }}</p>
+    </div>
+  </article>
+  {% endfor %}
+</section>
+{% endif %}
+
+{% if total_orders %}
+<section class="section" aria-label="Your orders at a glance">
+  <div class="grid grid--3">
+    {{ stat("Open orders", "{:,}".format(open_orders), hint="Waiting for review or approved", href=url_for('portal.orders')) }}
+    {{ stat("Spent this month", spent_this_month | inr, hint="Approved and fulfilled orders placed in " ~ (now | date("%B %Y"))) }}
+    {{ stat("Total orders", "{:,}".format(total_orders), hint="Since you joined", href=url_for('portal.orders')) }}
+  </div>
+</section>
+
+<section class="card card--flush section" aria-labelledby="recent-orders-title">
+  <header class="card__header split">
+    <h2 class="card__title" id="recent-orders-title">Recent orders</h2>
+    <a class="text-link" href="{{ url_for('portal.orders') }}">See all orders</a>
+  </header>
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">Order</th>
+          <th scope="col">Placed</th>
+          <th scope="col" class="num">Items</th>
+          <th scope="col" class="num">Total</th>
+          <th scope="col">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for order in recent_orders %}
+        <tr>
+          <td><a class="table__primary mono text-link" href="{{ url_for('portal.order_detail', number=order.number) }}">{{ order.number }}</a></td>
+          <td class="nowrap">{{ order.placed_at | date }}</td>
+          <td class="num">{{ order.items | length }}</td>
+          <td class="num money nowrap">{{ order.total_paise | inr }}</td>
+          <td>{{ status_badge(order.status) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% else %}
+<section class="card section" aria-labelledby="first-order-title">
+  <div class="card__body stack">
+    <h2 class="card__title" id="first-order-title">Place your first order</h2>
+    <p>{{ supplier }} has set up this portal so you can order from their catalog at any time. Here's how it works:</p>
+    <ol class="stack">
+      <li><strong>Browse the catalog.</strong> Search by product name or SKU, or pick a category.</li>
+      <li><strong>Add what you need to your cart.</strong> Your cart adds GST to every line, so you see the full total before you order.</li>
+      <li><strong>Place the order.</strong> {{ supplier }} reviews it, and you can follow its status here and on the Orders page.</li>
+    </ol>
+    <div class="cluster">
+      {{ link_button("Browse the catalog", url_for('portal.catalog'), variant="primary", icon_name="box") }}
+      {% if cart_items %}{{ link_button("Review your cart", url_for('portal.cart'), variant="secondary", icon_name="cart") }}{% endif %}
+    </div>
+  </div>
+</section>
+{% endif %}
+{% endblock %}
