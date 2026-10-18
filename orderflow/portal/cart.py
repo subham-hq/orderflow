@@ -15,7 +15,7 @@ from ..services.orders import OrderError, place_order, price_cart
 from . import bp
 from .forms import AddToCartForm, CheckoutForm, read_quantity
 
-BLANK_QUANTITY_MESSAGE = "Enter a quantity as a whole number, or 0 to remove this line."
+BLANK_QUANTITY_MESSAGE = "Enter a quantity, or 0 to remove this line."
 
 
 def priced_session_cart():

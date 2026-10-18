@@ -104,3 +104,15 @@ def test_a_blank_on_another_line_stops_the_remove_button(shopper, catalog):
     response = shopper.post("/portal/cart", data=data)
     assert response.status_code == 200
     assert get_cart(shopper) == {str(carton.id): 5, str(rice.id): 2}
+
+
+def test_a_quantity_error_wraps_inside_its_row():
+    # On phones the quantity cell is sized to its content; without a cap a
+    # long error ran past the edge of the card and was cut off
+    from tests.test_design_system import CSS
+
+    phone = CSS[CSS.index("@media screen and (max-width: 639px) {\n  .table-wrap > .table--stack") :]
+    cell = phone[phone.index(".table--cart td:nth-child(3) {") :]
+    assert "max-width: 100%;" in cell[: cell.index("}")]
+    wide = CSS[CSS.index("@media (min-width: 640px) {\n  .table--cart .field__error {") :]
+    assert "max-width: 13rem;" in wide[: wide.index("}")]

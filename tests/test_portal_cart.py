@@ -262,7 +262,7 @@ def test_an_empty_quantity_is_an_error_and_keeps_the_line(shopper, catalog):
     response = shopper.post("/portal/cart", data={f"qty-{carton.id}": "  "})
     assert response.status_code == 200
     page = response.get_data(as_text=True)
-    assert "Enter a quantity as a whole number, or 0 to remove this line." in page
+    assert "Enter a quantity, or 0 to remove this line." in page
     assert get_cart(shopper) == {str(carton.id): 3}
 
 

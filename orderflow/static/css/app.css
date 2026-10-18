@@ -1545,6 +1545,14 @@ a.table__primary.mono:hover,
   overflow-wrap: anywhere;
 }
 
+/* A quantity error in the cart wraps under its box rather than widening the
+   column and squeezing the product names */
+@media (min-width: 640px) {
+  .table--cart .field__error {
+    max-width: 13rem;
+  }
+}
+
 /* --------------------------------------------------------------------------
    Lists that become stacked rows on phones
 
@@ -1933,9 +1941,11 @@ a.table__primary.mono:hover,
     margin: -0.25rem -0.5rem 0 0;
   }
 
+  /* The quantity box keeps its size; an error under it wraps within the row */
   .table--cart td:nth-child(3) {
     order: 3;
     flex: none;
+    max-width: 100%;
     padding-top: 0.25rem;
   }
 
