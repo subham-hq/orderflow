@@ -6,6 +6,7 @@ from flask_wtf import FlaskForm
 from wtforms import HiddenField, StringField, TextAreaField
 from wtforms.validators import DataRequired, Length, Optional, ValidationError
 
+from ..admin.forms import Phone, squash
 from ..money import MAX_QUANTITY
 from ..services.cart import parse_id
 from ..services.orders import OrderError, parse_quantity
@@ -13,9 +14,6 @@ from ..services.orders import OrderError, parse_quantity
 NOTES_MAX_LENGTH = 2000
 # secrets.token_urlsafe(16) makes 22 characters; the column holds 64
 SUBMISSION_KEY_PATTERN = re.compile(r"[A-Za-z0-9_-]{16,64}")
-# A phone number: an optional +, then ASCII digits with spaces, brackets, dots or dashes between them
-PHONE_PATTERN = re.compile(r"\+?[0-9(][0-9 ().-]*[0-9]")
-PHONE_DIGITS = (7, 15)  # 15 is the longest number the international format allows
 
 
 def strip(value):
@@ -99,14 +97,19 @@ class AccountForm(FlaskForm):
         filters=[strip],
         validators=[Optional(), Length(max=80, message="Keep your last name to 80 characters or fewer.")],
     )
+    # The same filter and rule as the staff forms, so a number staff saved for
+    # the client is always one the client can save again
     phone = StringField(
         "Phone",
-        filters=[strip],
+        filters=[squash],
         validators=[Optional(), Length(max=32, message="Keep the phone number to 32 characters or fewer.")],
     )
 
+    def __init__(self, *args, saved_phone=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.saved_phone = saved_phone
+
     def validate_phone(self, field):
-        digits = sum(character in "0123456789" for character in field.data)
-        low, high = PHONE_DIGITS
-        if not PHONE_PATTERN.fullmatch(field.data) or not low <= digits <= high:
-            raise ValidationError(f"Enter a phone number with {low} to {high} digits, like +91 98765 43210.")
+        if self.saved_phone and field.data == squash(self.saved_phone):
+            return  # the number already on file: never refuse a field the client didn't change
+        Phone()(self, field)

@@ -13,6 +13,10 @@ def shopper(client, login, buyer):
     return client
 
 
+# The staff forms' message: clients and staff share one phone rule
+PHONE_ERROR = "Enter a phone number using digits, spaces and + - ( ), like +91 98450 12345."
+
+
 def flashes(client):
     with client.session_transaction() as sess:
         return [message for _category, message in sess.get("_flashes", [])]
@@ -94,12 +98,12 @@ def test_clearing_optional_fields_stores_nothing(shopper, buyer):
         ({"first_name": "A" * 81}, "Keep your first name to 80 characters or fewer."),
         ({"last_name": "B" * 81}, "Keep your last name to 80 characters or fewer."),
         ({"phone": "1" * 33}, "Keep the phone number to 32 characters or fewer."),
-        ({"phone": "call me"}, "Enter a phone number with 7 to 15 digits, like +91 98765 43210."),
-        ({"phone": "12345"}, "Enter a phone number with 7 to 15 digits, like +91 98765 43210."),
-        ({"phone": "+91 98765 43210 99999"}, "Enter a phone number with 7 to 15 digits, like +91 98765 43210."),
-        ({"phone": "٩٨٧٦٥٤٣٢١٠"}, "Enter a phone number with 7 to 15 digits, like +91 98765 43210."),
-        ({"phone": "98765²43210"}, "Enter a phone number with 7 to 15 digits, like +91 98765 43210."),
-        ({"phone": "98765 43210\n+1"}, "Enter a phone number with 7 to 15 digits, like +91 98765 43210."),
+        ({"phone": "call me"}, PHONE_ERROR),
+        ({"phone": "12345"}, PHONE_ERROR),
+        ({"phone": "+91 98765 43210 99999"}, PHONE_ERROR),
+        ({"phone": "٩٨٧٦٥٤٣٢١٠"}, PHONE_ERROR),
+        ({"phone": "98765²43210"}, PHONE_ERROR),
+        ({"phone": "98765 43210 ext 5"}, PHONE_ERROR),
     ],
 )
 def test_invalid_details_are_explained_and_what_was_typed_is_kept(shopper, buyer, fields, message):

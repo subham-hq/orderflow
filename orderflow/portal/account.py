@@ -15,7 +15,7 @@ EDITABLE_FIELDS = ("first_name", "last_name", "phone")
 @client_required
 def account():
     user = current_user._get_current_object()
-    form = AccountForm(obj=user)
+    form = AccountForm(obj=user, saved_phone=user.phone)
     if form.validate_on_submit():
         submitted = {name: getattr(form, name).data or None for name in EDITABLE_FIELDS}
         changed = {name: value for name, value in submitted.items() if getattr(user, name) != value}
