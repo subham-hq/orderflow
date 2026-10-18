@@ -14,9 +14,9 @@
 {% block title %}Import products{% endblock %}
 {% block topbar_title %}Catalog{% endblock %}
 {% block content %}
+<a class="back-link" href="{{ url_for('admin.products') }}">{{ icon('chevron-left') }}<span>Back to catalog</span></a>
 {% call page_header("Import products", "Add new products and update existing ones from a spreadsheet.", eyebrow="Catalog") %}
   {{ link_button("Download template", url_for('admin.products_import_template'), variant="secondary", icon_name="download") }}
-  {{ link_button("Back to catalog", url_for('admin.products'), variant="ghost") }}
 {% endcall %}
 
 <div class="sidebar-layout">

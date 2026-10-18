@@ -1082,6 +1082,33 @@ input[type="time"].input {
   min-width: 0;
 }
 
+/* File pickers (CSV import) get a button that matches the others */
+input[type="file"].input {
+  padding: 0.3125rem;
+  color: var(--muted);
+  font-size: 0.9375rem;
+  cursor: pointer;
+}
+
+input[type="file"].input::file-selector-button {
+  margin-right: 0.75rem;
+  padding: 0.375rem 0.875rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--btn-secondary-bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+
+input[type="file"].input:hover::file-selector-button {
+  border-color: var(--input-border-hover);
+  background: var(--btn-secondary-hover);
+}
+
 input[type="search"].input::-webkit-search-cancel-button {
   cursor: pointer;
 }
@@ -1297,6 +1324,11 @@ fieldset.stack > legend {
 
 .card__footer.split {
   justify-content: space-between;
+}
+
+.card__footer > p,
+.card__footer.muted {
+  font-size: 0.875rem;
 }
 
 .card--narrow {
@@ -1996,6 +2028,10 @@ a.table__primary.mono:hover,
   font-weight: 650;
 }
 
+.alert__text > p + p {
+  margin-top: 0.25rem;
+}
+
 .alert a {
   color: inherit;
   font-weight: 600;
@@ -2365,6 +2401,13 @@ a.stat:hover {
   --stat-bg: var(--info-bg);
   --stat-line: var(--info-line);
   --stat-label: var(--info-fg);
+}
+
+/* Three metrics share one row from tablet width, rather than two and an orphan */
+@media (min-width: 560px) {
+  .stat-grid.grid--3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 /* Dashboard metrics: two to a row on phones instead of one tall column */
@@ -2827,7 +2870,18 @@ a.stat--info:hover {
   margin-bottom: calc(-1 * var(--space-2));
 }
 
-/* The cart's summary stays in view beside the items on wide screens */
+/* The cart's summary stays in view beside the items on wide screens. The
+   items need about 48rem before their table would scroll, so below that
+   the summary moves under them, on the right. */
+.cart-layout > :first-child {
+  flex-basis: 48rem;
+}
+
+.cart-layout > .cart-summary {
+  max-width: 22rem;
+  margin-left: auto;
+}
+
 .cart-summary__note {
   font-size: 0.8125rem;
   text-align: center;
@@ -3164,6 +3218,12 @@ a.pagination__link:hover {
 .tab:hover {
   color: var(--heading);
   border-bottom-color: var(--line-strong);
+}
+
+/* The tab row scrolls sideways, which would clip a ring drawn outside */
+.tab:focus-visible {
+  outline-offset: -2px;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
 }
 
 .tab.is-active,

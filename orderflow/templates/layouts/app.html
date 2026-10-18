@@ -42,7 +42,7 @@
       <div class="user-chip">
         <span class="avatar" aria-hidden="true">{{ current_user.initials }}</span>
         <span class="user-chip__text">
-          <span class="user-chip__name">{{ current_user.full_name }}</span>
+          <span class="user-chip__name" title="{{ current_user.full_name }}">{{ current_user.full_name }}</span>
           <span class="user-chip__role">{{ 'Owner' if current_user.is_owner else 'Admin' }}</span>
         </span>
       </div>

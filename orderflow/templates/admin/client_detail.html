@@ -1,11 +1,12 @@
 {% extends "layouts/app.html" %}
-{% from "macros/ui.html" import link_button, post_button, page_header, status_badge, money, empty_state %}
+{% from "macros/ui.html" import icon, link_button, post_button, page_header, status_badge, money, empty_state %}
 {% from "admin/clients_macros.html" import account_badge, last_sign_in %}
 {% set active_nav = "clients" %}
 {% set display = client.full_name ~ (" (" ~ client.buyer_company ~ ")" if client.buyer_company else "") %}
 {% block title %}{{ client.buyer_company or client.full_name }}{% endblock %}
 {% block topbar_title %}Clients{% endblock %}
 {% block content %}
+<a class="back-link" href="{{ url_for('admin.clients') }}">{{ icon('chevron-left') }}<span>All clients</span></a>
 {% call page_header(client.buyer_company or client.full_name, client.full_name if client.buyer_company else client.email, eyebrow="Client", badge=account_badge(client)) %}
   {{ link_button("Edit details", url_for('admin.client_edit', user_id=client.id), variant="secondary", icon_name="edit") }}
 {% endcall %}
