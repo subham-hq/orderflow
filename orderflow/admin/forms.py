@@ -278,6 +278,15 @@ class BulletinForm(FlaskForm):
         field.parsed = expires
 
 
+# Settings --------------------------------------------------------------------
+
+
+class ProfileForm(FlaskForm):
+    first_name = _first_name("your")
+    last_name = _last_name()
+    phone = _phone()
+
+
 # List helpers ----------------------------------------------------------------
 
 
