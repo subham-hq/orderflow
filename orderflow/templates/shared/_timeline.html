@@ -6,7 +6,7 @@
     <span class="timeline__dot" aria-hidden="true"></span>
     <div class="timeline__body">
       <p class="timeline__title">{{ verbs.get(event.to_status, event.to_status | title) }}{% if event.actor %} by {{ event.actor.full_name }}{% endif %}</p>
-      <p class="timeline__meta"><time datetime="{{ event.created_at.isoformat() }}">{{ event.created_at | datetime }}</time></p>
+      <p class="timeline__meta"><time datetime="{{ event.created_at | datetime('%Y-%m-%dT%H:%M%z') }}">{{ event.created_at | datetime }}</time></p>
       {% if event.message %}<p class="timeline__note">{{ event.message }}</p>{% endif %}
     </div>
   </li>
