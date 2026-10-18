@@ -147,7 +147,9 @@ def test_a_race_lost_inside_place_order_is_reported_as_the_same_order(shopper, c
     assert get_cart(shopper) == {}
 
 
-@pytest.mark.parametrize("key", ["", "short", "has spaces in it, sixteen+", "x" * 65, "<script>alert(1)</script>"])
+@pytest.mark.parametrize(
+    "key", ["", "short", "has spaces in it, sixteen+", "x" * 65, "<script>alert(1)</script>", "a" * 22 + "\n"]
+)
 def test_a_missing_or_tampered_key_places_nothing_and_keeps_the_notes(shopper, catalog, key):
     set_cart(shopper, {catalog["carton"].id: 2})
     data = checkout_form(shopper, notes="Call before delivery", submission_key=key)
