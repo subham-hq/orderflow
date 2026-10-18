@@ -9,7 +9,7 @@ signed-in user's company. A record from another company is a 404, never a
 from functools import wraps
 from urllib.parse import urlsplit
 
-from flask import abort, current_app, flash, redirect, request, url_for
+from flask import abort, current_app, flash, g, redirect, request, url_for
 from flask_login import current_user
 from werkzeug.exceptions import HTTPException
 from werkzeug.routing import RequestRedirect
@@ -26,6 +26,7 @@ def home_url_for(user):
 
 
 SESSION_ENDED_MESSAGE = "You were signed out, so that didn't go through. Sign in and try again."
+TIMED_OUT_MESSAGE = "You were signed out because you hadn't been active for a while. Sign in to continue."
 
 
 def _sign_in_first():
@@ -36,7 +37,9 @@ def _sign_in_first():
     """
     if request.method in ("GET", "HEAD"):
         next_url = request.full_path.rstrip("?")
-        if request.method == "GET":
+        if request.method == "GET" and g.get("session_timed_out"):
+            flash(TIMED_OUT_MESSAGE, "info")
+        elif request.method == "GET":
             flash(login_manager.login_message, login_manager.login_message_category)
     else:
         # A form sent after the session ended. Sign-in can't repeat it, and

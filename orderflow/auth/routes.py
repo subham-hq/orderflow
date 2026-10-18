@@ -1,6 +1,6 @@
 from flask import flash, g, redirect, render_template, request, session, url_for
 from flask_limiter.util import get_remote_address
-from flask_login import current_user, login_required, login_user, logout_user
+from flask_login import current_user, login_required, login_user
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from ..extensions import db, limiter
@@ -18,7 +18,7 @@ from ..services.accounts import (
 )
 from ..timeutil import utcnow
 from ..tokens import ACCEPT_INVITE, RESET_PASSWORD, VERIFY_EMAIL, TokenError, load_token, make_token
-from . import bp
+from . import bp, sessions
 from .forms import (
     PASSWORD_HINT,
     ChangePasswordForm,
@@ -54,10 +54,11 @@ def _start_session(user, remember=False, keep_cart=False):
     (after changing their password); a sign-in never inherits someone else's.
     """
     cart = session.get("cart") if keep_cart else None
-    session.clear()
+    sessions.end()  # including a remember-me cookie someone else may have left here
     if cart:
         session["cart"] = cart
     login_user(user, remember=remember)
+    sessions.begin()
     user.last_login_at = utcnow()
     db.session.commit()
 
@@ -120,8 +121,7 @@ def login():
 
 @bp.route("/logout", methods=["POST"])
 def logout():
-    logout_user()
-    session.clear()
+    sessions.end()  # also deletes the "Keep me signed in" cookie
     flash("You've been signed out.", "info")
     return redirect(url_for("auth.login"))
 
