@@ -4,7 +4,7 @@
 {% block content %}
 <div class="auth__icon">{{ icon('mail') }}</div>
 <h1 class="auth__title">Check your inbox</h1>
-<p class="auth__lead">We sent a confirmation link to <strong>{{ current_user.email }}</strong>. Open it to finish setting up {{ current_user.company.name }}.</p>
+<p class="auth__lead">To finish setting up {{ current_user.company.name }}, open the confirmation link we email to <strong>{{ current_user.email }}</strong>.</p>
 <p class="muted">The link works for 3 days. If you can't find the email, check your spam folder.</p>
 <div class="stack">
   <form method="post" action="{{ url_for('auth.resend_verification') }}">

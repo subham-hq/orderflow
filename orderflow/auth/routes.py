@@ -82,8 +82,13 @@ def signup():
         except AccountError as error:
             form.email.errors.append(str(error))
         else:
-            _start_session(owner)
-            send_verification_email(owner)
+            _start_session(owner)  # clears the session, so flash after it
+            if not send_verification_email(owner):
+                flash(
+                    f"Your account is ready, but we couldn't send the confirmation email to {owner.email} just now. "
+                    "Use Send the link again in a few minutes.",
+                    "warning",
+                )
             return redirect(url_for("auth.verify_pending"))
     return render_template("auth/signup.html", form=form, password_hint=PASSWORD_HINT)
 
