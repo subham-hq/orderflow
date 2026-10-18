@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileAllowed, FileField, FileRequired
-from wtforms import BooleanField, EmailField, HiddenField, SelectField, StringField, TextAreaField
+from wtforms import BooleanField, EmailField, HiddenField, PasswordField, SelectField, StringField, TextAreaField
 from wtforms.validators import DataRequired, Email, Length, Optional, Regexp, StopValidation, ValidationError
 
 from .. import money, timeutil
@@ -457,6 +457,16 @@ class ProfileForm(FlaskForm):
     first_name = _first_name("your")
     last_name = _last_name()
     phone = _phone()
+
+
+class ChangeEmailForm(FlaskForm):
+    """Ask to sign in with a different email; a link to the new address confirms it."""
+
+    new_email = EmailField("New email", filters=[lower], validators=_email_validators(what="the new email address"))
+    current_password = PasswordField(
+        "Your password",
+        validators=[DataRequired("Enter your password, so we know it's you."), Length(max=128)],
+    )
 
 
 # List helpers ----------------------------------------------------------------

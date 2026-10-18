@@ -168,10 +168,7 @@ def client_detail(user_id):
 @per_person("20 per minute")
 def client_edit(user_id):
     user = _get_client_or_404(user_id)
-    email_editable = not user.has_accepted_invite
     form = ClientForm(obj=user if request.method == "GET" else None)
-    if not email_editable:
-        del form.email  # they sign in with it; only they can change it
 
     if form.validate_on_submit():
         changes = {
@@ -180,15 +177,50 @@ def client_edit(user_id):
             "buyer_company": form.buyer_company.data,
             "phone": form.phone.data or None,
         }
-        new_email = form.email.data if email_editable else user.email
+        new_email = form.email.data
         if new_email == user.email:
             return _save_client(user, form, changes, new_email)
         if email_taken(new_email):
             form.email.errors.append(_email_problem(new_email, EMAIL_TAKEN))
+        elif user.has_accepted_invite:
+            # They sign in with it, so the change waits until they confirm it
+            if not user.active:
+                form.email.errors.append(
+                    f"{client_accounts.display_name(user)} is suspended, so they can't confirm a new email "
+                    "address. Reactivate them first."
+                )
+            elif not _refused(form, client_accounts.invitation_blocked(user.company)):
+                return _request_email_change(user, changes, new_email)
         elif not user.active or not _refused(form, client_accounts.invitation_blocked(user.company, user.invited_by)):
             # A fresh invitation goes to the new address (unless they're suspended)
             return _save_client(user, form, changes, new_email)
-    return render_template("admin/client_form.html", form=form, client=user, email_editable=email_editable)
+    return render_template("admin/client_form.html", form=form, client=user)
+
+
+def _request_email_change(user, changes, new_email):
+    """Save the other changes, and email the new address a link the client must open to switch to it."""
+    changed = False
+    for name, value in changes.items():
+        if getattr(user, name) != value:
+            setattr(user, name, value)
+            changed = True
+    if changed:
+        db.session.commit()
+    saved = f"Saved changes to {client_accounts.display_name(user)}. " if changed else ""
+    if client_accounts.send_email_change_link(user, new_email, requested_by=current_user):
+        client_accounts.count_invitation(user.company_id)
+        flash(
+            f"{saved}We sent a link to {new_email} to confirm it. {user.first_name}'s sign-in email changes once "
+            f"they open the link and sign in; until then, they keep using {user.email}.",
+            "success",
+        )
+    else:
+        flash(
+            f"{saved}We couldn't email the confirmation link to {new_email} just now. "
+            "Please try again in a few minutes.",
+            "warning",
+        )
+    return redirect(url_for("admin.client_detail", user_id=user.id))
 
 
 def _save_client(user, form, changes, new_email):
@@ -212,7 +244,7 @@ def _save_client(user, form, changes, new_email):
             raise
         form.email.errors.append(EMAIL_TAKEN)
         user = _get_client_or_404(user.id)
-        return render_template("admin/client_form.html", form=form, client=user, email_editable=True)
+        return render_template("admin/client_form.html", form=form, client=user)
 
     message = f"Saved changes to {client_accounts.display_name(user)}."
     if email_changed:

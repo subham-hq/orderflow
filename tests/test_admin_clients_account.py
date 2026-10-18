@@ -183,29 +183,38 @@ def test_detail_of_a_suspended_client(client, signed_in, buyer):
 # Edit ------------------------------------------------------------------------
 
 
-def test_edit_form_is_prefilled_and_email_is_read_only_after_joining(client, signed_in, buyer):
+def test_edit_form_is_prefilled_and_explains_email_changes_after_joining(client, signed_in, buyer):
     body = text(client.get(f"/app/clients/{buyer.id}/edit"))
     assert 'value="Ananya"' in body and 'value="Buyer Pvt Ltd"' in body
-    assert 'name="email"' not in body and "buyer@sunrise.example" in body and "only they can change it" in body
+    assert 'name="email"' in body and 'value="buyer@sunrise.example"' in body
+    assert "They sign in with buyer@sunrise.example. If you change it, we&#39;ll email a link" in body
     assert "None" not in body
 
 
 def test_edit_saves_details(client, signed_in, buyer):
     data = {"first_name": "Ananya", "last_name": "Rao", "buyer_company": "Sunrise Retail LLP", "phone": "080 4000 1234"}
+    data["email"] = buyer.email
     response = client.post(f"/app/clients/{buyer.id}/edit", data=data, follow_redirects=True)
     assert "Saved changes to Ananya Rao (Sunrise Retail LLP)." in text(response)
     buyer = get_user(buyer.id)
     assert (buyer.last_name, buyer.buyer_company, buyer.phone) == ("Rao", "Sunrise Retail LLP", "080 4000 1234")
 
 
-def test_edit_ignores_an_email_sent_for_an_accepted_client(client, signed_in, buyer, mail):
+def test_an_accepted_clients_email_waits_for_them_to_confirm(client, signed_in, buyer, mail):
     data = {"first_name": "Ananya", "buyer_company": "Buyer Pvt Ltd", "email": "hijack@evil.example"}
     client.post(f"/app/clients/{buyer.id}/edit", data=data)
-    assert get_user(buyer.id).email == "buyer@sunrise.example" and mail == []
+    assert get_user(buyer.id).email == "buyer@sunrise.example"  # until the client confirms it, signed in
+    assert [message.to for message in mail] == [["hijack@evil.example"]]
 
 
 def test_saving_without_changes_says_so(client, signed_in, buyer):
-    data = {"first_name": " Ananya ", "last_name": "Test", "buyer_company": "Buyer Pvt Ltd", "phone": ""}
+    data = {
+        "first_name": " Ananya ",
+        "last_name": "Test",
+        "buyer_company": "Buyer Pvt Ltd",
+        "phone": "",
+        "email": buyer.email,
+    }
     response = client.post(f"/app/clients/{buyer.id}/edit", data=data, follow_redirects=True)
     body = text(response)
     assert "No changes to save for Ananya Test (Buyer Pvt Ltd)." in body and "Saved changes" not in body
@@ -425,7 +434,7 @@ def test_unexpected_database_errors_on_edit_are_not_hidden(client, signed_in, bu
         raise IntegrityError("UPDATE", {}, Exception("unexpected"))
 
     monkeypatch.setattr(db.session, "commit", failing_commit)
-    data = {"first_name": "Renamed", "buyer_company": "Buyer Pvt Ltd"}
+    data = {"first_name": "Renamed", "buyer_company": "Buyer Pvt Ltd", "email": buyer.email}
     # Tests propagate errors; in production this is the logged 500 page
     with pytest.raises(IntegrityError, match="unexpected"):
         client.post(f"/app/clients/{buyer.id}/edit", data=data)

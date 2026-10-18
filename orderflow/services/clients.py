@@ -8,20 +8,30 @@ suspended person loses access on their very next request.
 Invitations go to addresses staff type in, so each workspace can send only
 INVITATIONS_PER_DAY of them, and the names they carry (company, inviter,
 invitee) must be plain text without web addresses.
+
+Changing the email someone signs in with takes two steps: a link is sent to
+the new address, and the change happens when the person opens it while
+signed in to their account. Staff can ask for the change on a client's
+behalf, but only the client can confirm it, so staff can't take an account
+over by pointing it at an address they control.
 """
 
 import logging
 import re
 from datetime import UTC, datetime, timedelta
 
+from flask import current_app
+from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 from limits import parse as parse_rate_limit
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 
 from ..extensions import db, limiter
+from ..mail import external_url, send_email
 from ..models import CLIENT, REVENUE_STATUSES, Order, User
 from ..timeutil import as_utc, format_datetime, utcnow
-from .accounts import send_invite_email
+from ..tokens import TokenError
+from .accounts import find_user_by_email, normalize_email, send_invite_email
 
 log = logging.getLogger(__name__)
 
@@ -162,17 +172,17 @@ def invitation_text_problem(company, inviter=None, invitee=None):
     if has_link_or_markup(company.name):
         return (
             "Your company name in Settings includes a web address or the symbols < and >. "
-            "Remove it before sending invitations, so they can't be mistaken for spam."
+            "Remove it first, so emails from your workspace can't be mistaken for spam."
         )
     if inviter is not None and has_link_or_markup(inviter.full_name):
         return (
             f"The inviter's name ({inviter.full_name}) includes a web address or the symbols < and >. "
-            "Change it in their profile before sending invitations."
+            "Change it in their profile first."
         )
     if invitee is not None and any(has_link_or_markup(text) for text in (invitee.first_name, invitee.buyer_company)):
         return (
             f"{display_name(invitee)} has a web address or the symbols < and > in their name or business name. "
-            "Edit their details before sending the invitation."
+            "Edit their details first."
         )
     return None
 
@@ -220,6 +230,91 @@ def invitation_blocked(company, inviter=None, invitee=None):
     if problem is None and not invitations_allowed(company.id):
         problem = invitation_limit_message(company)
     return problem
+
+
+# Changing the email someone signs in with ------------------------------------------
+
+_EMAIL_CHANGE_SALT = "orderflow:change-email"
+
+
+def _email_change_serializer():
+    return URLSafeTimedSerializer(current_app.config["SECRET_KEY"], salt=_EMAIL_CHANGE_SALT)
+
+
+def make_email_change_token(user, new_email):
+    """A token for switching user to new_email. Like the other emailed links it
+    stops working once the user's email or password changes."""
+    payload = {"uid": user.id, "v": user.auth_version, "e": user.email, "new": normalize_email(new_email)}
+    return _email_change_serializer().dumps(payload)
+
+
+def load_email_change_token(token):
+    """Return (user, new email) for a token, or raise TokenError."""
+    max_age = current_app.config["VERIFY_TOKEN_MAX_AGE"]
+    try:
+        payload = _email_change_serializer().loads(token, max_age=int(max_age.total_seconds()))
+    except SignatureExpired:
+        raise TokenError("This link has expired.", expired=True) from None
+    except BadSignature:
+        raise TokenError("This link is not valid.") from None
+    if not isinstance(payload, dict) or not isinstance(payload.get("uid"), int) or not payload.get("new"):
+        raise TokenError("This link is not valid.")
+    user = db.session.get(User, payload["uid"])
+    if user is None or user.email != payload.get("e") or user.auth_version != payload.get("v"):
+        raise TokenError("This link has already been used or is no longer valid.")
+    return user, payload["new"]
+
+
+def send_email_change_link(user, new_email, requested_by):
+    """Email new_email a link that moves user's sign-in to it. Returns True if it was sent."""
+    return send_email(
+        new_email,
+        "Confirm your new email for OrderFlow",
+        "email_change",
+        user=user,
+        requested_by_self=requested_by.id == user.id,
+        link=external_url("admin.confirm_email_change", token=make_email_change_token(user, new_email)),
+    )
+
+
+def mask_email(email):
+    """ravi@stores.example -> r***@stores.example, for telling an old address where the account went."""
+    local, _, domain = email.partition("@")
+    return f"{local[:1]}***@{domain}"
+
+
+def change_email(user, new_email):
+    """Move user's sign-in to new_email (they proved they can read it). Returns
+    the old address. Raises ClientError if someone else has it now."""
+    new_email = normalize_email(new_email)
+    taken = ClientError(
+        f"{new_email} is now used by another OrderFlow account, so we can't switch to it. "
+        "Ask for a new link with a different address."
+    )
+    existing = find_user_by_email(new_email)
+    if existing is not None and existing.id != user.id:
+        raise taken
+    old_email = user.email
+    user.email = new_email
+    user.email_verified_at = utcnow()
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()  # registered a moment ago
+        raise taken from None
+    return old_email
+
+
+def send_email_changed_notice(user, old_email):
+    """Tell the old address where the account went, in case the change wasn't wanted."""
+    return send_email(
+        old_email,
+        "Your OrderFlow sign-in email has changed",
+        "email_changed",
+        user=user,
+        new_email_hint=mask_email(user.email),
+        contact_email=current_app.config.get("CONTACT_EMAIL"),
+    )
 
 
 def invite_recently_sent(user, now=None):
