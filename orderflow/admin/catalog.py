@@ -1,8 +1,8 @@
-"""Product catalog: add, edit, show/hide, and CSV import/export."""
+"""Product catalog: list, add, edit, show/hide, and CSV import/export."""
 
 from flask import Response, abort, flash, redirect, render_template, request, url_for
 from flask_login import current_user
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.exc import IntegrityError
 from werkzeug.datastructures import MultiDict
 from werkzeug.exceptions import RequestEntityTooLarge
@@ -13,7 +13,17 @@ from ..models import OrderItem, Product
 from ..permissions import company_select, get_company_object_or_404, safe_next_url, staff_required
 from ..services import catalog
 from . import bp
-from .forms import ProductForm, ProductImportForm, product_form_data
+from .forms import (
+    ProductForm,
+    ProductImportForm,
+    like_pattern,
+    page_number,
+    paginate,
+    product_form_data,
+    search_text,
+)
+
+STATUS_FILTERS = {"active": True, "hidden": False}
 
 # Which CSV column each form field comes from, for import error messages
 _CSV_COLUMN_FOR_FIELD = {
@@ -39,7 +49,46 @@ def _company_id():
 @bp.route("/products")
 @staff_required
 def products():
-    return render_template("placeholder.html", title="Catalog", layout="layouts/app.html")
+    q = search_text(request.args.get("q"))
+    category = search_text(request.args.get("category"))
+    status = request.args.get("status", "")
+    if status not in STATUS_FILTERS:
+        status = ""
+
+    filtered = company_select(Product)
+    if q:
+        pattern = like_pattern(q)
+        filtered = filtered.where(
+            or_(
+                Product.name.ilike(pattern, escape="\\"),
+                Product.sku.ilike(pattern, escape="\\"),
+                Product.description.ilike(pattern, escape="\\"),
+            )
+        )
+    if category:
+        filtered = filtered.where(Product.category == category)
+
+    # Counts for the status tabs reflect the search and category filters
+    counts_stmt = filtered.with_only_columns(Product.is_active, func.count(Product.id)).group_by(Product.is_active)
+    by_status = {bool(active): count for active, count in db.session.execute(counts_stmt)}
+    counts = {"": sum(by_status.values()), "active": by_status.get(True, 0), "hidden": by_status.get(False, 0)}
+
+    if status:
+        filtered = filtered.where(Product.is_active.is_(STATUS_FILTERS[status]))
+    page = paginate(filtered.order_by(func.lower(Product.name), Product.id), page_number(request.args.get("page")))
+
+    total_products = db.session.scalar(db.select(func.count(Product.id)).where(Product.company_id == _company_id()))
+    return render_template(
+        "admin/products.html",
+        page=page,
+        q=q,
+        category=category,
+        status=status,
+        counts=counts,
+        categories=catalog.category_options(_company_id()),
+        total_products=total_products,
+        filtering=bool(q or category or status),
+    )
 
 
 # Add and edit ----------------------------------------------------------------

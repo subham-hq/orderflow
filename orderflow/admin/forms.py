@@ -15,7 +15,11 @@ from wtforms import BooleanField, SelectField, StringField, TextAreaField
 from wtforms.validators import DataRequired, Length, Optional, StopValidation
 
 from .. import money
+from ..extensions import db
 from ..services import catalog
+
+PER_PAGE = 25
+SEARCH_MAX_LENGTH = 100
 
 _CURRENCY_PREFIX = re.compile(r"^(?:₹|rs\.?|inr)\s*", re.IGNORECASE)
 
@@ -158,3 +162,33 @@ class ProductImportForm(FlaskForm):
             FileAllowed(["csv"], "Upload a file that ends in .csv. In Excel, use File > Save As > CSV UTF-8."),
         ],
     )
+
+
+# List helpers ----------------------------------------------------------------
+
+
+def search_text(value):
+    """A search box value, trimmed and capped."""
+    return " ".join(str(value or "").split())[:SEARCH_MAX_LENGTH]
+
+
+def like_pattern(text):
+    """A LIKE pattern matching text anywhere, with % and _ taken literally."""
+    escaped = text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    return f"%{escaped}%"
+
+
+def page_number(value):
+    try:
+        number = int(str(value or "1").strip())
+    except ValueError:
+        return 1
+    return max(1, min(number, 100_000))
+
+
+def paginate(stmt, page, per_page=PER_PAGE):
+    """Paginate a select; a page past the end shows the last page."""
+    result = db.paginate(stmt, page=page, per_page=per_page, error_out=False)
+    if not result.items and page > 1 and result.pages:
+        result = db.paginate(stmt, page=result.pages, per_page=per_page, error_out=False)
+    return result
