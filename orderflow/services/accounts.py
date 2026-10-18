@@ -1,6 +1,7 @@
 """Companies, users, sign-up and invitations."""
 
 from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 
 from ..extensions import db
 from ..mail import external_url, send_email
@@ -118,7 +119,13 @@ def create_company_with_owner(company_name, first_name, last_name, email, passwo
     )
     owner.set_password(password)
     db.session.add_all([company, owner])
-    db.session.commit()
+    try:
+        db.session.commit()
+    except IntegrityError:
+        # The same email signed up a moment ago in another request (a double
+        # submit or a second tab). The address is the only unique value here.
+        db.session.rollback()
+        raise AccountError(EMAIL_EXISTS) from None
     return owner
 
 
