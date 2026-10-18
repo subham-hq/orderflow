@@ -23,15 +23,16 @@
     <div class="card__body">
       <ol class="checklist__list">
         {% for step in steps %}
-        <li class="checklist__item">
+        <li class="checklist__item{% if step.done %} is-done{% endif %}">
           <span class="checklist__marker" aria-hidden="true"></span>
           <div class="checklist__body">
-            <p class="checklist__title">{{ step.title }}</p>
+            <p class="checklist__title">{% if step.done %}<span class="visually-hidden">Done: </span>{% endif %}{{ step.title }}</p>
             <p class="checklist__text muted">{{ step.text }}</p>
-            {% if not step.action_url %}<p class="checklist__text muted">Clients sign in at <span class="mono">{{ portal_login_url }}</span></p>{% endif %}
+            {% if not step.done and not step.action_url %}<p class="checklist__text muted">Clients sign in at <span class="mono">{{ portal_login_url }}</span></p>{% endif %}
           </div>
-          {% if step.action_url %}
-          {{ link_button(step.action_label, step.action_url, variant=("primary" if loop.first else "secondary"), size="sm") }}
+          {% if step.done %}
+          {% elif step.action_url %}
+          {{ link_button(step.action_label, step.action_url, variant=("primary" if step.is_next else "secondary"), size="sm") }}
           {% else %}
           <button type="button" class="btn btn--ghost btn--sm" data-copy="{{ portal_login_url }}">Copy client sign-in link</button>
           {% endif %}

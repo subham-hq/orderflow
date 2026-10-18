@@ -178,48 +178,51 @@ class ChecklistStep:
     text: str
     action_label: str | None
     action_url: str | None
+    done: bool = False
+    # The first step still to do, which gets the primary button
+    is_next: bool = False
 
 
 def checklist_steps(progress):
-    """The setup steps still to do, in order. Empty once everything is done."""
-    steps = []
-    if not progress.has_products:
-        steps.append(
-            ChecklistStep(
-                "Add your first product",
-                "List what you sell with prices and GST so clients can order it.",
-                "Add products",
-                url_for("admin.products"),
-            )
-        )
-    if not progress.has_clients:
-        steps.append(
-            ChecklistStep(
-                "Invite your first client",
-                "Clients get an email invitation to a private portal with your catalog.",
-                "Invite a client",
-                url_for("admin.clients"),
-            )
-        )
-    if not progress.has_company_details:
-        steps.append(
-            ChecklistStep(
-                "Add your company details",
-                "Your address and GSTIN appear on every proforma invoice.",
-                "Open settings",
-                url_for("admin.settings"),
-            )
-        )
-    if not progress.has_orders:
-        steps.append(
-            ChecklistStep(
-                "Receive your first order",
-                "Orders your clients place show up here for you to review.",
-                None,
-                None,
-            )
-        )
-    return steps
+    """Every setup step in order, each marked done or not, so their numbers
+    never shift. Empty once everything is done."""
+    if progress.complete:
+        return []
+    steps = [
+        (
+            progress.has_products,
+            "Add your first product",
+            "List what you sell with prices and GST so clients can order it.",
+            "Add products",
+            url_for("admin.products"),
+        ),
+        (
+            progress.has_clients,
+            "Invite your first client",
+            "Clients get an email invitation to a private portal with your catalog.",
+            "Invite a client",
+            url_for("admin.clients"),
+        ),
+        (
+            progress.has_company_details,
+            "Add your company details",
+            "Your address and GSTIN appear on every proforma invoice.",
+            "Open settings",
+            url_for("admin.settings"),
+        ),
+        (
+            progress.has_orders,
+            "Receive your first order",
+            "Orders your clients place show up here for you to review.",
+            None,
+            None,
+        ),
+    ]
+    next_index = next(index for index, (done, *_) in enumerate(steps) if not done)
+    return [
+        ChecklistStep(title, text, label, url, done=done, is_next=index == next_index)
+        for index, (done, title, text, label, url) in enumerate(steps)
+    ]
 
 
 @bp.route("/")

@@ -155,13 +155,24 @@ def test_new_company_sees_the_getting_started_checklist_and_empty_states(client,
     assert_no_inline_code(html)
 
 
-def test_checklist_only_shows_unfinished_steps_and_hides_when_done(client, login, owner, company, buyer):
+def test_checklist_marks_finished_steps_done_and_hides_when_done(client, login, owner, company, buyer):
     login(owner)
     product = factories.make_product(company)
     html = page(client)
     assert "2 of 4 done" in html  # a product and a client
-    assert "Add your first product" not in html and "Invite your first client" not in html
-    assert "Add your company details" in html
+    items = re.findall(r'<li class="checklist__item( is-done)?">(.*?)</li>', html, re.S)
+    assert [bool(done) for done, _ in items] == [True, True, False, False]
+    titles = [re.sub(r"<[^>]+>", "", re.search(r'checklist__title">(.*?)</p>', body).group(1)) for _, body in items]
+    assert titles == [
+        "Done: Add your first product",
+        "Done: Invite your first client",
+        "Add your company details",
+        "Receive your first order",
+    ]
+    # Finished steps have no buttons; the first step left gets the primary one
+    assert 'href="/app/products"' not in items[0][1] and 'href="/app/clients"' not in items[1][1]
+    assert "btn--primary btn--sm" in items[2][1] and 'href="/app/settings"' in items[2][1]
+    assert "data-copy" in items[3][1]
 
     company.address = "Plot 7, MIDC, Pune"
     make_order(company, buyer, [(product, 1)], PENDING, ist(2026, 10, 18, 9, 0))
@@ -275,9 +286,14 @@ def test_checklist_steps_follow_progress(app):
     with app.test_request_context():
         assert dashboard_view.checklist_steps(SetupProgress(True, True, True, True)) == []
         steps = dashboard_view.checklist_steps(SetupProgress(False, True, False, False))
+        later = dashboard_view.checklist_steps(SetupProgress(True, True, False, False))
     assert [step.title for step in steps] == [
         "Add your first product",
+        "Invite your first client",
         "Add your company details",
         "Receive your first order",
     ]
+    assert [step.done for step in steps] == [False, True, False, False]
+    assert [step.is_next for step in steps] == [True, False, False, False]
+    assert [step.is_next for step in later] == [False, False, True, False]
     assert steps[-1].action_url is None
