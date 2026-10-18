@@ -54,6 +54,14 @@ class AccountError(ValueError):
     """A problem the user can fix, with a message safe to show them."""
 
 
+# Shown when someone signs up with an address that already has an account.
+# Forgot password works for everyone: it sends a reset link, or a fresh
+# invitation to someone who was invited but never set a password.
+EMAIL_EXISTS = (
+    "An account with this email already exists. Sign in, or use Forgot password if you don't know the password."
+)
+
+
 def normalize_email(value):
     return (value or "").strip().lower()
 
@@ -95,7 +103,7 @@ def create_company_with_owner(company_name, first_name, last_name, email, passwo
     """Create a new business account and its owner (unverified)."""
     email = normalize_email(email)
     if email_taken(email):
-        raise AccountError("An account with this email already exists. Try signing in instead.")
+        raise AccountError(EMAIL_EXISTS)
     problem = password_problem(password, email)
     if problem:
         raise AccountError(problem)

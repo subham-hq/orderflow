@@ -13,6 +13,7 @@ from ..services.accounts import (
     find_user_by_email,
     mark_verified,
     normalize_email,
+    send_invite_email,
     send_verification_email,
 )
 from ..timeutil import utcnow
@@ -176,7 +177,7 @@ def forgot_password():
     form = ForgotPasswordForm()
     if form.validate_on_submit():
         user = find_user_by_email(form.email.data)
-        if user is not None and user.active and user.password_hash:
+        if user is not None and user.active and user.has_accepted_invite:
             send_email(
                 user.email,
                 "Reset your OrderFlow password",
@@ -184,6 +185,10 @@ def forgot_password():
                 user=user,
                 link=external_url("auth.reset_password", token=make_token(RESET_PASSWORD, user)),
             )
+        elif user is not None and user.active and send_invite_email(user):
+            # Invited but never set a password, so there's nothing to reset:
+            # a fresh invitation lets them choose one.
+            db.session.commit()  # remember when it was sent
         # Same answer either way, so this form can't be used to find accounts
         return render_template("auth/forgot_password_sent.html", email=normalize_email(form.email.data))
     return render_template("auth/forgot_password.html", form=form)
