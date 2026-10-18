@@ -3080,6 +3080,10 @@ a.pagination__link:hover {
     display: none;
   }
 
+  .no-js .site-header {
+    position: static;
+  }
+
   .no-js .site-header__inner {
     flex-wrap: wrap;
     padding-block: 0.75rem;
@@ -3852,6 +3856,10 @@ a.pagination__link:hover {
 
   .no-js .portal-header__toggle {
     display: none;
+  }
+
+  .no-js .portal-header {
+    position: static;
   }
 
   .no-js .portal-header__inner {
