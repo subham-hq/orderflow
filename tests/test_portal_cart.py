@@ -92,6 +92,11 @@ def test_add_to_cart_adds_up_and_returns_to_the_same_catalog_page(shopper, catal
     assert get_cart(shopper) == {str(carton.id): 5}
 
 
+def test_add_to_cart_keeps_a_fragment_already_in_the_return_address(shopper, catalog):
+    response = add(shopper, catalog["carton"].id, "1", next_url="/portal/catalog?page=2#top")
+    assert response.headers["Location"] == "/portal/catalog?page=2#top"
+
+
 @pytest.mark.parametrize(
     "next_url", ["https://evil.example/portal/", "//evil.example/", "/app/", "", "javascript:alert(1)"]
 )
