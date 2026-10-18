@@ -48,7 +48,7 @@ everything looks.
 | `badge(label, tone)` | Generic pill (`neutral`, `success`, `warning`, `danger`, `info`) |
 | `money(paise)` | Formatted rupees with tabular figures |
 | `page_header(title, subtitle, eyebrow, badge)` | Page title; use `{% call page_header(...) %}actions{% endcall %}` for buttons. `badge` is shown beside the title, e.g. `badge=status_badge(order.status)` |
-| `empty_state(title, text, action_url, action_label, icon_name)` | Nothing-here-yet panel |
+| `empty_state(title, text, action_url, action_label, icon_name, action_variant)` | Nothing-here-yet panel. Its button is `primary` unless you pass `action_variant="secondary"`: do that when the page header already has the primary button, and for resets such as "Clear filters" |
 | `stat(label, value, hint, tone, href)` | Metric tile (`tone`: `warning`, `success`, `danger`, `info`) |
 | `pagination(page, endpoint)` | Previous / next links for a SQLAlchemy pagination object |
 | `flashes()` | Flash messages (layouts already include it) |

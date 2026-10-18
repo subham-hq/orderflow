@@ -90,7 +90,7 @@
   {{ pagination(page, 'admin.orders') }}
   {% elif filters.searching %}
   <div class="card">
-    {{ empty_state("No orders match your search", "Check the spelling, or try a wider date range. Search looks at order numbers, client names, buyer companies and email addresses.", clear_url, "Clear search and dates", "search") }}
+    {{ empty_state("No orders match your search", "Check the spelling, or try a wider date range. Search looks at order numbers, client names, buyer companies and email addresses.", clear_url, "Clear search and dates", "search", action_variant="secondary") }}
   </div>
   {% else %}
   <div class="card">

@@ -11,7 +11,7 @@
 
 {% if not page.items %}
 <div class="card">
-  {{ empty_state("Post your first bulletin", "Tell clients about dispatch schedules, holiday closures or new products. Every live bulletin appears on their portal dashboard.", url_for('admin.bulletin_new'), "Write a bulletin", icon_name="megaphone") }}
+  {{ empty_state("Post your first bulletin", "Tell clients about dispatch schedules, holiday closures or new products. Every live bulletin appears on their portal dashboard.", url_for('admin.bulletin_new'), "Write a bulletin", icon_name="megaphone", action_variant="secondary") }}
 </div>
 {% else %}
 <section class="stack" aria-label="Bulletins, newest first">

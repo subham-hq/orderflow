@@ -15,7 +15,8 @@
     "Browse " ~ supplier ~ "'s catalog, add what you need to your cart and place your first order. You can follow its progress here.",
     url_for('portal.catalog'),
     "Browse the catalog",
-    "orders"
+    "orders",
+    action_variant="secondary"
   ) }}
 </div>
 {% else %}
@@ -81,7 +82,8 @@
     "Check the order number, or clear the search to see all your orders.",
     url_for('portal.orders', **clear_args),
     "Clear search",
-    "search"
+    "search",
+    action_variant="secondary"
   ) }}
 </div>
 {% else %}
@@ -93,7 +95,7 @@
 } %}
 {% set empty_title, empty_text = empty.get(tab, ("No orders here", "Orders you place appear here.")) %}
 <div class="card">
-  {{ empty_state(empty_title, empty_text, url_for('portal.orders'), "See all orders", "orders") }}
+  {{ empty_state(empty_title, empty_text, url_for('portal.orders'), "See all orders", "orders", action_variant="secondary") }}
 </div>
 {% endif %}
 {% endif %}

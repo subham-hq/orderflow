@@ -102,12 +102,14 @@
 </header>
 {%- endmacro %}
 
-{% macro empty_state(title, text=None, action_url=None, action_label=None, icon_name="box") -%}
+{# action_variant: "secondary" when the page header already has the primary
+   button, or for a reset such as "Clear filters" #}
+{% macro empty_state(title, text=None, action_url=None, action_label=None, icon_name="box", action_variant="primary") -%}
 <div class="empty-state">
   <div class="empty-state__icon">{{ icon(icon_name) }}</div>
   <h2 class="empty-state__title">{{ title }}</h2>
   {% if text %}<p class="empty-state__text">{{ text }}</p>{% endif %}
-  {% if action_url %}{{ link_button(action_label, action_url, variant="primary") }}{% endif %}
+  {% if action_url %}{{ link_button(action_label, action_url, variant=action_variant) }}{% endif %}
 </div>
 {%- endmacro %}
 

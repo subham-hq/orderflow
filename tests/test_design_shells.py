@@ -369,6 +369,41 @@ def test_stacked_tables_keep_the_column_order_their_phone_layout_expects(client,
         assert seen[layout] == columns, layout
 
 
+def primary_buttons(body):
+    """Primary buttons on a page, leaving out the catalog's per-product Add buttons."""
+    without_cards = re.sub(r'<article class="product-card".*?</article>', "", body, flags=re.S)
+    return re.findall(r'class="btn btn--primary\b', without_cards)
+
+
+def test_each_view_has_at_most_one_primary_button(client, login, company, owner, buyer):
+    from orderflow.services.orders import place_order
+
+    paths = ["/app/", "/app/orders", "/app/products", "/app/clients", "/app/bulletins", "/app/team", "/app/settings"]
+    login(buyer)
+    for path in ("/portal/", "/portal/orders", "/portal/catalog", "/portal/cart"):
+        body = client.get(path).get_data(as_text=True)
+        assert len(primary_buttons(body)) <= 1, path
+    client.post("/logout")
+    login(owner)
+    # A brand-new workspace: every list is empty and the header already offers the main action
+    for path in paths:
+        body = client.get(path).get_data(as_text=True)
+        assert len(primary_buttons(body)) <= 1, path
+
+    product = factories.make_product(company, sku="CTN-1", name="Carton")
+    order, _ = place_order(buyer, {product.id: 3})
+    db.session.commit()
+    for path in [*paths, f"/app/orders/{order.number}", "/app/products?q=nothing-matches"]:
+        body = client.get(path).get_data(as_text=True)
+        assert len(primary_buttons(body)) <= 1, path
+
+    client.post("/logout")
+    login(buyer)
+    for path in ("/portal/", "/portal/orders", "/portal/orders?q=nothing", "/portal/catalog", "/portal/cart"):
+        body = client.get(path).get_data(as_text=True)
+        assert len(primary_buttons(body)) <= 1, path
+
+
 def test_every_stacked_layout_has_phone_rules():
     from tests.test_design_system import CSS
 

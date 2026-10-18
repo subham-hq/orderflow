@@ -11,7 +11,7 @@
 
 {% if not total_clients %}
 <div class="card">
-  {{ empty_state("Invite your first client", "Add a buyer by email. They'll get a link to set a password, then they can browse your catalog and send you purchase orders.", url_for('admin.client_invite'), "Invite a client", icon_name="users") }}
+  {{ empty_state("Invite your first client", "Add a buyer by email. They'll get a link to set a password, then they can browse your catalog and send you purchase orders.", url_for('admin.client_invite'), "Invite a client", icon_name="users", action_variant="secondary") }}
 </div>
 {% else %}
 <section class="stack" aria-label="Clients">
@@ -79,7 +79,7 @@
   </div>
   {% else %}
   <div class="card">
-    {{ empty_state("No clients match", "Try a different search or status, or clear the filters to see everyone.", url_for('admin.clients'), "Clear filters", icon_name="search") }}
+    {{ empty_state("No clients match", "Try a different search or status, or clear the filters to see everyone.", url_for('admin.clients'), "Clear filters", icon_name="search", action_variant="secondary") }}
   </div>
   {% endif %}
 </section>

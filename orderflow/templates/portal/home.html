@@ -78,7 +78,7 @@
       <li><strong>Place the order.</strong> {{ supplier }} reviews it, and you can follow its status here and on the Orders page.</li>
     </ol>
     <div class="cluster">
-      {{ link_button("Browse the catalog", url_for('portal.catalog'), variant="primary", icon_name="box") }}
+      {{ link_button("Browse the catalog", url_for('portal.catalog'), variant="secondary", icon_name="box") }}
       {% if cart_items %}{{ link_button("Review your cart", url_for('portal.cart'), variant="secondary", icon_name="cart") }}{% endif %}
     </div>
   </div>
