@@ -1,51 +1,74 @@
 {% extends "base.html" %}
+{# Public site: header with a menu that folds away on phones, and a footer.
+   Pages fill `content`; the landing page moves flash messages next to its
+   contact form by overriding `flashes`. #}
 {% block body_class %}page-marketing{% endblock %}
 {% block body %}
+{% set home = url_for('public.index') %}
 <header class="site-header">
   <div class="container site-header__inner">
-    <a class="brand" href="{{ url_for('public.index') }}" aria-label="{{ APP_NAME }} home">
+    <a class="brand" href="{{ home }}" aria-label="{{ APP_NAME }} home">
       <img class="brand__mark" src="{{ url_for('static', filename='img/logo-mark.svg') }}" alt="" width="28" height="28">
       <span class="brand__name">{{ APP_NAME }}</span>
     </a>
-    <button type="button" class="site-header__toggle" data-nav-toggle aria-expanded="false" aria-controls="site-nav">
-      {{ icon('menu') }}<span class="visually-hidden">Menu</span>
+    <button type="button" class="menu-button site-header__toggle" data-nav-toggle aria-expanded="false" aria-controls="site-nav">
+      {{ icon('menu', class="menu-button__open") }}{{ icon('x', class="menu-button__close") }}<span class="visually-hidden">Menu</span>
     </button>
     <nav class="site-nav" id="site-nav" aria-label="Main">
-      <a href="{{ url_for('public.index') }}#features">Product</a>
-      <a href="{{ url_for('public.index') }}#how-it-works">How it works</a>
-      <a href="{{ url_for('public.index') }}#pricing">Pricing</a>
-      <a href="{{ url_for('public.index') }}#faq">FAQ</a>
+      <a href="{{ home }}#features">Product</a>
+      <a href="{{ home }}#how-it-works">How it works</a>
+      <a href="{{ home }}#pricing">Pricing</a>
+      <a href="{{ home }}#faq">FAQ</a>
       <span class="site-nav__spacer"></span>
       {% if current_user.is_authenticated %}
         <a class="btn btn--primary btn--sm" href="{{ url_for('public.start') }}">Open {{ APP_NAME }}</a>
       {% else %}
-        <a href="{{ url_for('auth.login') }}">Sign in</a>
+        <a class="site-nav__signin" href="{{ url_for('auth.login') }}">Sign in</a>
         <a class="btn btn--primary btn--sm" href="{{ url_for('auth.signup') }}">Start free</a>
       {% endif %}
     </nav>
   </div>
 </header>
 <main id="main" class="site-main">
-  <div class="container">{{ flashes() }}</div>
+  {% block flashes %}<div class="container site-flashes">{{ flashes() }}</div>{% endblock %}
   {% block content %}{% endblock %}
 </main>
 <footer class="site-footer">
   <div class="container site-footer__inner">
     <div class="site-footer__brand">
-      <a class="brand" href="{{ url_for('public.index') }}">
+      <a class="brand" href="{{ home }}">
         <img class="brand__mark" src="{{ url_for('static', filename='img/logo-mark.svg') }}" alt="" width="24" height="24">
         <span class="brand__name">{{ APP_NAME }}</span>
       </a>
       <p class="muted">Ordering software for suppliers and the businesses they sell to.</p>
     </div>
     <nav class="site-footer__nav" aria-label="Footer">
-      <a href="{{ url_for('public.index') }}#features">Product</a>
-      <a href="{{ url_for('public.index') }}#pricing">Pricing</a>
-      <a href="{{ url_for('public.index') }}#contact">Contact</a>
-      <a href="{{ url_for('public.privacy') }}">Privacy</a>
-      <a href="{{ url_for('public.terms') }}">Terms</a>
+      <div>
+        <h2 class="site-footer__heading">Product</h2>
+        <ul class="site-footer__links">
+          <li><a href="{{ home }}#features">Features</a></li>
+          <li><a href="{{ home }}#how-it-works">How it works</a></li>
+          <li><a href="{{ home }}#pricing">Pricing</a></li>
+          <li><a href="{{ home }}#faq">FAQ</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2 class="site-footer__heading">Get started</h2>
+        <ul class="site-footer__links">
+          <li><a href="{{ url_for('auth.signup') }}">Create an account</a></li>
+          <li><a href="{{ url_for('auth.login') }}">Sign in</a></li>
+          <li><a href="{{ home }}#contact">Contact us</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2 class="site-footer__heading">Legal</h2>
+        <ul class="site-footer__links">
+          <li><a href="{{ url_for('public.privacy') }}">Privacy Policy</a></li>
+          <li><a href="{{ url_for('public.terms') }}">Terms of Service</a></li>
+        </ul>
+      </div>
     </nav>
-    <p class="site-footer__legal muted">© {{ current_year }} {{ config.LEGAL_NAME }}</p>
+    <p class="site-footer__legal">© {{ current_year }} {{ config.LEGAL_NAME }}</p>
   </div>
 </footer>
 {% endblock %}

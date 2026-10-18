@@ -1,5 +1,8 @@
 {% extends "base.html" %}
-{# Staff workspace: sidebar navigation. Pages set active_nav to highlight their item. #}
+{# Staff workspace: sidebar navigation that becomes a drawer on small screens.
+   Pages set active_nav to highlight their item, and may fill topbar_title
+   (defaults to the page title) and topbar_actions. A view can pass
+   nav_badges, e.g. {'orders': 4}, to show a count next to a nav item. #}
 {% block body_class %}page-app{% endblock %}
 {% block body %}
 {% set nav = [
@@ -11,19 +14,27 @@
 ] %}
 {% if current_user.is_owner %}{% set nav = nav + [('team', 'admin.team', 'Team', 'team')] %}{% endif %}
 {% set nav = nav + [('settings', 'admin.settings', 'Settings', 'settings')] %}
+{% set badges = nav_badges if nav_badges is mapping else {} %}
 <div class="shell">
   <aside class="sidebar" id="sidebar" data-sidebar>
     <div class="sidebar__top">
-      <a class="brand" href="{{ url_for('admin.dashboard') }}">
-        <img class="brand__mark" src="{{ url_for('static', filename='img/logo-mark.svg') }}" alt="" width="26" height="26">
-        <span class="brand__name">{{ APP_NAME }}</span>
-      </a>
+      <div class="sidebar__head">
+        <a class="brand" href="{{ url_for('admin.dashboard') }}">
+          <img class="brand__mark" src="{{ url_for('static', filename='img/logo-mark.svg') }}" alt="" width="26" height="26">
+          <span class="brand__name">{{ APP_NAME }}</span>
+        </a>
+        <button type="button" class="menu-button sidebar__close" data-sidebar-toggle aria-expanded="false" aria-controls="sidebar">
+          {{ icon('x') }}<span class="visually-hidden">Close navigation</span>
+        </button>
+      </div>
       <p class="sidebar__company" title="{{ current_user.company.name }}">{{ current_user.company.name }}</p>
     </div>
     <nav class="sidebar__nav" aria-label="Workspace">
       {% for key, endpoint, label, icon_name in nav %}
+      {% set count = badges.get(key) %}
       <a class="nav-link{% if active_nav == key %} is-active{% endif %}" href="{{ url_for(endpoint) }}"{% if active_nav == key %} aria-current="page"{% endif %}>
         {{ icon(icon_name) }}<span>{{ label }}</span>
+        {%- if count is number and count > 0 %}<span class="nav-link__count">{{ "{:,}".format(count) if count < 1000 else "999+" }}<span class="visually-hidden"> waiting</span></span>{% endif %}
       </a>
       {% endfor %}
     </nav>
@@ -43,10 +54,10 @@
   </aside>
   <div class="shell__main">
     <header class="topbar">
-      <button type="button" class="topbar__menu" data-sidebar-toggle aria-expanded="false" aria-controls="sidebar">
+      <button type="button" class="menu-button topbar__menu" data-sidebar-toggle aria-expanded="false" aria-controls="sidebar">
         {{ icon('menu') }}<span class="visually-hidden">Open navigation</span>
       </button>
-      <div class="topbar__title">{% block topbar_title %}{% endblock %}</div>
+      <div class="topbar__title">{% block topbar_title %}{% endblock %}{% if not self.topbar_title() | trim %}{{ self.title() }}{% endif %}</div>
       <div class="topbar__actions">{% block topbar_actions %}{% endblock %}</div>
     </header>
     <main id="main" class="main">

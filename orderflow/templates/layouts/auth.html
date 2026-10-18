@@ -1,4 +1,7 @@
 {% extends "base.html" %}
+{# Sign-in pages: the form on the left, a brand panel on the right on wide
+   screens. Pages fill `content` and may replace the panel with `aside`. #}
+{% from "macros/ui.html" import status_badge %}
 {% block body_class %}page-auth{% endblock %}
 {% block body %}
 <div class="auth">
@@ -15,8 +18,30 @@
       <a href="{{ url_for('public.privacy') }}">Privacy</a> · <a href="{{ url_for('public.terms') }}">Terms</a>
     </p>
   </main>
-  <aside class="auth__aside" aria-hidden="true">
-    {% block aside %}{% endblock %}
+  <aside class="auth__aside weave" aria-hidden="true">
+    {% block aside %}
+    <p class="auth-visual__title">Every order from every client, in one calm list.</p>
+    <ul class="auth-visual__orders">
+      {% for number, client, status in [
+        ('ORD-000022', 'Mehta Hardware Stores', 'pending'),
+        ('ORD-000018', 'Greenleaf Foods', 'approved'),
+        ('ORD-000002', 'Sunrise Retail LLP', 'fulfilled'),
+      ] %}
+      <li class="auth-visual__order">
+        <div>
+          <p class="auth-visual__number">{{ number }}</p>
+          <p class="auth-visual__client">{{ client }}</p>
+        </div>
+        {{ status_badge(status) }}
+      </li>
+      {% endfor %}
+    </ul>
+    <ul class="auth-visual__points">
+      <li>{{ icon('check') }}A private catalog and portal for each client</li>
+      <li>{{ icon('check') }}GST worked out on every line</li>
+      <li>{{ icon('check') }}Email updates at every step</li>
+    </ul>
+    {% endblock %}
   </aside>
 </div>
 {% endblock %}

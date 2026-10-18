@@ -1,37 +1,44 @@
 {% extends "base.html" %}
-{# Client portal: top navigation with the supplier's name. Pages set active_nav. #}
+{# Client portal: a top bar with the supplier's name, the cart (always in
+   view) and a menu that folds away on phones. Pages set active_nav. #}
 {% block body_class %}page-portal{% endblock %}
 {% block body %}
+{% set company = current_user.company %}
 {% set nav = [
   ('home', 'portal.home', 'Home', 'home'),
   ('catalog', 'portal.catalog', 'Catalog', 'box'),
   ('orders', 'portal.orders', 'Orders', 'orders'),
   ('account', 'portal.account', 'Account', 'settings'),
 ] %}
-{% set cart_count = (session.get('cart') or {}).values() | sum %}
+{% set raw_cart = session.get('cart') %}
+{% set cart_count = (raw_cart.values() | select('number') | sum) if raw_cart is mapping else 0 %}
 <header class="portal-header">
   <div class="container portal-header__inner">
     <a class="brand" href="{{ url_for('portal.home') }}">
-      <img class="brand__mark" src="{{ url_for('static', filename='img/logo-mark.svg') }}" alt="" width="26" height="26">
-      <span class="brand__name">{{ current_user.company.name }}</span>
+      <span class="brand__monogram" aria-hidden="true">{{ (company.name | trim)[:1] | upper or '?' }}</span>
+      <span class="brand__text">
+        <span class="brand__name">{{ company.name }}</span>
+        <span class="brand__sub">Ordering portal</span>
+      </span>
     </a>
-    <button type="button" class="portal-header__toggle" data-nav-toggle aria-expanded="false" aria-controls="portal-nav">
-      {{ icon('menu') }}<span class="visually-hidden">Menu</span>
-    </button>
     <nav class="portal-nav" id="portal-nav" aria-label="Portal">
       {% for key, endpoint, label, icon_name in nav %}
       <a class="nav-link{% if active_nav == key %} is-active{% endif %}" href="{{ url_for(endpoint) }}"{% if active_nav == key %} aria-current="page"{% endif %}>
         {{ icon(icon_name) }}<span>{{ label }}</span>
       </a>
       {% endfor %}
-      <a class="cart-link{% if active_nav == 'cart' %} is-active{% endif %}" href="{{ url_for('portal.cart') }}">
-        {{ icon('cart') }}<span>Cart</span>{% if cart_count %}<span class="cart-link__count">{{ cart_count }}</span>{% endif %}
-      </a>
       <form method="post" action="{{ url_for('auth.logout') }}" class="portal-nav__logout">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit" class="nav-link nav-link--button">{{ icon('logout') }}<span>Sign out</span></button>
       </form>
     </nav>
+    <a class="cart-link{% if active_nav == 'cart' %} is-active{% endif %}" href="{{ url_for('portal.cart') }}"{% if active_nav == 'cart' %} aria-current="page"{% endif %}>
+      {{ icon('cart') }}<span class="cart-link__label">Cart</span>
+      {%- if cart_count %}<span class="cart-link__count">{{ "{:,}".format(cart_count) if cart_count < 1000 else "999+" }}<span class="visually-hidden"> {{ "unit" if cart_count == 1 else "units" }}</span></span>{% endif %}
+    </a>
+    <button type="button" class="menu-button portal-header__toggle" data-nav-toggle aria-expanded="false" aria-controls="portal-nav">
+      {{ icon('menu', class="menu-button__open") }}{{ icon('x', class="menu-button__close") }}<span class="visually-hidden">Menu</span>
+    </button>
   </div>
 </header>
 <main id="main" class="portal-main">
@@ -41,9 +48,13 @@
   </div>
 </main>
 <footer class="portal-footer">
-  <div class="container muted">
-    {{ current_user.company.name }}{% if current_user.company.support_email %} · <a href="mailto:{{ current_user.company.support_email }}">{{ current_user.company.support_email }}</a>{% endif %}{% if current_user.company.phone %} · {{ current_user.company.phone }}{% endif %}
-    <span class="portal-footer__powered">Powered by {{ APP_NAME }}</span>
+  <div class="container portal-footer__inner">
+    <p class="portal-footer__contact">
+      <span>{{ company.name }}</span>
+      {% if company.support_email %}<a href="mailto:{{ company.support_email }}">{{ company.support_email }}</a>{% endif %}
+      {% if company.phone %}<a href="tel:{{ company.phone | replace(' ', '') }}">{{ company.phone }}</a>{% endif %}
+    </p>
+    <p class="portal-footer__powered">Powered by {{ APP_NAME }}</p>
   </div>
 </footer>
 {% endblock %}
