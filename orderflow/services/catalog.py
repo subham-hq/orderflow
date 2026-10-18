@@ -42,6 +42,9 @@ DEFAULT_UNIT = "unit"
 CSV_COLUMNS = ("sku", "name", "price", "gst_percent", "category", "unit", "description", "active")
 REQUIRED_CSV_COLUMNS = ("sku", "name", "price", "gst_percent")
 MAX_IMPORT_ROWS = 5000
+# The longest value a cell may hold. Descriptions allow 2,000 characters; a
+# much longer value is nearly always a missing closing quote swallowing rows.
+MAX_CSV_CELL_LENGTH = 5000
 
 # Cells starting with these are treated as formulas by spreadsheet apps
 _FORMULA_PREFIXES = ("=", "+", "-", "@", "\t", "\r")
@@ -252,33 +255,81 @@ def read_products_csv(data):
             "Save it as CSV UTF-8 and upload it again."
         )
 
+    reader = csv.reader(io.StringIO(text, newline=""), strict=True)
     try:
-        records = list(csv.reader(io.StringIO(text, newline=""), strict=True))
+        header = [_header_name(cell) for cell in next(reader, [])]
+        _check_cell_lengths(header, 1)
+        used, unnamed = _check_header(header)
+        names = [name for _, name in used]
+
+        # Rows are read one at a time, and only the first MAX_IMPORT_ROWS are
+        # kept: past that the rest are just counted for the message, so a
+        # file of millions of tiny rows can't fill the server's memory.
+        rows, product_count = [], 0
+        for index, cells in enumerate(reader, start=2):
+            if not any(cell.strip() for cell in cells):
+                continue  # blank lines are skipped
+            product_count += 1
+            if product_count > MAX_IMPORT_ROWS:
+                continue
+            _check_cell_lengths(cells, index)
+            for position in unnamed:
+                if position < len(cells) and cells[position].strip():
+                    raise CatalogError(
+                        f"Column {position + 1} has values but no header. "
+                        f"Give it one of these names: {', '.join(CSV_COLUMNS)}."
+                    )
+            rows.append(_csv_row(index, cells, header, used))
     except csv.Error as error:
+        if "field larger than field limit" in str(error):
+            raise _long_value_error("one value in this file") from None
         raise CatalogError(
             f"We couldn't read this CSV file ({error}). Check that it opens in a spreadsheet app."
         ) from None
 
-    header = [_header_name(cell) for cell in records[0]] if records else []
-    body = records[1:]
+    if product_count > MAX_IMPORT_ROWS:
+        raise CatalogError(
+            f"This file has {product_count:,} products. Import up to {MAX_IMPORT_ROWS:,} at a time by "
+            "splitting it into smaller files."
+        )
+    if not rows:
+        raise CatalogError("This file has a header but no products. Add one product per row below the header.")
+    return names, rows
 
-    used = []  # (position, column name)
-    for position, name in enumerate(header):
-        if name:
-            used.append((position, name))
-        elif any(position < len(cells) and cells[position].strip() for cells in body):
-            raise CatalogError(
-                f"Column {position + 1} has values but no header. Give it one of these names: {', '.join(CSV_COLUMNS)}."
-            )
 
+def _long_value_error(where):
+    return CatalogError(
+        f"We couldn't read this CSV file: {where} is longer than {MAX_CSV_CELL_LENGTH:,} characters. "
+        "Descriptions can be up to 2,000 characters. If a value starts with a double quote, check that it "
+        "ends with one too, then upload the file again."
+    )
+
+
+def _check_cell_lengths(cells, number):
+    """Stop at the first value far longer than any column allows (usually an unclosed quote)."""
+    if any(len(cell) > MAX_CSV_CELL_LENGTH for cell in cells):
+        raise _long_value_error(f"a value on row {number:,}")
+
+
+def _shown_name(name, limit=40):
+    """A column name for a message, cut short if someone pasted a paragraph into the header."""
+    return name if len(name) <= limit else name[: limit - 1] + "…"
+
+
+def _check_header(header):
+    """Check the header row's names. Returns (used, unnamed): the (position,
+    name) of each named column and the positions of columns with no name."""
+    used = [(position, name) for position, name in enumerate(header) if name]
+    unnamed = [position for position, name in enumerate(header) if not name]
     names = [name for _, name in used]
     for name in names:
         if names.count(name) > 1:
-            raise CatalogError(f"The column “{name}” appears more than once. Keep one and try again.")
+            raise CatalogError(f"The column “{_shown_name(name)}” appears more than once. Keep one and try again.")
     unknown = [name for name in names if name not in CSV_COLUMNS]
     if unknown:
         raise CatalogError(
-            f"We don't recognise the column “{unknown[0]}”. Use these column names: {', '.join(CSV_COLUMNS)}."
+            f"We don't recognise the column “{_shown_name(unknown[0])}”. "
+            f"Use these column names: {', '.join(CSV_COLUMNS)}."
         )
     missing = [name for name in REQUIRED_CSV_COLUMNS if name not in names]
     if missing:
@@ -286,28 +337,18 @@ def read_products_csv(data):
             f"This file is missing the {'column' if len(missing) == 1 else 'columns'} {', '.join(missing)}. "
             f"The first row must be a header like: {','.join(CSV_COLUMNS)}"
         )
+    return used, unnamed
 
-    rows = []
-    for index, cells in enumerate(body, start=2):
-        if not any(cell.strip() for cell in cells):
-            continue  # blank lines are skipped
-        row = CsvRow(number=index)
-        extra = cells[len(header) :]
-        if any(cell.strip() for cell in extra):
-            row.error = (
-                "This row has more values than there are columns. If a value contains a comma, "
-                "put the whole value in double quotes."
-            )
-        for position, name in used:
-            cell = cells[position] if position < len(cells) else ""
-            row.values[name] = _unescape_cell(cell.strip())
-        rows.append(row)
 
-    if not rows:
-        raise CatalogError("This file has a header but no products. Add one product per row below the header.")
-    if len(rows) > MAX_IMPORT_ROWS:
-        raise CatalogError(
-            f"This file has {len(rows):,} products. Import up to {MAX_IMPORT_ROWS:,} at a time by "
-            "splitting it into smaller files."
+def _csv_row(number, cells, header, used):
+    row = CsvRow(number=number)
+    extra = cells[len(header) :]
+    if any(cell.strip() for cell in extra):
+        row.error = (
+            "This row has more values than there are columns. If a value contains a comma, "
+            "put the whole value in double quotes."
         )
-    return names, rows
+    for position, name in used:
+        cell = cells[position] if position < len(cells) else ""
+        row.values[name] = _unescape_cell(cell.strip())
+    return row
