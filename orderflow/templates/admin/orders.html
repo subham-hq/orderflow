@@ -1,0 +1,96 @@
+{% extends "layouts/app.html" %}
+{% from "macros/ui.html" import icon, page_header, link_button, button, status_badge, money, empty_state, pagination %}
+{% set active_nav = "orders" %}
+{% block title %}Orders{% endblock %}
+{% block topbar_title %}Orders{% endblock %}
+{% block content %}
+{{ page_header("Orders", "Review, approve and fulfil the purchase orders your clients place.") }}
+
+{% if not has_orders %}
+<div class="card">
+  {{ empty_state("No orders yet", "When your clients place orders from their portal, they appear here for you to review. Invite a client to get started.", url_for('admin.clients'), "Invite a client", "orders") }}
+</div>
+{% else %}
+<div class="stack">
+  <nav class="tabs" aria-label="Filter orders by status">
+    {% for tab in tabs %}
+    <a class="tab{% if tab.active %} is-active{% endif %}" href="{{ tab.url }}"{% if tab.active %} aria-current="page"{% endif %}>{{ tab.label }} <span class="tab__count">{{ "{:,}".format(tab.count) }}</span></a>
+    {% endfor %}
+  </nav>
+
+  <form class="toolbar" method="get" action="{{ url_for('admin.orders') }}" role="search" data-allow-resubmit>
+    {% if filters.status %}<input type="hidden" name="status" value="{{ filters.status }}">{% endif %}
+    <div class="search">
+      <label class="visually-hidden" for="order-search">Search orders</label>
+      {{ icon('search') }}
+      <input class="input" type="search" id="order-search" name="q" value="{{ filters.q }}" maxlength="100" placeholder="Order number, client or email" autocomplete="off">
+    </div>
+    <div class="toolbar__field">
+      <label class="field__label" for="order-from">From</label>
+      <input class="input" type="date" id="order-from" name="from" value="{{ filters.raw_from }}">
+    </div>
+    <div class="toolbar__field">
+      <label class="field__label" for="order-to">To</label>
+      <input class="input" type="date" id="order-to" name="to" value="{{ filters.raw_to }}">
+    </div>
+    {{ button("Apply", variant="secondary", icon_name="filter") }}
+    {% if filters.searching %}<a class="text-link" href="{{ clear_url }}">Clear search and dates</a>{% endif %}
+  </form>
+
+  {% for message in filters.messages %}
+  <div class="alert alert--warning" role="alert">{{ icon('alert') }}<p class="alert__text">{{ message }}</p></div>
+  {% endfor %}
+
+  {% if page.items %}
+  <p class="muted">
+    {% if page.pages > 1 %}Showing {{ "{:,}".format(page.first) }}–{{ "{:,}".format(page.last) }} of {{ "{:,}".format(page.total) }} orders{% else %}{{ "{:,}".format(page.total) }} order{{ "s" if page.total != 1 }}{% endif %}
+  </p>
+  <div class="card card--flush">
+    <div class="table-wrap">
+      <table class="table">
+        <caption class="visually-hidden">{{ status_label }} orders, newest first</caption>
+        <thead>
+          <tr>
+            <th scope="col">Order</th>
+            <th scope="col">Client</th>
+            <th scope="col">Placed</th>
+            <th scope="col" class="num">Items</th>
+            <th scope="col" class="num">Total</th>
+            <th scope="col">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for order in page.items %}
+          {% set client = order.client %}
+          <tr>
+            <td class="nowrap"><a class="text-link mono" href="{{ url_for('admin.order_detail', number=order.number) }}">{{ order.number }}</a></td>
+            <td>
+              <span class="table__primary">{{ client.buyer_company or client.full_name }}</span>
+              {% if client.buyer_company %}<span class="table__secondary">{{ client.full_name }}</span>{% endif %}
+            </td>
+            <td class="nowrap">
+              <span class="table__primary"><time datetime="{{ order.placed_at | datetime('%Y-%m-%dT%H:%M%z') }}">{{ order.placed_at | date }}</time></span>
+              <span class="table__secondary">{{ order.placed_at | timeago }}</span>
+            </td>
+            <td class="num">{{ line_counts.get(order.id, 0) }}</td>
+            <td class="num">{{ money(order.total_paise) }}</td>
+            <td>{{ status_badge(order.status) }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {{ pagination(page, 'admin.orders') }}
+  {% elif filters.searching %}
+  <div class="card">
+    {{ empty_state("No orders match your search", "Check the spelling, or try a wider date range. Search looks at order numbers, client names, buyer companies and email addresses.", clear_url, "Clear search and dates", "search") }}
+  </div>
+  {% else %}
+  <div class="card">
+    {{ empty_state("No " ~ status_label | lower ~ " orders", empty_tab_text, icon_name="orders") }}
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}
