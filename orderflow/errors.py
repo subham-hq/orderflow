@@ -1,11 +1,9 @@
 """Friendly error pages."""
 
-import logging
-
 from flask import render_template, request
 from flask_wtf.csrf import CSRFError
 
-log = logging.getLogger(__name__)
+from .security import log_safe_path
 
 ERRORS = {
     400: ("Something was wrong with that request", "Please go back and try again."),
@@ -43,10 +41,18 @@ def init_errors(app):
     for code in (400, 403, 404, 405, 413, 429):
         app.register_error_handler(code, lambda error, code=code: _render(code))
 
+    def log_exception(exc_info):
+        # Flask calls this once for every unhandled exception, just before the
+        # 500 handler below. Replacing it (rather than logging again in the
+        # handler) keeps one traceback per error, and the path never shows a
+        # token from an emailed link.
+        app.logger.error("Unhandled error on %s %s", request.method, log_safe_path(request.path), exc_info=exc_info)
+
+    app.log_exception = log_exception
+
     @app.errorhandler(500)
     def server_error(error):
         from .extensions import db
 
-        log.exception("Unhandled error on %s %s", request.method, request.path)
         db.session.rollback()
         return _render(500)
