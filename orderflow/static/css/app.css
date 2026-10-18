@@ -14,23 +14,8 @@
 :root {
   color-scheme: light;
 
-  /* Brand: indigo ink and marigold */
-  --indigo-950: #0c1440;
-  --indigo-900: #121d52;
-  --indigo-800: #1b2a6b;
-  --indigo-700: #24378a;
-  --indigo-600: #3044b0;
-  --indigo-500: #4a5fd0;
-  --indigo-300: #9aa6ea;
-  --indigo-200: #c9d0f2;
-  --indigo-100: #e4e8f9;
-  --indigo-50: #f0f2fc;
-  --marigold-700: #8a5300;
-  --marigold-600: #e0921f;
-  --marigold-500: #f2a93b;
-  --marigold-300: #f8cd85;
-  --marigold-100: #fdeccd;
-  --marigold-50: #fef6e6;
+  /* Brand: indigo ink (#1b2a6b) and marigold (#f2a93b). Components use the
+     semantic tokens below, which the dark theme redraws, never raw brand hex. */
 
   /* Surfaces, lines and text */
   --bg: #f5f6fb;
