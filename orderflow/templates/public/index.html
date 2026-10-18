@@ -294,7 +294,8 @@
     <div class="card contact__form">
       <div class="card__body">
         {{ flashes() }}
-        <form method="post" action="{{ url_for('public.contact') }}" class="stack">
+        {# The #contact fragment opens the page again at the form, errors in view, even without JavaScript #}
+        <form method="post" action="{{ url_for('public.contact', _anchor='contact') }}" class="stack">
           {{ contact_form.hidden_tag() }}
           <div class="grid grid--2">
             {{ field(contact_form.name, autocomplete="name") }}

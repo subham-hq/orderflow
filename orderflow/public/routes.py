@@ -14,10 +14,29 @@ from . import bp
 
 
 class ContactForm(FlaskForm):
-    name = StringField("Your name", validators=[DataRequired(), Length(max=120)])
-    email = EmailField("Work email", validators=[DataRequired(), Email(), Length(max=254)])
-    company = StringField("Company", validators=[Optional(), Length(max=160)])
-    message = TextAreaField("What do you sell, and to whom?", validators=[Optional(), Length(max=2000)])
+    name = StringField(
+        "Your name",
+        validators=[
+            DataRequired("Enter your name."),
+            Length(max=120, message="Keep your name to 120 characters or fewer."),
+        ],
+    )
+    email = EmailField(
+        "Work email",
+        validators=[
+            DataRequired("Enter your work email."),
+            Length(max=254, message="Keep the email address to 254 characters or fewer."),
+            Email("Enter a valid email address, like name@business.in."),
+        ],
+    )
+    company = StringField(
+        "Company",
+        validators=[Optional(), Length(max=160, message="Keep the company name to 160 characters or fewer.")],
+    )
+    message = TextAreaField(
+        "What do you sell, and to whom?",
+        validators=[Optional(), Length(max=2000, message="Keep your message to 2,000 characters or fewer.")],
+    )
 
 
 @bp.route("/")

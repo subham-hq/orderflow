@@ -143,7 +143,7 @@ def test_landing_header_offers_sign_in_when_signed_out(client):
 
 def test_contact_form_renders_every_field(client):
     html = page(client.get("/"))
-    forms = [f for f in html.find_all("form") if f.get("action") == "/contact"]
+    forms = [f for f in html.find_all("form") if f.get("action") == "/contact#contact"]
     assert len(forms) == 1 and forms[0]["method"] == "post"
     for name in ("name", "email", "company", "message"):
         assert html.find_all(id=name), name
