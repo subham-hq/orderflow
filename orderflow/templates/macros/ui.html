@@ -122,11 +122,16 @@
 </{{ tag }}>
 {%- endmacro %}
 
-{# pagination: a SQLAlchemy Pagination object; endpoint and kwargs build page links #}
-{% macro pagination(page, endpoint) -%}
+{# pagination: a SQLAlchemy Pagination object; endpoint builds the page links.
+   The links keep only the list filters named in keep, never every query
+   argument: a stray ?endpoint= or ?_method= would otherwise reach url_for
+   as one of its own arguments and fail. #}
+{% macro pagination(page, endpoint, keep=("q", "status", "category", "from", "to")) -%}
 {% if page and page.pages > 1 %}
 {% set link_args = dict(request.view_args or {}) %}
-{% set _ = link_args.update(request.args.to_dict()) %}
+{% for key, value in request.args.items() if key in keep %}
+{% set _ = link_args.update({key: value}) %}
+{% endfor %}
 <nav class="pagination" aria-label="Pages">
   {% if page.has_prev %}
     {% set _ = link_args.update({'page': page.prev_num}) %}
