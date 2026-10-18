@@ -1,0 +1,87 @@
+{% extends "layouts/app.html" %}
+{% from "macros/ui.html" import field, form_errors, button, link_button, post_button, page_header, badge %}
+{% set active_nav = "products" %}
+{% set editing = product is not none %}
+{% block title %}{% if editing %}Edit {{ product.name }}{% else %}New product{% endif %}{% endblock %}
+{% block topbar_title %}Catalog{% endblock %}
+{% block content %}
+{% if editing %}
+{% call page_header(product.name, "Changes apply to new orders. Past orders and invoices keep the details they were placed with.", eyebrow="Edit product") %}
+  {% if product.is_active %}{{ badge("Active", "success") }}{% else %}{{ badge("Hidden", "neutral") }}{% endif %}
+{% endcall %}
+{% else %}
+{{ page_header("New product", "Add something your clients can order. You can edit it any time.", eyebrow="Catalog") }}
+{% endif %}
+
+<div class="sidebar-layout">
+  <form method="post" class="stack" novalidate>
+    {{ form.hidden_tag() }}
+    {{ form_errors(form) }}
+    <div class="card">
+      <div class="card__header"><h2 class="card__title">Product details</h2></div>
+      <div class="card__body stack">
+        {{ field(form.name, autofocus=not editing, placeholder="Corrugated carton, 5-ply") }}
+        <div class="grid grid--2">
+          {{ field(form.sku, hint="Letters, numbers and - _ . / only. We'll capitalise it for you.", placeholder="CTN-001", autocomplete="off") }}
+          {{ field(form.category, list="category-options", hint="Pick one you already use or type a new one.", autocomplete="off") }}
+        </div>
+        {{ field(form.description, rows=4, hint="Optional. Sizes, materials, pack contents: anything that helps clients choose.") }}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card__header"><h2 class="card__title">Price and tax</h2></div>
+      <div class="card__body stack">
+        <div class="grid grid--3">
+          {{ field(form.price, inputmode="decimal", placeholder="1250.50", autocomplete="off") }}
+          {{ field(form.gst_rate, hint="Added on top of the price at checkout.") }}
+          {{ field(form.unit, list="unit-options", hint="How you sell it, like box or kg.", autocomplete="off") }}
+        </div>
+        {{ field(form.is_active, hint="Turn this off to hide the product from clients without losing it.") }}
+      </div>
+    </div>
+
+    <datalist id="category-options">
+      {% for name in categories %}<option value="{{ name }}"></option>{% endfor %}
+    </datalist>
+    <datalist id="unit-options">
+      {% for name in units %}<option value="{{ name }}"></option>{% endfor %}
+    </datalist>
+
+    <div class="cluster">
+      {{ button("Save changes" if editing else "Add product") }}
+      {% if not editing %}{{ button("Add and start another", variant="secondary", name="next_action", value="another") }}{% endif %}
+      {{ link_button("Cancel", url_for('admin.products'), variant="ghost") }}
+    </div>
+  </form>
+
+  <aside class="stack" aria-label="About this product">
+    {% if editing %}
+    <div class="card">
+      <div class="card__header"><h2 class="card__title">At a glance</h2></div>
+      <div class="card__body">
+        <dl class="kv">
+          <div class="kv__row"><dt class="kv__label">SKU</dt><dd class="kv__value mono">{{ product.sku }}</dd></div>
+          <div class="kv__row"><dt class="kv__label">On past orders</dt><dd class="kv__value">{{ "{:,}".format(order_lines) }} line{{ "" if order_lines == 1 else "s" }}</dd></div>
+          <div class="kv__row"><dt class="kv__label">Added</dt><dd class="kv__value">{{ product.created_at | date }}</dd></div>
+          <div class="kv__row"><dt class="kv__label">Last changed</dt><dd class="kv__value">{{ product.updated_at | datetime }}</dd></div>
+        </dl>
+      </div>
+      <div class="card__footer">
+        {% if product.is_active %}
+        {{ post_button(url_for('admin.product_status', product_id=product.id), "Hide from clients", variant="secondary", icon_name="eye-off", fields={"active": 0, "next": url_for('admin.product_edit', product_id=product.id)}) }}
+        {% else %}
+        {{ post_button(url_for('admin.product_status', product_id=product.id), "Show to clients", variant="secondary", icon_name="eye", fields={"active": 1, "next": url_for('admin.product_edit', product_id=product.id)}) }}
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+    <div class="card">
+      <div class="card__header"><h2 class="card__title">Good to know</h2></div>
+      <div class="card__body stack">
+        <p>Each order keeps a copy of the name, price and GST rate at the time it was placed, so editing a product never changes past orders or invoices.</p>
+      </div>
+    </div>
+  </aside>
+</div>
+{% endblock %}
