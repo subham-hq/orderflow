@@ -124,8 +124,8 @@
   --scroll-shadow: rgba(18, 23, 53, 0.14);
 
   /* Charts */
-  --chart-bar: #c9d0f2;
-  --chart-bar-hover: #9aa6ea;
+  --chart-bar: #7d8ade;
+  --chart-bar-hover: #5d6bcf;
   --chart-bar-strong: #1b2a6b;
   --chart-accent: #f2a93b;
   --chart-axis: #c9cee0;
@@ -317,9 +317,9 @@
     --overlay: rgba(3, 5, 16, 0.66);
     --scroll-shadow: rgba(0, 0, 0, 0.5);
 
-    --chart-bar: #2f3a7a;
-    --chart-bar-hover: #3f4b94;
-    --chart-bar-strong: #8f9cf5;
+    --chart-bar: #5d6bcf;
+    --chart-bar-hover: #7a87e4;
+    --chart-bar-strong: #c9cffc;
     --chart-accent: #f2a93b;
     --chart-axis: #39427a;
     --chart-grid: #1f2650;
@@ -2232,6 +2232,26 @@ a.stat:hover {
   --stat-label: var(--info-fg);
 }
 
+/* Dashboard metrics: two to a row on phones instead of one tall column */
+@media (min-width: 360px) and (max-width: 559px) {
+  .stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    --grid-gap: var(--space-3);
+  }
+
+  .stat-grid > .stat:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+
+  .stat-grid .stat {
+    padding: 0.875rem;
+  }
+
+  .stat-grid .stat__value {
+    font-size: 1.5rem;
+  }
+}
+
 a.stat--warning:hover {
   border-color: var(--warning-icon);
 }
@@ -2329,6 +2349,18 @@ a.stat--info:hover {
 
 .chart__area {
   fill: var(--chart-area);
+}
+
+/* The chart scales with its card; on phones its labels are drawn larger
+   so they still read at about 10px */
+@media (max-width: 639px) {
+  .chart__label {
+    font-size: 23px;
+  }
+
+  .chart__label--y {
+    font-size: 21px;
+  }
 }
 
 .chart__legend {
@@ -3309,6 +3341,23 @@ a.pagination__link:hover {
   font-variant-numeric: tabular-nums;
 }
 
+.checklist__status {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.checklist__meter {
+  width: 5rem;
+  height: 6px;
+  margin: 0;
+  border-radius: 3px;
+}
+
+.checklist__meter .meter__fill {
+  fill: var(--success-icon);
+}
+
 /* A small heading for a group of cards that has no card of its own */
 .section-label {
   margin: 0;
@@ -3384,6 +3433,12 @@ a.pagination__link:hover {
     repeating-linear-gradient(90deg, var(--weave-thread-2) 0 1px, transparent 1px 7px);
   background-size: 28px 28px, auto, auto;
   color: var(--ink-text);
+}
+
+/* Focus rings stay visible on indigo: marigold instead of indigo */
+.weave,
+.band--ink {
+  --focus: var(--stitch);
 }
 
 .weave h1,

@@ -15,7 +15,10 @@
   <section class="card checklist" aria-labelledby="checklist-title">
     <div class="card__header">
       <h2 class="card__title" id="checklist-title">Get your workspace ready</h2>
-      <p class="checklist__progress muted">{{ progress.done }} of {{ progress.total }} done</p>
+      <div class="checklist__status">
+        <p class="checklist__progress muted">{{ progress.done }} of {{ progress.total }} done</p>
+        <svg class="meter checklist__meter" viewBox="0 0 100 4" preserveAspectRatio="none" aria-hidden="true" focusable="false"><rect class="meter__track" width="100" height="4" rx="2"></rect><rect class="meter__fill" width="{{ (progress.done * 100 // progress.total) if progress.total else 0 }}" height="4" rx="2"></rect></svg>
+      </div>
     </div>
     <div class="card__body">
       <ol class="checklist__list">
@@ -28,7 +31,7 @@
             {% if not step.action_url %}<p class="checklist__text muted">Clients sign in at <span class="mono">{{ portal_login_url }}</span></p>{% endif %}
           </div>
           {% if step.action_url %}
-          {{ link_button(step.action_label, step.action_url, variant="secondary", size="sm") }}
+          {{ link_button(step.action_label, step.action_url, variant=("primary" if loop.first else "secondary"), size="sm") }}
           {% else %}
           <button type="button" class="btn btn--ghost btn--sm" data-copy="{{ portal_login_url }}">Copy client sign-in link</button>
           {% endif %}
@@ -41,7 +44,7 @@
 
   <section aria-labelledby="kpi-title">
     <h2 class="visually-hidden" id="kpi-title">{{ kpis.month.label }} at a glance</h2>
-    <div class="grid grid--4">
+    <div class="grid grid--4 stat-grid">
       {{ stat("Revenue in " ~ kpis.month.label, kpis.revenue_paise | inr_compact, revenue_hint, tone=("success" if kpis.revenue_change and kpis.revenue_change > 0 else None)) }}
       {{ stat("Awaiting review", "{:,}".format(kpis.pending_orders), (("Oldest placed " ~ (queue[0].placed_at | timeago)) if queue else "You're all caught up"), tone=("warning" if kpis.pending_orders else None), href=pending_url) }}
       {{ stat("Orders in " ~ kpis.month.label, "{:,}".format(kpis.orders_this_month), "{:,}".format(kpis.orders_previous_period) ~ " by this time in " ~ kpis.month.previous_label, href=month_orders_url) }}
@@ -69,10 +72,10 @@
             <text class="chart__label chart__label--y" x="{{ chart.left - 8 }}" y="{{ tick.position }}" text-anchor="end" dominant-baseline="middle">{{ tick.label }}</text>
             {% endfor %}
             {% for bar in chart.bars %}
-            <rect class="chart__bar{% if not bar.revenue_paise %} chart__bar--empty{% endif %}" x="{{ bar.x }}" y="{{ bar.y }}" width="{{ bar.width }}" height="{{ bar.height }}" rx="2"><title>{{ bar.label }}</title></rect>
+            <rect class="chart__bar{% if not bar.revenue_paise %} chart__bar--empty{% elif loop.last %} chart__bar--current{% endif %}" x="{{ bar.x }}" y="{{ bar.y }}" width="{{ bar.width }}" height="{{ bar.height }}" rx="2"><title>{{ bar.label }}</title></rect>
             {% endfor %}
             {% for tick in chart.x_ticks %}
-            <text class="chart__label chart__label--x" x="{{ tick.position }}" y="{{ chart.bottom + 20 }}" text-anchor="middle">{{ tick.label }}</text>
+            <text class="chart__label chart__label--x{% if loop.last %} chart__label--strong{% endif %}" x="{{ tick.position }}" y="{{ chart.bottom + 20 }}" text-anchor="middle">{{ tick.label }}</text>
             {% endfor %}
           </svg>
           <table class="visually-hidden">
@@ -142,7 +145,7 @@
                 <span class="table__primary">{{ product.name }}</span>
                 <span class="table__secondary mono">{{ product.sku }}</span>
               </td>
-              <td class="num nowrap">{{ "{:,}".format(product.quantity) }} <span class="muted">{{ product.unit }}</span></td>
+              <td class="num">{{ "{:,}".format(product.quantity) }}<span class="table__secondary">{{ product.unit }}</span></td>
               <td class="num">
                 {{ money(product.revenue_paise) }}
                 <svg class="meter" viewBox="0 0 100 4" preserveAspectRatio="none" aria-hidden="true" focusable="false"><rect class="meter__track" width="100" height="4" rx="2"></rect><rect class="meter__fill" width="{{ [(product.revenue_paise * 100 // best), 2] | max }}" height="4" rx="2"></rect></svg>
