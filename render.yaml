@@ -54,3 +54,6 @@ databases:
     databaseName: orderflow
     user: orderflow
     postgresMajorVersion: "17"
+    # No connections from the internet: the web service reaches the database
+    # over Render's private network. See docs/deploy.md to allow your own IP.
+    ipAllowList: []

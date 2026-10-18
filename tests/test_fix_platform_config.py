@@ -152,6 +152,14 @@ def test_more_than_one_worker_without_redis_is_warned_about(production, monkeypa
     assert "gunicorn workers" not in caplog.text
 
 
+def test_the_database_accepts_no_connections_from_the_internet():
+    render = (ROOT / "render.yaml").read_text()
+    databases = render[render.index("\ndatabases:") :]
+    assert re.search(r"^    ipAllowList: \[\]$", databases, re.MULTILINE)
+    # The app reaches it over the private network, through the internal URL
+    assert "property: connectionString" in render
+
+
 def test_the_shipped_server_runs_one_worker():
     render = (ROOT / "render.yaml").read_text()
     assert re.search(r'- key: WEB_CONCURRENCY\n\s+value: "1"', render)

@@ -99,6 +99,13 @@ service.
   own HTTP request logs, on plans that have them, still record full paths.
 - **Backups:** paid Render Postgres plans take daily backups; check your
   plan's retention in the database's **Backups** tab.
+- **Database access:** the Blueprint sets the database's `ipAllowList` to
+  an empty list, so it accepts no connections from the internet; the web
+  service connects over Render's private network. `flask` commands run from
+  the web service's **Shell** tab work as they are. To connect from your own
+  computer (with `psql`, say), add your address as a `/32` to the
+  database's access control list, in `render.yaml` or the dashboard, and
+  take it out again when you're done.
 - **Scaling:** the Blueprint runs one gunicorn worker (`WEB_CONCURRENCY`)
   with eight threads (`GUNICORN_THREADS`). Rate limits on signing in,
   signing up, password resets and the contact form are counted in memory by
