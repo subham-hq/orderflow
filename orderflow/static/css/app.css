@@ -4625,6 +4625,7 @@ a.pagination__link:hover {
 }
 
 .band--ink {
+  border-block: 1px solid var(--ink-line);
   background: var(--ink-bg);
   color: var(--ink-text);
 }

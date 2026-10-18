@@ -34,6 +34,32 @@ def strip_jinja_comments(source):
     return re.sub(r"\{#.*?#\}", "", source, flags=re.S)
 
 
+def html_tags(source):
+    """The HTML tags in a template, with Jinja code blanked out first."""
+    source = strip_jinja_comments(source)
+    source = re.sub(r"\{%.*?%\}", " ", source, flags=re.S)
+    source = re.sub(r"\{\{.*?\}\}", "x", source, flags=re.S)
+    return re.findall(r"<[a-zA-Z][^<>]*>", source)
+
+
+def csp_problems(source):
+    """What the Content Security Policy would block in this template."""
+    problems = []
+    for tag in html_tags(source):
+        name = re.match(r"<([a-zA-Z][\w-]*)", tag).group(1).lower()
+        if re.search(r"\sstyle\s*=", tag, re.I):
+            problems.append(f"style attribute: {tag}")
+        if re.search(r"\son[a-z]+\s*=", tag, re.I):
+            problems.append(f"event handler attribute: {tag}")
+        if name == "style":
+            problems.append("<style> block")
+        if name == "script" and not re.search(r"\ssrc\s*=", tag, re.I):
+            problems.append(f"inline script: {tag}")
+        if re.search(r"""=\s*["']?\s*javascript:""", tag, re.I):
+            problems.append(f"javascript: URL: {tag}")
+    return problems
+
+
 # --------------------------------------------------------------------------
 # Templates: nothing the Content Security Policy would block
 # --------------------------------------------------------------------------
@@ -41,30 +67,37 @@ def strip_jinja_comments(source):
 
 @pytest.mark.parametrize("path", PAGE_TEMPLATES, ids=rel)
 def test_templates_have_no_inline_styles_or_scripts(path):
-    source = strip_jinja_comments(path.read_text())
-    assert not re.search(r"""\sstyle\s*=\s*["'{]""", source), "style= attribute"
-    assert not re.search(r"<style\b", source, re.I), "<style> block"
-    for tag in re.findall(r"<script\b[^>]*>", source, re.I):
-        assert re.search(r"\ssrc\s*=", tag), f"inline script: {tag}"
-    assert not re.search(r"""\son[a-z]+\s*=\s*["']""", source, re.I), "on* event handler attribute"
-    assert "javascript:" not in source.lower(), "javascript: URL"
+    problems = csp_problems(path.read_text())
+    assert not problems, problems
 
 
-def test_the_guard_finds_what_it_should():
-    bad = [
+@pytest.mark.parametrize(
+    "source",
+    [
         '<p style="color:red">x</p>',
+        "<p class=\"a\"\n   style='color:red'>x</p>",
         "<style>p{}</style>",
         "<script>alert(1)</script>",
-        '<button onclick="go()">x</button>',
-    ]
-    for source in bad:
-        found = (
-            re.search(r"""\sstyle\s*=\s*["'{]""", source)
-            or re.search(r"<style\b", source)
-            or any(not re.search(r"\ssrc\s*=", t) for t in re.findall(r"<script\b[^>]*>", source))
-            or re.search(r"""\son[a-z]+\s*=\s*["']""", source)
-        )
-        assert found, source
+        '<button type="button" onclick="go()">x</button>',
+        '<a href="javascript:void(0)">x</a>',
+        '<div {% if wide %}style="width:100%"{% endif %}>x</div>',
+    ],
+)
+def test_the_guard_catches_inline_code(source):
+    assert csp_problems(source), source
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        '<script src="/static/js/app.js" defer></script>',
+        "{% set onboarding = 'Get started' %}{% set style = 'compact' %}",
+        '<p class="note">Turn reminders on = off</p>',
+        '<a class="btn" href="{{ url_for(\'public.index\') }}">Home</a>',
+    ],
+)
+def test_the_guard_allows_ordinary_markup(source):
+    assert not csp_problems(source), source
 
 
 def test_emails_use_inline_styles_and_no_scripts():
