@@ -31,10 +31,13 @@ def create_app(config_name=None, **overrides):
         raise RuntimeError("SECRET_KEY is not set. Generate one and add it to the environment.")
 
     if app.config["TRUST_PROXY"]:
-        # Render terminates TLS at its proxy; trust its forwarded headers once
-        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
+        # Render terminates TLS at its proxy. Trust only the forwarded values
+        # its proxy adds (the right-most ones), which clients can't forge.
+        hops = app.config["PROXY_HOPS"]
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=hops, x_proto=hops, x_host=hops)
 
     logging.basicConfig(level=app.config["LOG_LEVEL"], format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+    _warn_about_production_settings(app)
 
     db.init_app(app)
     migrate.init_app(app, db, render_as_batch=True, compare_type=True)
@@ -58,6 +61,22 @@ def create_app(config_name=None, **overrides):
 
     init_cli(app)
     return app
+
+
+def _warn_about_production_settings(app):
+    """Log clear warnings for settings that would break a live deployment."""
+    if not app.config.get("SESSION_COOKIE_SECURE"):
+        return  # not production
+    log = logging.getLogger("orderflow")
+    base_url = app.config["APP_BASE_URL"]
+    if "localhost" in base_url or not base_url.startswith("https://"):
+        log.warning("APP_BASE_URL is %r; set it to your https:// address so email links work.", base_url)
+    if app.config["MAIL_BACKEND"] == "resend" and not app.config.get("RESEND_API_KEY"):
+        log.warning("MAIL_BACKEND is resend but RESEND_API_KEY is not set; emails will not be sent.")
+    if app.config["MAIL_BACKEND"] == "console":
+        log.warning("MAIL_BACKEND is console; emails are only written to the log.")
+    if "localhost" in app.config["MAIL_FROM"]:
+        log.warning("MAIL_FROM is %r; set it to an address on your verified sending domain.", app.config["MAIL_FROM"])
 
 
 def _register_user_loader():

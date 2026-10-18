@@ -88,3 +88,34 @@ def test_portal_is_closed_to_staff(client, login, owner):
 def test_team_page_is_owner_only(client, login, admin):
     login(admin)
     assert client.get("/app/team").headers["Location"] == "/app/"
+
+
+def test_proxy_headers_are_trusted_only_from_the_proxy():
+    app = create_app("testing", TRUST_PROXY=True)
+    with app.app_context():
+        db.create_all()
+
+        @app.get("/_ip")
+        def show_ip():
+            from flask import request
+
+            return f"{request.remote_addr} {request.scheme}"
+
+        client = app.test_client()
+        # A client-supplied value comes first; the proxy appends the real address last
+        response = client.get("/_ip", headers={"X-Forwarded-For": "6.6.6.6, 203.0.113.9", "X-Forwarded-Proto": "https"})
+        assert response.get_data(as_text=True) == "203.0.113.9 https"
+        db.drop_all()
+
+
+def test_production_settings_warnings(monkeypatch, caplog):
+    from orderflow import config
+
+    monkeypatch.setattr(config.ProductionConfig, "SECRET_KEY", "x")
+    monkeypatch.setattr(config.ProductionConfig, "APP_BASE_URL", "http://localhost:5000")
+    monkeypatch.setattr(config.ProductionConfig, "RESEND_API_KEY", None)
+    monkeypatch.setattr(config.ProductionConfig, "MAIL_BACKEND", "resend")
+    create_app("production", SQLALCHEMY_DATABASE_URI="sqlite://")
+    assert "APP_BASE_URL" in caplog.text
+    assert "RESEND_API_KEY" in caplog.text
+    assert "MAIL_FROM" in caplog.text

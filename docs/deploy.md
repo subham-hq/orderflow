@@ -88,6 +88,10 @@ service.
   rate limits are kept in memory per worker. If you run more than one
   instance, add a Render Key Value (Redis) instance and set
   `RATELIMIT_STORAGE_URI` to its connection URL so limits are shared.
+- **Client IP addresses:** rate limits use the address that Render's proxy
+  adds to `X-Forwarded-For`. If Render ever puts a second proxy in front of
+  your service (for example a CDN you add yourself), set `PROXY_HOPS` to the
+  number of proxies so limits apply per visitor rather than per proxy.
 - **Secret key:** changing `SECRET_KEY` signs everyone out and invalidates
   links already sent by email.
 - **Migrations:** schema changes ship as files in `migrations/versions/` and

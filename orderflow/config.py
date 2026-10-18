@@ -89,6 +89,8 @@ class Config:
     DEFAULT_TIMEZONE = "Asia/Kolkata"
     MAX_CONTENT_LENGTH = 1 * 1024 * 1024
     TRUST_PROXY = _bool("TRUST_PROXY", False)
+    # How many proxies sit in front of the app (Render: 1)
+    PROXY_HOPS = int(os.environ.get("PROXY_HOPS", "1"))
     LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
 
 
