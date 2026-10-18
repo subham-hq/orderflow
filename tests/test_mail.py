@@ -82,7 +82,7 @@ def test_contact_form_stores_lead_and_emails_sales(client, mail, app):
 
 def test_contact_form_validation(client, mail):
     response = client.post("/contact", data={"name": "", "email": "nope"})
-    assert response.status_code == 302
+    assert response.status_code == 400
     assert mail == []
 
 

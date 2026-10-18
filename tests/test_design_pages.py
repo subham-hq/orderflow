@@ -196,11 +196,17 @@ def test_contact_messages_appear_next_to_the_form(client, mail):
     assert len(mail) == 1 and mail[0].to == ["sales@orderflow.test"]
 
 
-def test_contact_validation_error_is_shown_in_the_contact_section(client):
-    response = client.post("/contact", data={"name": "", "email": "not-an-email"}, follow_redirects=True)
+def test_contact_validation_errors_show_next_to_fields_and_keep_input(client):
+    response = client.post(
+        "/contact",
+        data={"name": "", "email": "not-an-email", "company": "Kiran Stores", "message": "40 retail stores"},
+    )
+    assert response.status_code == 400
     body = response.get_data(as_text=True)
     contact = body[body.index('id="contact"') :]
-    assert "alert--danger" in contact
+    assert contact.count("field__error") == 2  # name and email
+    assert 'value="Kiran Stores"' in contact and "40 retail stores" in contact
+    assert 'aria-invalid="true"' in contact
     assert db.session.scalar(db.select(db.func.count(Lead.id))) == 0
 
 

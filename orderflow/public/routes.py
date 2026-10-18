@@ -30,10 +30,9 @@ def index():
 def contact():
     form = ContactForm()
     if not form.validate_on_submit():
-        for errors in form.errors.values():
-            flash(errors[0], "danger")
-            break
-        return redirect(url_for("public.index", _anchor="contact"))
+        # Show the page again with the errors next to each field and the
+        # visitor's text kept, rather than redirecting and losing it.
+        return render_template("public/index.html", contact_form=form), 400
 
     lead = Lead(
         name=clean(form.name.data),

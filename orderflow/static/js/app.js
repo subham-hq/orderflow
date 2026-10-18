@@ -229,6 +229,14 @@
     });
   });
 
+  // When a page comes back with form errors, move focus to the first one so
+  // keyboard and screen reader users land on it (and it scrolls into view)
+  var firstInvalid = document.querySelector('[aria-invalid="true"]');
+  if (firstInvalid) {
+    firstInvalid.focus({ preventScroll: true });
+    firstInvalid.scrollIntoView({ block: "center" });
+  }
+
   // Hide revealed passwords again when their form is sent, so browsers don't
   // store them as ordinary text
   document.addEventListener("submit", function (event) {
