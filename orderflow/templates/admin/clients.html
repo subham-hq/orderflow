@@ -77,6 +77,21 @@
     <p class="muted">Showing {{ page.first }}–{{ page.last }} of {{ page.total }} client{{ "" if page.total == 1 else "s" }}</p>
     {{ pagination(page, 'admin.clients') }}
   </div>
+  {% elif status and counts[""] %}
+  {# The search finds clients, just none with this status #}
+  {% set matching = counts[""] %}
+  <div class="card">
+    {% if q %}
+    {{ empty_state("No " ~ status ~ " clients match your search", "Your search matches " ~ "{:,}".format(matching) ~ (" client" if matching == 1 else " clients") ~ ", but " ~ ("they aren't " if matching == 1 else "none of them are ") ~ status ~ ".", url_for('admin.clients', q=q), "Show all matching clients", icon_name="search", action_variant="secondary") }}
+    {% else %}
+    {% set tab_text = {
+      "active": "No one has accepted an invitation yet. Clients show here once they set a password and can sign in.",
+      "invited": "Everyone you've invited has accepted. Clients you invite show here until they set a password.",
+      "suspended": "No one is suspended. Clients you suspend are listed here, and you can reactivate them any time.",
+    } %}
+    {{ empty_state("No " ~ status ~ " clients", tab_text[status], url_for('admin.clients'), "Show all clients", icon_name="users", action_variant="secondary") }}
+    {% endif %}
+  </div>
   {% else %}
   <div class="card">
     {{ empty_state("No clients match", "Try a different search or status, or clear the filters to see everyone.", url_for('admin.clients'), "Clear filters", icon_name="search", action_variant="secondary") }}

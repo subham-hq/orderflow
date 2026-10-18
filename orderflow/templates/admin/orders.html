@@ -88,6 +88,12 @@
     </div>
   </div>
   {{ pagination(page, 'admin.orders') }}
+  {% elif filters.searching and filters.status and tabs[0].count %}
+  {# The search finds orders, just none in this tab #}
+  {% set matching = tabs[0].count %}
+  <div class="card">
+    {{ empty_state("No " ~ status_label | lower ~ " orders match your search", "Your search matches " ~ "{:,}".format(matching) ~ (" order" if matching == 1 else " orders") ~ ", but " ~ ("it isn't " if matching == 1 else "none of them are ") ~ status_label | lower ~ ".", url_for('admin.orders', **filters.args(status=None)), "Show " ~ ("the matching order" if matching == 1 else "all " ~ "{:,}".format(matching) ~ " matching orders"), "search", action_variant="secondary") }}
+  </div>
   {% elif filters.searching %}
   <div class="card">
     {{ empty_state("No orders match your search", "Check the spelling, or try a wider date range. Search looks at order numbers, client names, buyer companies and email addresses.", clear_url, "Clear search and dates", "search", action_variant="secondary") }}

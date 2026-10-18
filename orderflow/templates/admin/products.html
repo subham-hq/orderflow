@@ -94,6 +94,22 @@
     <p class="muted">Showing {{ page.first }}–{{ page.last }} of {{ page.total }} product{{ "" if page.total == 1 else "s" }}</p>
     {{ pagination(page, 'admin.products') }}
   </div>
+  {% elif status and counts[""] %}
+  {# The search or category finds products, just none with this status #}
+  {% set matching = counts[""] %}
+  {% set products_word = "product" if matching == 1 else "products" %}
+  {% set none_are = ("it isn't " if matching == 1 else "none of them are ") ~ status %}
+  <div class="card">
+    {% if q %}
+    {{ empty_state("No " ~ status ~ " products match your search", "Your search matches " ~ "{:,}".format(matching) ~ " " ~ products_word ~ ", but " ~ none_are ~ ".", url_for('admin.products', q=q, category=category or None), "Show all matching products", icon_name="search", action_variant="secondary") }}
+    {% elif category %}
+    {{ empty_state("No " ~ status ~ " products in “" ~ category ~ "”", "“" ~ category ~ "” has " ~ "{:,}".format(matching) ~ " " ~ products_word ~ ", but " ~ none_are ~ ".", url_for('admin.products', category=category), "Show all of “" ~ category ~ "”", icon_name="tag", action_variant="secondary") }}
+    {% elif status == "hidden" %}
+    {{ empty_state("No hidden products", "Every product in your catalog is visible to clients. When you hide a product, it's listed here until you show it again.", url_for('admin.products'), "Show all products", icon_name="eye-off", action_variant="secondary") }}
+    {% else %}
+    {{ empty_state("No active products", "Every product is hidden from clients right now, so they can't order anything. Show a product to put it back in their catalog.", url_for('admin.products', status="hidden"), "Show hidden products", icon_name="eye", action_variant="secondary") }}
+    {% endif %}
+  </div>
   {% else %}
   <div class="card">
     {{ empty_state("No products match", "Try a different search or category, or clear the filters to see your whole catalog.", url_for('admin.products'), "Clear filters", icon_name="search", action_variant="secondary") }}
