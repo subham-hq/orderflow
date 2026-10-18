@@ -148,6 +148,7 @@
   --stitch-line: rgba(242, 169, 59, 0.38);
   --ink-chip: rgba(255, 255, 255, 0.1);
   --highlight: #f8cd85;
+  --highlight-from: 62%;
   --accent-soft: #fdeccd;
   --accent-soft-text: #7a4a00;
   --brand-ink: #1b2a6b;
@@ -342,7 +343,8 @@
     --stitch: #f2a93b;
     --stitch-line: rgba(242, 169, 59, 0.32);
     --ink-chip: rgba(255, 255, 255, 0.08);
-    --highlight: rgba(242, 169, 59, 0.42);
+    --highlight: rgba(242, 169, 59, 0.78);
+    --highlight-from: 76%;
     --accent-soft: rgba(242, 169, 59, 0.14);
     --accent-soft-text: #f6c372;
     --brand-ink: #c9cffc;
@@ -4853,7 +4855,7 @@ a.pagination__link:hover {
 
 .hero__highlight {
   padding-inline: 0.04em;
-  background-image: linear-gradient(transparent 62%, var(--highlight) 62%, var(--highlight) 92%, transparent 92%);
+  background-image: linear-gradient(transparent var(--highlight-from), var(--highlight) var(--highlight-from), var(--highlight) 92%, transparent 92%);
   background-repeat: no-repeat;
   background-size: 100% 100%;
   -webkit-box-decoration-break: clone;
