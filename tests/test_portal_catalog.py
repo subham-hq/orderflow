@@ -196,3 +196,9 @@ def test_a_product_hidden_by_the_supplier_leaves_the_catalog_and_the_cart(shoppe
     page = get(shopper)
     assert "bopp tape" not in product_names(page)
     assert "bopp tape is no longer available, so we took it out of your cart." in page
+
+
+def test_search_and_category_text_is_escaped_when_shown_back(shopper, catalog):
+    page = get(shopper, q="<i>x</i>", category='"><script>alert(1)</script>')
+    assert "<i>x</i>" not in page and "<script>alert(1)</script>" not in page
+    assert "&lt;i&gt;x&lt;/i&gt;" in page

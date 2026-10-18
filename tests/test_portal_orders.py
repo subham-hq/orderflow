@@ -237,3 +237,10 @@ def test_pagination_shows_twenty_per_page_newest_first(shopper, buyer, catalog):
     # Page links keep the status tab and search
     pending = shopper.get("/portal/orders?status=pending&q=ORD").get_data(as_text=True)
     assert 'href="/portal/orders?status=pending&amp;q=ORD&amp;page=2"' in pending
+
+
+def test_search_text_is_escaped_when_shown_back(shopper, buyer, catalog):
+    make_order(buyer, [(catalog["carton"], 1)])
+    page = shopper.get("/portal/orders", query_string={"q": "<b>x</b>"}).get_data(as_text=True)
+    assert "<b>x</b>" not in page
+    assert "&lt;b&gt;x&lt;/b&gt;" in page
