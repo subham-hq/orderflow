@@ -1,0 +1,28 @@
+{# Line items for an order. Expects `order`. #}
+<div class="table-wrap">
+  <table class="table table--lines">
+    <thead>
+      <tr>
+        <th scope="col">Item</th>
+        <th scope="col" class="num">Qty</th>
+        <th scope="col" class="num">Unit price</th>
+        <th scope="col" class="num">GST</th>
+        <th scope="col" class="num">Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in order.items %}
+      <tr>
+        <td>
+          <span class="table__primary">{{ item.name }}</span>
+          <span class="table__secondary mono">{{ item.sku }}{% if item.category %} · {{ item.category }}{% endif %}</span>
+        </td>
+        <td class="num">{{ "{:,}".format(item.quantity) }} <span class="muted">{{ item.unit }}</span></td>
+        <td class="num money">{{ item.unit_price_paise | inr }}</td>
+        <td class="num"><span class="money">{{ item.line_tax_paise | inr }}</span> <span class="muted">({{ item.gst_rate_bp | gst }})</span></td>
+        <td class="num money">{{ item.line_total_paise | inr }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

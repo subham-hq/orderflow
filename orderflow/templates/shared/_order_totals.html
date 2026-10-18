@@ -1,0 +1,6 @@
+{# Totals box for an order. Expects `order`. #}
+<dl class="summary">
+  <div class="summary__row"><dt>Subtotal</dt><dd class="money">{{ order.subtotal_paise | inr }}</dd></div>
+  <div class="summary__row"><dt>GST</dt><dd class="money">{{ order.tax_paise | inr }}</dd></div>
+  <div class="summary__row summary__total"><dt>Total</dt><dd class="money">{{ order.total_paise | inr }}</dd></div>
+</dl>

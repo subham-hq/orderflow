@@ -4,4 +4,4 @@ from flask import Blueprint
 
 bp = Blueprint("admin", __name__)
 
-from . import routes  # noqa: E402,F401
+from . import bulletins, catalog, clients, dashboard, orders, settings, team  # noqa: E402,F401
