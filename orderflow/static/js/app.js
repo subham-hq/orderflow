@@ -6,24 +6,40 @@
   document.documentElement.classList.remove("no-js");
   document.documentElement.classList.add("js");
 
-  // Confirm before submitting forms marked with data-confirm, using a native <dialog>
+  // Confirm before submitting forms marked with data-confirm, using a native <dialog>.
+  // It is an alert dialog: screen readers hear its title and the question as it
+  // opens. Destructive actions start on Cancel, so one Enter press never carries
+  // out something that can't be undone.
+  var dialogCount = 0;
+
   function confirmDialog(message, label, variant) {
     return new Promise(function (resolve) {
+      var destructive = /^danger/.test(variant || "");
+      var id = "confirm-dialog-" + ++dialogCount;
       var dialog = document.createElement("dialog");
       dialog.className = "dialog";
-      dialog.setAttribute("aria-label", "Please confirm");
+      dialog.setAttribute("role", "alertdialog");
+      dialog.setAttribute("aria-labelledby", id + "-title");
+      dialog.setAttribute("aria-describedby", id + "-text");
       dialog.innerHTML =
         '<form method="dialog" class="dialog__body">' +
+        '<h2 class="visually-hidden"></h2>' +
         '<p class="dialog__text"></p>' +
         '<div class="dialog__actions">' +
         '<button value="cancel" class="btn btn--ghost">Cancel</button>' +
         '<button value="ok" class="btn"></button>' +
         "</div></form>";
-      dialog.querySelector(".dialog__text").textContent = message;
+      var title = dialog.querySelector("h2");
+      title.id = id + "-title";
+      title.textContent = "Please confirm";
+      var text = dialog.querySelector(".dialog__text");
+      text.id = id + "-text";
+      text.textContent = message;
+      var cancel = dialog.querySelector('button[value="cancel"]');
       var ok = dialog.querySelector('button[value="ok"]');
       ok.textContent = label || "Confirm";
       // Destructive actions (danger, danger-soft) confirm with a red button
-      ok.classList.add("btn--" + (/^danger/.test(variant || "") ? "danger" : "primary"));
+      ok.classList.add("btn--" + (destructive ? "danger" : "primary"));
       document.body.appendChild(dialog);
       dialog.addEventListener("close", function () {
         resolve(dialog.returnValue === "ok");
@@ -34,7 +50,7 @@
         if (event.target === dialog) dialog.close("cancel");
       });
       dialog.showModal();
-      ok.focus();
+      (destructive ? cancel : ok).focus();
     });
   }
 

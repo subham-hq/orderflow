@@ -207,7 +207,7 @@ properties, never a literal colour.
 
 | Attribute | Behaviour |
 | --- | --- |
-| `data-confirm="Message"` on a form | Confirm in a dialog before submitting |
+| `data-confirm="Message"` on a form | Confirm in a dialog before submitting. Screen readers hear the message as the dialog opens; with `data-confirm-variant="danger…"` the confirm button is red and focus starts on Cancel |
 | `data-stepper` with `data-step="±1"` buttons | Quantity stepper |
 | `data-autosubmit` on a select or checkbox | Submit its form on change |
 | `data-copy="text"` on a button | Copy to clipboard |
