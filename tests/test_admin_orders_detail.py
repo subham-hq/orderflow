@@ -209,9 +209,10 @@ def test_detail_runs_a_fixed_number_of_queries(client, login, owner, company, bu
 def test_unknown_orders_are_404(client, login, owner, make, path):
     make(PENDING)
     login(owner)
-    assert client.get(f"/app/orders/{path}").status_code == 404
-    assert client.get(f"/app/orders/{path}/invoice").status_code == 404
-    assert client.post(f"/app/orders/{path}/status", data={"to_status": APPROVED}).status_code == 404
+    expected = 400 if "%00" in path else 404  # NUL in a path is refused before any view runs
+    assert client.get(f"/app/orders/{path}").status_code == expected
+    assert client.get(f"/app/orders/{path}/invoice").status_code == expected
+    assert client.post(f"/app/orders/{path}/status", data={"to_status": APPROVED}).status_code == expected
 
 
 def test_other_companies_orders_are_404(client, login, owner, make, other_company, mail):
