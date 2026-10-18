@@ -1,0 +1,45 @@
+{% extends "layouts/app.html" %}
+{% from "macros/ui.html" import field, form_errors, button, link_button, page_header %}
+{% from "admin/bulletins_macros.html" import state_badge %}
+{% set active_nav = "bulletins" %}
+{% set editing = bulletin is not none %}
+{% block title %}{% if editing %}Edit {{ bulletin.title }}{% else %}New bulletin{% endif %}{% endblock %}
+{% block topbar_title %}Bulletins{% endblock %}
+{% block content %}
+{% if editing %}
+{% call page_header(bulletin.title, "Changes show on client dashboards as soon as you save.", eyebrow="Edit bulletin") %}
+  {{ state_badge(state) }}
+{% endcall %}
+{% else %}
+{{ page_header("New bulletin", "Write an announcement for every client's portal dashboard.", eyebrow="Bulletins") }}
+{% endif %}
+
+<div class="sidebar-layout">
+  <form method="post" class="stack" novalidate>
+    {{ form.hidden_tag() }}
+    {{ form_errors(form) }}
+    <div class="card">
+      <div class="card__body stack">
+        {{ field(form.title, autofocus=not editing, placeholder="Diwali dispatch schedule") }}
+        {{ field(form.body, rows=8, hint="Up to 4,000 characters. Line breaks are kept, and a blank line starts a new paragraph.") }}
+        {{ field(form.publish, hint="Leave this off to save a draft that only your team can see.") }}
+        {{ field(form.expires_at, type="datetime-local", hint="In " ~ timezone ~ " time. The bulletin comes down automatically at this time. Leave it blank to keep it up until you unpublish it.") }}
+      </div>
+    </div>
+    <div class="cluster">
+      {{ button("Save changes" if editing else "Save bulletin") }}
+      {{ link_button("Cancel", url_for('admin.bulletins'), variant="ghost") }}
+    </div>
+  </form>
+
+  <aside class="stack" aria-label="About bulletins">
+    <div class="card">
+      <div class="card__header"><h2 class="card__title">How bulletins work</h2></div>
+      <div class="card__body stack">
+        <p>Every live bulletin shows on your clients' portal dashboard, newest first.</p>
+        <p>A bulletin is <strong>Live</strong> while it's published and before its end time, <strong>Draft</strong> while it's unpublished, and <strong>Expired</strong> once its end time has passed.</p>
+      </div>
+    </div>
+  </aside>
+</div>
+{% endblock %}

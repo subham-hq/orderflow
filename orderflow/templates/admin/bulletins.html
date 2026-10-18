@@ -1,0 +1,52 @@
+{% extends "layouts/app.html" %}
+{% from "macros/ui.html" import link_button, post_button, page_header, empty_state, pagination %}
+{% from "admin/bulletins_macros.html" import state_badge, bulletin_body %}
+{% set active_nav = "bulletins" %}
+{% block title %}Bulletins{% endblock %}
+{% block topbar_title %}Bulletins{% endblock %}
+{% block content %}
+{% call page_header("Bulletins", "Announcements your clients see on their portal dashboard, like dispatch schedules, holidays or price changes.") %}
+  {{ link_button("New bulletin", url_for('admin.bulletin_new'), variant="primary", icon_name="plus") }}
+{% endcall %}
+
+{% if not page.items %}
+<div class="card">
+  {{ empty_state("Post your first bulletin", "Tell clients about dispatch schedules, holiday closures or new products. Every live bulletin appears on their portal dashboard.", url_for('admin.bulletin_new'), "Write a bulletin", icon_name="megaphone") }}
+</div>
+{% else %}
+<section class="stack" aria-label="Bulletins, newest first">
+  {% for bulletin, state, ended in rows %}
+  <article class="card">
+    <div class="card__header split">
+      <h2 class="card__title">{{ bulletin.title }}</h2>
+      {{ state_badge(state) }}
+    </div>
+    <div class="card__body stack">
+      {{ bulletin_body(bulletin.body) }}
+    </div>
+    <div class="card__footer split">
+      <p class="muted">
+        {% if ended and not bulletin.is_published %}Its end time has passed, so edit it to choose a new one before publishing. {% endif %}
+        Posted{% if bulletin.author %} by {{ bulletin.author.full_name }}{% endif %} on {{ bulletin.created_at | date }}
+        ·
+        {% if bulletin.expires_at %}{{ "Ended" if ended else "Ends" }} {{ bulletin.expires_at | datetime }}{% else %}No end date{% endif %}
+      </p>
+      <div class="cluster">
+        {{ link_button("Edit", url_for('admin.bulletin_edit', bulletin_id=bulletin.id), variant="ghost", size="sm", icon_name="edit") }}
+        {% if bulletin.is_published %}
+        {{ post_button(url_for('admin.bulletin_status', bulletin_id=bulletin.id), "Unpublish", variant="ghost", size="sm", icon_name="eye-off", fields={"published": 0, "next": request.full_path}) }}
+        {% elif not ended %}
+        {{ post_button(url_for('admin.bulletin_status', bulletin_id=bulletin.id), "Publish", variant="secondary", size="sm", icon_name="eye", fields={"published": 1, "next": request.full_path}) }}
+        {% endif %}
+        {{ post_button(url_for('admin.bulletin_delete', bulletin_id=bulletin.id), "Delete", variant="danger", size="sm", icon_name="trash", confirm="Delete “" ~ bulletin.title ~ "”? Clients will stop seeing it, and this can't be undone.", confirm_label="Delete bulletin") }}
+      </div>
+    </div>
+  </article>
+  {% endfor %}
+  <div class="split">
+    <p class="muted">Times are in {{ timezone }}. Showing {{ page.first }}–{{ page.last }} of {{ page.total }} bulletin{{ "" if page.total == 1 else "s" }}.</p>
+    {{ pagination(page, 'admin.bulletins') }}
+  </div>
+</section>
+{% endif %}
+{% endblock %}

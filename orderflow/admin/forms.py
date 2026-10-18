@@ -8,18 +8,20 @@ rates, SKUs) are parsed once during validation and left on the field as
 """
 
 import re
+from datetime import timedelta
 
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileAllowed, FileField, FileRequired
 from wtforms import BooleanField, EmailField, SelectField, StringField, TextAreaField
 from wtforms.validators import DataRequired, Email, Length, Optional, StopValidation, ValidationError
 
-from .. import money
+from .. import money, timeutil
 from ..extensions import db
 from ..services import catalog
 
 PER_PAGE = 25
 SEARCH_MAX_LENGTH = 100
+BULLETIN_MAX_YEARS_AHEAD = 5
 
 _CURRENCY_PREFIX = re.compile(r"^(?:₹|rs\.?|inr)\s*", re.IGNORECASE)
 _PHONE_CHARS = re.compile(r"[0-9+()\-. ]+")
@@ -226,6 +228,54 @@ class TeamInviteForm(FlaskForm):
     first_name = _first_name()
     last_name = _last_name()
     email = EmailField("Work email", filters=[lower], validators=_email_validators(what="their work email address"))
+
+
+# Bulletins -------------------------------------------------------------------
+
+
+class BulletinForm(FlaskForm):
+    title = StringField(
+        "Title",
+        filters=[squash],
+        validators=[DataRequired("Give the bulletin a title."), _length(160, "the title")],
+    )
+    body = TextAreaField(
+        "Message",
+        filters=[strip_text],
+        validators=[DataRequired("Write the message your clients will see."), _length(4000, "the message")],
+    )
+    publish = BooleanField("Publish it so clients can see it", default=True)
+    expires_at = StringField("Take it down at (optional)", filters=[strip])
+
+    def __init__(self, *args, timezone=timeutil.DEFAULT_TZ, current_expiry=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        # The company time zone the expiry is typed in, and the saved expiry
+        # when editing (the input only shows whole minutes)
+        self.timezone = timezone
+        self.current_expiry = timeutil.as_utc(current_expiry)
+
+    def validate_expires_at(self, field):
+        """Parse the expiry in the company's time zone; result (UTC) in field.parsed."""
+        field.parsed = None
+        if not field.data:
+            return
+        try:
+            expires = timeutil.parse_local_datetime(field.data, self.timezone)
+        except (ValueError, OverflowError):
+            raise StopValidation("Enter a date and time, like 31 Oct 2026, 6:00 PM.") from None
+        if self.current_expiry and expires == self.current_expiry.replace(second=0, microsecond=0):
+            expires = self.current_expiry  # unchanged: keep the exact saved time
+        now = timeutil.utcnow()
+        if expires > now + timedelta(days=365 * BULLETIN_MAX_YEARS_AHEAD):
+            raise StopValidation(
+                f"Choose a time within the next {BULLETIN_MAX_YEARS_AHEAD} years, or leave it blank to keep it up."
+            )
+        if self.publish.data and expires <= now:
+            raise StopValidation(
+                "That time has already passed. Choose a time in the future, or leave it blank to keep "
+                "the bulletin up until you take it down."
+            )
+        field.parsed = expires
 
 
 # List helpers ----------------------------------------------------------------
