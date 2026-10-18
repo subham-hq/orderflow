@@ -7,7 +7,7 @@ signed-in user's company. A record from another company is a 404, never a
 """
 
 from functools import wraps
-from urllib.parse import urljoin, urlsplit
+from urllib.parse import urlsplit
 
 from flask import abort, flash, redirect, request, url_for
 from flask_login import current_user
@@ -64,14 +64,22 @@ def get_company_object_or_404(model, object_id):
 
 
 def is_safe_next_url(target):
-    """True if target is a relative path on this site (prevents open redirects)."""
-    if not target:
+    """True only for a plain path on this site, like /app/orders?page=2 (prevents open redirects).
+
+    Anything a browser could read as another site is refused: a scheme
+    ("https:/evil.example", which the redirect turns into
+    "https:///evil.example" and browsers then open as evil.example), a host
+    ("//evil.example"), backslashes ("/\\evil.example"), which browsers treat
+    as slashes, and control characters, which browsers drop before parsing.
+    """
+    if not isinstance(target, str) or not target.startswith("/"):
         return False
     if target.startswith("//") or "\\" in target:
         return False
-    host_url = urlsplit(request.host_url)
-    joined = urlsplit(urljoin(request.host_url, target))
-    return joined.scheme in {"http", "https"} and joined.netloc == host_url.netloc
+    if any(ord(char) < 0x20 or ord(char) == 0x7F for char in target):
+        return False
+    parts = urlsplit(target)
+    return not parts.scheme and not parts.netloc
 
 
 def safe_next_url(default):
