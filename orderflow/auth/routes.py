@@ -63,6 +63,21 @@ def _start_session(user, remember=False, keep_cart=False):
     db.session.commit()
 
 
+def _send_password_changed(user):
+    """Tell the account holder, so a change they didn't make doesn't go unnoticed.
+
+    The link opens the forgot-password page rather than carrying a reset
+    token, so the email itself can't be used to take over the account.
+    """
+    send_email(
+        user.email,
+        "Your OrderFlow password was changed",
+        "password_changed",
+        user=user,
+        link=external_url("auth.forgot_password"),
+    )
+
+
 @bp.route("/signup", methods=["GET", "POST"])
 @limiter.limit("10 per hour", methods=["POST"])
 def signup():
@@ -226,6 +241,7 @@ def reset_password(token):
         user.end_all_sessions()
         mark_verified(user)  # they proved they can read this inbox
         db.session.commit()
+        _send_password_changed(user)
         if not user.active:
             flash("Your password was changed, but this account is suspended.", "warning")
             return redirect(url_for("auth.login"))
@@ -283,6 +299,7 @@ def change_password():
             user.set_password(form.password.data)
             user.end_all_sessions()  # sign out every other device
             db.session.commit()
+            _send_password_changed(user)
             _start_session(user, keep_cart=True)
             flash("Password updated. You've been signed out on your other devices.", "success")
             return redirect(home_url_for(user))
