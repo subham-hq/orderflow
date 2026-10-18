@@ -54,7 +54,7 @@ from flask import Flask, flash, redirect, render_template, request, session, url
 from flask_session import Session
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from helpers import admin_required, client_required, db, inr
+from helpers import admin_required, client_required, db, inr, to_paise
 
 # ==================================================
 # SYSTEM ARCHITECTURE OVERVIEW
@@ -1329,9 +1329,9 @@ def admin_products():
             description = request.form.get("description")
             is_active = 1 if request.form.get("is_active") == "1" else 0
 
-            # Convert price to paise for safe storage.
+            # Convert price to paise for safe storage (rounded to the nearest paisa).
             try:
-                base_price = int(float(request.form.get("base_price")) * 100)
+                base_price = to_paise(request.form.get("base_price"))
                 tax_percentage = float(request.form.get("tax_percentage") or 0)
             except ValueError:
                 flash("Invalid price or tax format. Please enter numbers only.", "danger")
@@ -1411,9 +1411,9 @@ def edit_product(product_id):
         description = request.form.get("description")
         is_active = 1 if request.form.get("is_active") == "1" else 0
 
-        # Convert price to paise
+        # Convert price to paise (rounded to the nearest paisa)
         try:
-            base_price_cents = int(float(request.form.get("base_price")) * 100)
+            base_price_cents = to_paise(request.form.get("base_price"))
             tax_percentage = float(request.form.get("tax_percentage") or 0)
 
         except ValueError:

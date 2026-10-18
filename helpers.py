@@ -1,5 +1,6 @@
 import os
 import sqlite3
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 
 from cs50 import SQL
 from flask import flash, redirect, session
@@ -93,3 +94,24 @@ def admin_required(f):
 def inr(value):
     """Format value as INR."""
     return f"₹{value:,.2f}"
+
+def to_paise(value):
+    """
+    Convert a rupee amount entered in a form (e.g. "19.99") to integer paise.
+
+    Uses Decimal and rounds to the nearest paisa. float(value) * 100 can land
+    just below the real amount (19.99 * 100 = 1998.9999...), and int() would
+    then cut it down by one paisa.
+
+    Raises ValueError if the value is not a finite number.
+    """
+
+    try:
+        amount = Decimal(value)
+    except (InvalidOperation, TypeError):
+        raise ValueError(f"Invalid amount: {value!r}")
+
+    if not amount.is_finite():
+        raise ValueError(f"Invalid amount: {value!r}")
+
+    return int((amount * 100).quantize(Decimal(1), rounding=ROUND_HALF_UP))
