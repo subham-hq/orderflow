@@ -1,15 +1,20 @@
 """Companies, users, sign-up and invitations."""
 
+from datetime import timedelta
+
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 
 from ..extensions import db
 from ..mail import external_url, send_email
-from ..models import ADMIN, CLIENT, OWNER, Company, User
-from ..timeutil import utcnow
+from ..models import ADMIN, CLIENT, OWNER, Bulletin, Company, Order, Product, User
+from ..timeutil import as_utc, utcnow
 from ..tokens import ACCEPT_INVITE, VERIFY_EMAIL, make_token
 
 MIN_PASSWORD_LENGTH = 10
+
+# An unconfirmed sign-up older than this no longer holds its email address
+ABANDONED_SIGNUP_AGE = timedelta(hours=24)
 
 # Passwords people reach for first; refused outright
 COMMON_PASSWORDS = {
@@ -100,14 +105,50 @@ def email_taken(email):
     return find_user_by_email(email) is not None
 
 
+def _is_abandoned_signup(user):
+    """An owner who signed up over a day ago, never confirmed the email, and has an empty workspace."""
+    if user.role != OWNER or user.is_verified:
+        return False
+    if as_utc(user.created_at) > utcnow() - ABANDONED_SIGNUP_AGE:
+        return False
+    for model in (Product, Order, Bulletin):
+        if db.session.scalar(db.select(model.id).where(model.company_id == user.company_id).limit(1)) is not None:
+            return False
+    teammate = db.session.scalar(
+        db.select(User.id).where(User.company_id == user.company_id, User.id != user.id).limit(1)
+    )
+    return teammate is None
+
+
+def release_abandoned_signup(email):
+    """Free an email address held by a sign-up nobody ever confirmed.
+
+    Anyone can sign up with an address that isn't theirs. Since they can't
+    confirm it, that sign-up stops holding the address after a day: the next
+    sign-up or invitation for it removes the empty workspace and carries on.
+    Returns True if one was removed. The caller commits.
+    """
+    user = find_user_by_email(email)
+    if user is None or not _is_abandoned_signup(user):
+        return False
+    company_id = user.company_id
+    # Still unconfirmed in the WHERE, in case they confirm at this very moment
+    deleted = db.session.execute(db.delete(User).where(User.id == user.id, User.email_verified_at.is_(None))).rowcount
+    if not deleted:
+        return False
+    db.session.execute(db.delete(Company).where(Company.id == company_id))
+    return True
+
+
 def create_company_with_owner(company_name, first_name, last_name, email, password):
     """Create a new business account and its owner (unverified)."""
     email = normalize_email(email)
-    if email_taken(email):
-        raise AccountError(EMAIL_EXISTS)
     problem = password_problem(password, email)
     if problem:
         raise AccountError(problem)
+    release_abandoned_signup(email)
+    if email_taken(email):
+        raise AccountError(EMAIL_EXISTS)
 
     company = Company(name=clean(company_name))
     owner = User(
@@ -155,6 +196,7 @@ def invite_user(company, inviter, email, role, first_name, last_name=None, buyer
     if role not in (ADMIN, CLIENT):
         raise AccountError("Choose a valid role.")
     email = normalize_email(email)
+    release_abandoned_signup(email)
     if email_taken(email):
         raise AccountError("Someone with this email already has an OrderFlow account.")
 
