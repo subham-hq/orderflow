@@ -1,0 +1,32 @@
+[project]
+name = "orderflow"
+version = "2.0.0"
+description = "B2B ordering for suppliers and their business clients"
+requires-python = ">=3.12"
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+extend-exclude = ["migrations"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM"]
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["orderflow"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --strict-markers"
+filterwarnings = [
+    "error::DeprecationWarning:orderflow.*",
+]
+
+[tool.coverage.run]
+source = ["orderflow"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
