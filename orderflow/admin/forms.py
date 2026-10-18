@@ -8,7 +8,7 @@ rates, SKUs) are parsed once during validation and left on the field as
 """
 
 import re
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileAllowed, FileField, FileRequired
@@ -309,6 +309,27 @@ class TeamInviteForm(FlaskForm):
 
 # Bulletins -------------------------------------------------------------------
 
+# Besides the date picker's own value (2026-10-31T18:00, or with a space), an
+# end time may be typed the way the app shows dates: 31 Oct 2026, 6:00 PM.
+_DISPLAY_DATETIME_FORMATS = ("%d %b %Y, %I:%M %p", "%d %b %Y %I:%M %p", "%d %B %Y, %I:%M %p", "%d %B %Y %I:%M %p")
+
+
+def parse_end_time(value, tz_name):
+    """A bulletin end time typed in tz_name, in UTC. Raises ValueError (or
+    OverflowError for years at the edge of the calendar) if it can't be read."""
+    try:
+        return timeutil.parse_local_datetime(value, tz_name)
+    except ValueError:
+        pass
+    text = " ".join(value.split())
+    for fmt in _DISPLAY_DATETIME_FORMATS:
+        try:
+            typed = datetime.strptime(text, fmt)
+        except ValueError:
+            continue
+        return timeutil.parse_local_datetime(typed.isoformat(timespec="minutes"), tz_name)
+    raise ValueError(value)
+
 
 class BulletinForm(KeepsState, FlaskForm):
     title = StringField(
@@ -343,9 +364,9 @@ class BulletinForm(KeepsState, FlaskForm):
         if not field.data:
             return
         try:
-            expires = timeutil.parse_local_datetime(field.data, self.timezone)
+            expires = parse_end_time(field.data, self.timezone)
         except (ValueError, OverflowError):
-            raise StopValidation("Enter a date and time, like 31 Oct 2026, 6:00 PM.") from None
+            raise StopValidation("Enter a date and time, like 2026-10-31 18:00 or 31 Oct 2026, 6:00 PM.") from None
         if self.current_expiry and expires == self.current_expiry.replace(second=0, microsecond=0):
             expires = self.current_expiry  # unchanged: keep the exact saved time
         now = timeutil.utcnow()
