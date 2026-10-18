@@ -221,6 +221,15 @@ class ClientForm(FlaskForm):
     phone = _phone()
 
 
+# Team ------------------------------------------------------------------------
+
+
+class TeamInviteForm(FlaskForm):
+    first_name = _first_name()
+    last_name = _last_name()
+    email = EmailField("Work email", filters=[lower], validators=_email_validators(what="their work email address"))
+
+
 # List helpers ----------------------------------------------------------------
 
 
