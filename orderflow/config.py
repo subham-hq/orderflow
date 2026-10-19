@@ -9,6 +9,8 @@ import os
 from datetime import timedelta
 from pathlib import Path
 
+from sqlalchemy.pool import NullPool
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 log = logging.getLogger("orderflow")
@@ -131,6 +133,12 @@ class TestingConfig(Config):
     TESTING = True
     SECRET_KEY = "test-secret-key"
     SQLALCHEMY_DATABASE_URI = os.environ.get("TEST_DATABASE_URL") or "sqlite://"
+    # Tests create many apps; on Postgres, don't keep a pool of connections
+    # open for each one, or the server runs out of connections mid-run.
+    # (In-memory SQLite needs its single shared connection, so leave it alone.)
+    SQLALCHEMY_ENGINE_OPTIONS = (
+        {"poolclass": NullPool} if os.environ.get("TEST_DATABASE_URL") else Config.SQLALCHEMY_ENGINE_OPTIONS
+    )
     WTF_CSRF_ENABLED = False
     RATELIMIT_ENABLED = False
     MAIL_BACKEND = "memory"
