@@ -1,0 +1,19 @@
+{% extends "layouts/auth.html" %}
+{% from "macros/ui.html" import button, icon %}
+{% block title %}Confirm your email{% endblock %}
+{% block content %}
+<div class="auth__icon">{{ icon('mail') }}</div>
+<h1 class="auth__title">Check your inbox</h1>
+<p class="auth__lead">To finish setting up {{ current_user.company.name }}, open the confirmation link we email to <strong>{{ current_user.email }}</strong>.</p>
+<p class="muted">The link works for 3 days. If you can't find the email, check your spam folder.</p>
+<div class="stack">
+  <form method="post" action="{{ url_for('auth.resend_verification') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {{ button("Send the link again", variant="secondary", class="btn--block") }}
+  </form>
+  <form method="post" action="{{ url_for('auth.logout') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {{ button("Sign out", variant="ghost", class="btn--block") }}
+  </form>
+</div>
+{% endblock %}

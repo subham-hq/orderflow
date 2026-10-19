@@ -1,0 +1,84 @@
+{% extends "layouts/app.html" %}
+{% from "macros/ui.html" import field, form_errors, button, post_button, page_header %}
+{% from "admin/clients_macros.html" import account_badge, last_sign_in %}
+{% set active_nav = "team" %}
+{% block title %}Team{% endblock %}
+{% block topbar_title %}Team{% endblock %}
+{% block content %}
+{{ page_header("Team", "The people who run " ~ current_user.company.name ~ " with you. Admins can manage orders, the catalog, clients and bulletins; only you can manage the team and company settings.") }}
+
+<div class="sidebar-layout">
+  <section class="stack" aria-label="Team members">
+    <div class="card card--flush">
+      <div class="table-wrap">
+        <table class="table table--stack table--team">
+          <caption class="visually-hidden">Team members</caption>
+          <thead>
+            <tr>
+              <th scope="col">Name</th>
+              <th scope="col">Role</th>
+              <th scope="col">Status</th>
+              <th scope="col">Last sign-in</th>
+              <th scope="col"><span class="visually-hidden">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for member in members %}
+            {% set is_me = member.id == current_user.id %}
+            <tr{% if not member.active %} class="is-muted"{% endif %}>
+              <td>
+                <span class="table__primary">{{ member.full_name }}{% if is_me %} <span class="muted">(you)</span>{% endif %}</span>
+                <span class="table__secondary">{{ member.email }}</span>
+              </td>
+              <td>{{ "Owner" if member.is_owner else "Admin" }}</td>
+              <td>
+                {{ account_badge(member) }}
+                {% if member.active and not member.has_accepted_invite and member.invite_sent_at %}<span class="table__secondary">Invited {{ member.invite_sent_at | timeago }}</span>{% endif %}
+              </td>
+              <td class="nowrap">{{ last_sign_in(member) }}</td>
+              <td class="text-right">
+                {% if member.is_owner or is_me %}
+                <span class="muted">Account owner</span>
+                {% else %}
+                <div class="cluster">
+                  {% if not member.has_accepted_invite and member.active %}
+                  {{ post_button(url_for('admin.team_resend_invite', user_id=member.id), "Resend invitation", variant="ghost", size="sm", icon_name="send") }}
+                  {% endif %}
+                  {% if member.active %}
+                  {{ post_button(url_for('admin.team_status', user_id=member.id), "Suspend", variant="ghost", size="sm", icon_name="ban", fields={"active": 0}, confirm="Suspend " ~ member.full_name ~ "? They'll be signed out straight away and won't be able to sign in until you reactivate them.", confirm_label="Suspend") }}
+                  {% else %}
+                  {{ post_button(url_for('admin.team_status', user_id=member.id), "Reactivate", variant="secondary", size="sm", icon_name="rotate", fields={"active": 1}) }}
+                  {% endif %}
+                  {% if not member.has_accepted_invite %}
+                  {{ post_button(url_for('admin.team_remove', user_id=member.id), "Withdraw invitation", variant="danger-soft", size="sm", icon_name="trash", confirm="Withdraw the invitation for " ~ member.email ~ "? The link we sent will stop working.", confirm_label="Withdraw invitation") }}
+                  {% endif %}
+                </div>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if members | length == 1 %}
+      <div class="card__footer muted">It's just you so far. Invite a teammate to share the work of approving and fulfilling orders.</div>
+      {% endif %}
+    </div>
+    <p class="muted">Admins who have joined can't be removed, so their names stay on the orders they handled. Suspend them instead to stop them signing in.</p>
+  </section>
+
+  <aside class="stack" aria-label="Invite a teammate">
+    <div class="card">
+      <div class="card__header"><h2 class="card__title">Invite a teammate</h2></div>
+      <form method="post" action="{{ url_for('admin.team_invite') }}" class="card__body stack" novalidate>
+        {{ form.hidden_tag() }}
+        {{ form_errors(form) }}
+        {{ field(form.first_name, autocomplete="off") }}
+        {{ field(form.last_name, autocomplete="off") }}
+        {{ field(form.email, hint="We'll email them a link to set a password and join as an admin.", autocomplete="off", placeholder="name@" ~ (current_user.email.split('@')[1])) }}
+        <div class="cluster">{{ button("Send invitation", icon_name="send") }}</div>
+      </form>
+    </div>
+  </aside>
+</div>
+{% endblock %}

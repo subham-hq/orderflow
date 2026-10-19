@@ -1,0 +1,139 @@
+{% extends "layouts/app.html" %}
+{% from "macros/ui.html" import icon, page_header, link_button, post_button, button, field, status_badge, badge %}
+{% set active_nav = "orders" %}
+{% block title %}Order {{ order.number }}{% endblock %}
+{% block topbar_title %}Orders{% endblock %}
+{% block content %}
+{% set client_name = client.buyer_company or client.full_name %}
+<a class="back-link" href="{{ url_for('admin.orders') }}">{{ icon('chevron-left') }}<span>All orders</span></a>
+{% call page_header(order.number, "Placed " ~ (order.placed_at | datetime) ~ " by " ~ client_name, eyebrow="Purchase order", badge=status_badge(order.status)) %}
+  {% if order.status not in ('rejected', 'cancelled') %}
+  {{ link_button("Proforma invoice", url_for('admin.invoice', number=order.number), variant="secondary", icon_name="receipt") }}
+  {% endif %}
+  {% if 'approved' in allowed %}
+  {{ post_button(transition_url, "Approve order", variant="primary", icon_name="check", fields={"to_status": "approved"},
+       confirm="Approve " ~ order.number ~ " for " ~ (order.total_paise | inr) ~ "? We'll email " ~ client_name ~ " to let them know.",
+       confirm_label="Approve order") }}
+  {% endif %}
+  {% if 'fulfilled' in allowed %}
+  {{ post_button(transition_url, "Mark as fulfilled", variant="primary", icon_name="truck", fields={"to_status": "fulfilled"},
+       confirm="Mark " ~ order.number ~ " as fulfilled? Do this once the goods have been delivered. We'll email " ~ client_name ~ ".",
+       confirm_label="Mark as fulfilled") }}
+  {% endif %}
+{% endcall %}
+
+<div class="sidebar-layout">
+  <div class="stack">
+    {% if order.status == 'rejected' %}
+    <div class="alert alert--danger">
+      {{ icon('alert') }}
+      <div class="alert__text">
+        <p><strong>Rejected</strong>{% if order.decided_by %} by {{ order.decided_by.full_name }}{% endif %}{% if order.decided_at %} on {{ order.decided_at | datetime }}{% endif %}</p>
+        {% if order.rejection_reason %}<p class="order-note">{{ order.rejection_reason }}</p>{% endif %}
+      </div>
+    </div>
+    {% elif order.status == 'cancelled' %}
+    <div class="alert alert--info">
+      {{ icon('ban') }}
+      <div class="alert__text">
+        <p><strong>Cancelled</strong>{% if cancel_event and cancel_event.actor %} by {{ cancel_event.actor.full_name }}{% endif %}{% if order.cancelled_at %} on {{ order.cancelled_at | datetime }}{% endif %}</p>
+        {% if cancel_event and cancel_event.message %}<p class="order-note">{{ cancel_event.message }}</p>{% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    <section class="card card--flush" aria-labelledby="items-title">
+      <div class="card__header">
+        <h2 class="card__title" id="items-title">Items</h2>
+        <p class="muted">{{ line_count }} product{{ "s" if line_count != 1 }}</p>
+      </div>
+      {% include "shared/_order_lines.html" %}
+      <div class="card__footer">
+        {% include "shared/_order_totals.html" %}
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="notes-title">
+      <div class="card__header">
+        <h2 class="card__title" id="notes-title">Notes from the buyer</h2>
+      </div>
+      <div class="card__body">
+        {% if order.notes %}
+        <p class="order-note">{{ order.notes }}</p>
+        {% else %}
+        <p class="muted">The buyer didn't add any notes to this order.</p>
+        {% endif %}
+      </div>
+    </section>
+
+    {% if note_form and note_form.to_status.data == 'rejected' %}
+    <section class="card" aria-labelledby="reject-title">
+      <div class="card__header">
+        <h2 class="card__title" id="reject-title">Can't accept this order?</h2>
+      </div>
+      <form method="post" action="{{ transition_url }}" class="card__body stack" data-confirm="Reject {{ order.number }}? This can't be undone, and the client will see your reason." data-confirm-label="Reject order" data-confirm-variant="danger">
+        {{ note_form.hidden_tag() }}
+        {{ field(note_form.message, hint="The client sees this, so be specific: what isn't available and what they can do instead.", rows=3) }}
+        {{ button("Reject order", variant="danger-soft", icon_name="x") }}
+      </form>
+    </section>
+    {% elif note_form and note_form.to_status.data == 'cancelled' %}
+    <section class="card" aria-labelledby="cancel-title">
+      <div class="card__header">
+        <h2 class="card__title" id="cancel-title">Can't supply it?</h2>
+      </div>
+      <form method="post" action="{{ transition_url }}" class="card__body stack" data-confirm="Cancel {{ order.number }}? This can't be undone. We'll email {{ client_name }}." data-confirm-label="Cancel order" data-confirm-variant="danger">
+        {{ note_form.hidden_tag() }}
+        {{ field(note_form.message, hint="Tell the client why you're cancelling, for example if stock ran out.", rows=3) }}
+        {{ button("Cancel order", variant="danger-soft", icon_name="ban") }}
+      </form>
+    </section>
+    {% endif %}
+  </div>
+
+  <aside class="stack" aria-label="Order status and client">
+    <section class="card" aria-labelledby="next-title">
+      <div class="card__header">
+        <h2 class="card__title" id="next-title">{{ "What's next" if allowed else "Status" }}</h2>
+      </div>
+      <div class="card__body">
+        {% if order.status == 'pending' %}
+        <p class="muted">Check the items and quantities, then approve the order or reject it with a reason. We'll email the client either way.</p>
+        {% elif order.status == 'approved' %}
+        <p class="muted">Approved{% if order.decided_by %} by {{ order.decided_by.full_name }}{% endif %}{% if order.decided_at %} on {{ order.decided_at | date }}{% endif %}. Mark it as fulfilled once the goods are delivered.</p>
+        {% elif order.status == 'fulfilled' %}
+        <p class="muted">Fulfilled{% if order.fulfilled_by %} by {{ order.fulfilled_by.full_name }}{% endif %}{% if order.fulfilled_at %} on {{ order.fulfilled_at | date }}{% endif %}. This order is complete, so there's nothing else to do.</p>
+        {% elif order.status == 'rejected' %}
+        <p class="muted">This order was rejected, so there's nothing else to do. The client can place a new order at any time.</p>
+        {% else %}
+        <p class="muted">This order was cancelled, so there's nothing else to do.</p>
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="client-title">
+      <div class="card__header">
+        <h2 class="card__title" id="client-title">Client</h2>
+        {% if not client.active %}{{ badge("Suspended", "warning") }}{% endif %}
+      </div>
+      <div class="card__body">
+        <dl class="kv">
+          <div class="kv__row"><dt class="kv__label">Buyer company</dt><dd class="kv__value">{{ client.buyer_company or "Not given" }}</dd></div>
+          <div class="kv__row"><dt class="kv__label">Contact</dt><dd class="kv__value"><a class="text-link" href="{{ url_for('admin.client_detail', user_id=client.id) }}">{{ client.full_name }}</a></dd></div>
+          <div class="kv__row"><dt class="kv__label">Email</dt><dd class="kv__value"><a class="text-link" href="mailto:{{ client.email }}">{{ client.email }}</a></dd></div>
+          <div class="kv__row"><dt class="kv__label">Phone</dt><dd class="kv__value">{% if client.phone %}<a class="text-link" href="tel:{{ client.phone | replace(' ', '') }}">{{ client.phone }}</a>{% else %}Not given{% endif %}</dd></div>
+        </dl>
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="history-title">
+      <div class="card__header">
+        <h2 class="card__title" id="history-title">History</h2>
+      </div>
+      <div class="card__body">
+        {% include "shared/_timeline.html" %}
+      </div>
+    </section>
+  </aside>
+</div>
+{% endblock %}

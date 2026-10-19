@@ -1,0 +1,50 @@
+{% extends "layouts/marketing.html" %}
+{% block title %}Terms of Service{% endblock %}
+{% block description %}The agreement between you and {{ APP_NAME }} about using the service.{% endblock %}
+{# How to reach us: the contact email if one is configured, otherwise the contact form #}
+{% macro contact_link() -%}
+{% if config.CONTACT_EMAIL %}email us at <a href="mailto:{{ config.CONTACT_EMAIL }}">{{ config.CONTACT_EMAIL }}</a>{% else %}write to us using <a href="{{ url_for('public.index') }}#contact">the contact form on our website</a>{% endif %}
+{%- endmacro %}
+{% block content %}
+<div class="container legal">
+<article class="prose">
+  <p class="legal__updated">Last updated 18 October 2026</p>
+  <h1>Terms of Service</h1>
+  <p>These terms are an agreement between you and {{ config.LEGAL_NAME }} ("we") about your use of {{ APP_NAME }}. By creating an account or accepting an invitation, you agree to them.</p>
+
+  <h2>The service</h2>
+  <p>{{ APP_NAME }} lets suppliers publish a catalog to business clients they invite, receive purchase orders, and manage those orders. We may improve, change or remove features over time.</p>
+
+  <h2>Accounts</h2>
+  <ul>
+    <li>You must give accurate details and keep your password secure. You're responsible for activity under your account.</li>
+    <li>The person who creates a workspace is its owner and controls who can access it. Owners and admins can invite, suspend and remove users in their workspace.</li>
+    <li>If you think your account has been misused, {{ contact_link() }} straight away.</li>
+  </ul>
+
+  <h2>Your data</h2>
+  <p>You keep ownership of the data you put into {{ APP_NAME }}. You give us permission to store and process it only to run the service for you. Our <a href="{{ url_for('public.privacy') }}">Privacy Policy</a> explains how we handle personal information.</p>
+
+  <h2>Orders between suppliers and clients</h2>
+  <p>{{ APP_NAME }} is a tool that suppliers and their clients use to exchange orders. We aren't a party to those orders. Prices, taxes, delivery, payment and any disputes are between the supplier and the client. Suppliers are responsible for the accuracy of their prices and tax rates and for issuing any legally required tax invoices.</p>
+
+  <h2>Acceptable use</h2>
+  <p>Don't use {{ APP_NAME }} to break the law, send spam, upload malicious code, try to access other workspaces, or interfere with the service. We may suspend accounts that do.</p>
+
+  <h2>Availability</h2>
+  <p>We work to keep {{ APP_NAME }} running, but we provide it "as is" and can't promise it will always be available or error-free. Keep your own records of important orders.</p>
+
+  <h2>Liability</h2>
+  <p>To the extent the law allows, we aren't liable for indirect or consequential losses, or for losses arising from orders between suppliers and clients. Nothing in these terms limits liability that can't be limited by law.</p>
+
+  <h2>Ending your use</h2>
+  <p>You can stop using {{ APP_NAME }} at any time. A workspace owner can ask us to close the workspace and delete its data. We may close accounts that break these terms, and will give notice where we reasonably can.</p>
+
+  <h2>Changes to these terms</h2>
+  <p>We may update these terms. If a change is significant, we'll tell workspace owners by email before it takes effect.</p>
+
+  <h2>Contact</h2>
+  <p>Questions about these terms? Please {{ contact_link() }}.</p>
+</article>
+</div>
+{% endblock %}

@@ -1,0 +1,7 @@
+{% extends "emails/_layout.html" %}
+{% block preheader %}You now sign in with a different email address.{% endblock %}
+{% block content %}
+<h1 style="margin:0 0 12px;font-size:22px;line-height:1.3;color:#0c1440;">Your sign-in email has changed</h1>
+<p style="margin:0;">Hi {{ user.first_name }}, you now sign in to {% if user.is_client %}your {{ user.company.name }} account{% else %}the {{ user.company.name }} workspace{% endif %} on {{ app_name }} with {{ new_email_hint }} instead of this address. We'll send account emails there from now on.</p>
+<p style="margin:16px 0 0;font-size:13px;color:#5a6182;">If you didn't ask for this, {% if user.is_client %}contact {{ user.company.name }}{% elif not user.is_owner %}tell the owner of your workspace{% elif contact_email %}write to us at {{ contact_email }}{% else %}reply to this email{% endif %} straight away.</p>
+{% endblock %}

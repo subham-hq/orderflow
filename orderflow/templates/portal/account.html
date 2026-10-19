@@ -1,0 +1,68 @@
+{% extends "layouts/portal.html" %}
+{% from "macros/ui.html" import icon, field, button, link_button, page_header, form_errors %}
+{% set active_nav = "account" %}
+{% block title %}Your account{% endblock %}
+{% block content %}
+{{ page_header("Your account", "Your contact details, and how to reach " ~ supplier.name ~ ".", eyebrow=user.buyer_company) }}
+
+<div class="sidebar-layout">
+  <div class="stack">
+    <section class="card" aria-labelledby="details-title">
+      <form method="post" action="{{ url_for('portal.account') }}" class="card__body stack" novalidate>
+        {{ form.hidden_tag() }}
+        <h2 class="card__title" id="details-title">Your details</h2>
+        {{ form_errors(form) }}
+        <div class="grid grid--2">
+          {{ field(form.first_name, autocomplete="given-name") }}
+          {{ field(form.last_name, autocomplete="family-name", hint="Optional.") }}
+        </div>
+        {{ field(form.phone, type="tel", autocomplete="tel", inputmode="tel", hint="Optional. " ~ supplier.name ~ " may call this number about your orders.") }}
+        <div class="cluster">
+          {{ button("Save details") }}
+        </div>
+      </form>
+    </section>
+
+    <section class="card" aria-labelledby="sign-in-title">
+      <div class="card__body stack">
+        <h2 class="card__title" id="sign-in-title">Signing in</h2>
+        <dl class="kv">
+          <div class="kv__row"><dt class="kv__label">Email</dt><dd class="kv__value">{{ user.email }}</dd></div>
+          {% if user.buyer_company %}
+          <div class="kv__row"><dt class="kv__label">Business</dt><dd class="kv__value">{{ user.buyer_company }}</dd></div>
+          {% endif %}
+        </dl>
+        <p class="muted">To change your email address or business name, contact {{ supplier.name }}{% if supplier.support_email %} at <a class="text-link" href="mailto:{{ supplier.support_email }}">{{ supplier.support_email }}</a>{% endif %}.</p>
+        <div class="cluster">
+          {{ link_button("Change password", url_for('auth.change_password'), variant="secondary", icon_name="shield") }}
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <aside class="card" aria-labelledby="supplier-title">
+    <div class="card__body stack">
+      <h2 class="card__title" id="supplier-title">Your supplier</h2>
+      <p><strong>{{ supplier.legal_name or supplier.name }}</strong></p>
+      {% if supplier.support_email or supplier.phone or supplier.address or supplier.gstin %}
+      <dl class="kv">
+        {% if supplier.support_email %}
+        <div class="kv__row"><dt class="kv__label">Email</dt><dd class="kv__value"><a class="text-link" href="mailto:{{ supplier.support_email }}">{{ supplier.support_email }}</a></dd></div>
+        {% endif %}
+        {% if supplier.phone %}
+        <div class="kv__row"><dt class="kv__label">Phone</dt><dd class="kv__value"><a class="text-link" href="tel:{{ supplier.phone | replace(' ', '') }}">{{ supplier.phone }}</a></dd></div>
+        {% endif %}
+        {% if supplier.address %}
+        <div class="kv__row"><dt class="kv__label">Address</dt><dd class="kv__value text-pre-line">{{ supplier.address }}</dd></div>
+        {% endif %}
+        {% if supplier.gstin %}
+        <div class="kv__row"><dt class="kv__label">GSTIN</dt><dd class="kv__value mono">{{ supplier.gstin }}</dd></div>
+        {% endif %}
+      </dl>
+      {% else %}
+      <p class="muted">{{ supplier.name }} hasn't added contact details here yet. You can leave them a note when you place an order.</p>
+      {% endif %}
+    </div>
+  </aside>
+</div>
+{% endblock %}

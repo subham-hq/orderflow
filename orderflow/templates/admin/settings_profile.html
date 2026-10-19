@@ -1,0 +1,60 @@
+{% extends "layouts/app.html" %}
+{% from "macros/ui.html" import field, form_errors, button, link_button, page_header %}
+{% set active_nav = "settings" %}
+{% set settings_tab = "profile" %}
+{% block title %}Your profile{% endblock %}
+{% block topbar_title %}Settings{% endblock %}
+{% block content %}
+{{ page_header("Settings", "Your own details. Your team sees your name on the orders you handle.") }}
+{% include "admin/settings_tabs.html" %}
+
+<div class="sidebar-layout">
+  <form method="post" class="stack" novalidate>
+    {{ form.hidden_tag() }}
+    {{ form_errors(form) }}
+    <div class="card">
+      <div class="card__header"><h2 class="card__title">Your profile</h2></div>
+      <div class="card__body stack">
+        <div class="grid grid--2">
+          {{ field(form.first_name, autocomplete="given-name") }}
+          {{ field(form.last_name, autocomplete="family-name") }}
+        </div>
+        {{ field(form.phone, hint="Optional.", autocomplete="tel", inputmode="tel") }}
+        <dl class="kv">
+          <div class="kv__row">
+            <dt class="kv__label">Email</dt>
+            <dd class="kv__value">{{ current_user.email }} <span class="muted">· You sign in with this address.</span></dd>
+          </div>
+          <div class="kv__row">
+            <dt class="kv__label">Role</dt>
+            <dd class="kv__value">{{ "Owner" if current_user.is_owner else "Admin" }}</dd>
+          </div>
+        </dl>
+      </div>
+    </div>
+    <div class="cluster">{{ button("Save profile") }}</div>
+  </form>
+
+  <aside class="stack" aria-label="Sign-in email and password">
+    <form method="post" action="{{ url_for('admin.change_email') }}" class="card" novalidate>
+      {{ email_form.hidden_tag() }}
+      <div class="card__header"><h2 class="card__title">Sign-in email</h2></div>
+      <div class="card__body stack">
+        {{ form_errors(email_form) }}
+        <p>To sign in with a different address, enter it with your password. We'll email a link to the new address, and the change happens once you open it and confirm.</p>
+        {{ field(email_form.new_email, autocomplete="email", placeholder="name@business.in") }}
+        {{ field(email_form.current_password, autocomplete="current-password") }}
+        {{ button("Send confirmation link", variant="secondary", icon_name="send") }}
+      </div>
+    </form>
+
+    <div class="card">
+      <div class="card__header"><h2 class="card__title">Password</h2></div>
+      <div class="card__body stack">
+        <p>Changing your password signs you out on every other device.</p>
+        {{ link_button("Change password", url_for('auth.change_password'), variant="secondary", icon_name="shield") }}
+      </div>
+    </div>
+  </aside>
+</div>
+{% endblock %}

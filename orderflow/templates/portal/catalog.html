@@ -1,0 +1,114 @@
+{% extends "layouts/portal.html" %}
+{% from "macros/ui.html" import icon, button, link_button, page_header, empty_state, pagination, badge, csrf %}
+{% set active_nav = "catalog" %}
+{% set supplier = current_user.company.name %}
+{% block title %}Catalog{% endblock %}
+{% block content %}
+{% call page_header("Catalog", "Prices are per unit, before GST. GST is added in your cart.", eyebrow=supplier) %}
+  {% if cart_items %}
+  {{ link_button("Review cart (" ~ "{:,}".format(cart_items) ~ ")", url_for('portal.cart'), variant="secondary", icon_name="cart") }}
+  {% endif %}
+{% endcall %}
+
+{% if catalog_is_empty %}
+<div class="card">
+  {{ empty_state(
+    supplier ~ " hasn't added any products yet",
+    "Check back soon. Products appear here as soon as " ~ supplier ~ " adds them to the catalog.",
+    icon_name="box"
+  ) }}
+</div>
+{% else %}
+<div class="stack stack--sm">
+  <form method="get" action="{{ url_for('portal.catalog') }}" class="toolbar" role="search">
+    {# Searching keeps the category picked below #}
+    {% if category %}<input type="hidden" name="category" value="{{ category }}">{% endif %}
+    <div class="search">
+      <label class="visually-hidden" for="catalog-search">Search products{% if category %} in {{ category }}{% endif %}</label>
+      {{ icon('search') }}
+      <input class="input" type="search" id="catalog-search" name="q" value="{{ q }}" placeholder="Search by name, SKU or description" maxlength="100" autocomplete="off">
+    </div>
+    {{ button("Search", variant="secondary", icon_name="search") }}
+    {% if q or category %}
+    <a class="text-link" href="{{ url_for('portal.catalog') }}">Clear filters</a>
+    {% endif %}
+  </form>
+
+  {% if category_chips %}
+  {# Plain links, so picking a category works without JavaScript. They keep the search. #}
+  <nav aria-label="Categories">
+    <ul class="chips">
+      {% for name, count in category_chips %}
+      {% set args = {'q': q} if q else {} %}
+      {% if name %}{% set _ = args.update({'category': name}) %}{% endif %}
+      {% set current = (name or '') == category %}
+      <li>
+        <a class="chip{% if current %} is-active{% endif %}" href="{{ url_for('portal.catalog', **args) }}"{% if current %} aria-current="page"{% endif %}>
+          <span class="chip__label">{{ name or "All" }}</span>
+          <span class="chip__count">{{ "{:,}".format(count) }}<span class="visually-hidden"> {{ "product" if count == 1 else "products" }}</span></span>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+  </nav>
+  {% endif %}
+</div>
+
+{% if page.items %}
+<p class="results-count muted">
+  {{ "{:,}".format(page.total) }} {{ "product" if page.total == 1 else "products" }}
+  {%- if q %} matching “{{ q }}”{% endif %}
+  {%- if category %} in {{ category }}{% endif %}
+  {%- if page.pages > 1 %} · showing {{ page.first }}–{{ page.last }}{% endif %}
+</p>
+<div class="product-grid">
+  {% for product in page.items %}
+  {% set quantity_id = "add-qty-" ~ product.id %}
+  {% set in_cart_now = in_cart.get(product.id) %}
+  <article class="product-card" id="product-{{ product.id }}" aria-labelledby="product-{{ product.id }}-name">
+    <div class="product-card__body">
+      {% if product.category %}<p class="product-card__category">{{ product.category }}</p>{% endif %}
+      <h2 class="product-card__name" id="product-{{ product.id }}-name">{{ product.name }}</h2>
+      <p class="product-card__sku">{{ product.sku }}</p>
+      {% if product.description %}<p class="product-card__description muted">{{ product.description | truncate(160) }}</p>{% endif %}
+      <p class="product-card__price"><span class="money">{{ product.price_paise | inr }}</span> <span class="product-card__unit">per {{ product.unit }}</span></p>
+      <p class="product-card__tax">GST {{ product.gst_rate_bp | gst }}</p>
+      {% if in_cart_now %}
+      <p class="product-card__in-cart">{{ icon('check-circle') }}<span>In cart: {{ "{:,}".format(in_cart_now) }}</span> <a class="text-link" href="{{ url_for('portal.cart') }}">View cart</a></p>
+      {% endif %}
+    </div>
+    <form method="post" action="{{ url_for('portal.cart_add') }}" class="product-card__form" novalidate>
+      {{ csrf() }}
+      <input type="hidden" name="product_id" value="{{ product.id }}">
+      <input type="hidden" name="next" value="{{ next_url }}">
+      <label class="visually-hidden" for="{{ quantity_id }}">Quantity of {{ product.name }}</label>
+      <div class="stepper" data-stepper>
+        <button type="button" class="stepper__button" data-step="-1" aria-label="One fewer {{ product.name }}">{{ icon('minus') }}</button>
+        <input class="input stepper__input" type="number" id="{{ quantity_id }}" name="quantity" value="1" min="1" max="{{ MAX_QUANTITY }}" step="1" inputmode="numeric" autocomplete="off">
+        <button type="button" class="stepper__button" data-step="1" aria-label="One more {{ product.name }}">{{ icon('plus') }}</button>
+      </div>
+      <button type="submit" class="btn btn--primary">{{ icon('cart') }}<span>Add<span class="visually-hidden"> {{ product.name }} to cart</span></span></button>
+    </form>
+  </article>
+  {% endfor %}
+</div>
+{{ pagination(page, 'portal.catalog') }}
+{% else %}
+<div class="card">
+  {% if q %}
+  {% set empty_title = "No products match “" ~ q ~ "”" ~ (" in " ~ category if category else "") %}
+  {% else %}
+  {% set empty_title = "No products in " ~ category ~ " right now" %}
+  {% endif %}
+  {{ empty_state(
+    empty_title,
+    "Try a different word or SKU, or clear the filters to see the whole catalog.",
+    url_for('portal.catalog'),
+    "Clear filters",
+    "search",
+    action_variant="secondary"
+  ) }}
+</div>
+{% endif %}
+{% endif %}
+{% endblock %}

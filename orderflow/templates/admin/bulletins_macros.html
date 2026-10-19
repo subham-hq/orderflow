@@ -1,0 +1,13 @@
+{# Helpers for the bulletin pages. #}
+{% from "macros/ui.html" import badge %}
+
+{% macro state_badge(state) -%}
+{% if state == "live" %}{{ badge("Live", "success") }}{% elif state == "draft" %}{{ badge("Draft", "neutral") }}{% else %}{{ badge("Expired", "warning") }}{% endif %}
+{%- endmacro %}
+
+{# The message as typed: blank lines start a new paragraph, single line breaks are kept. #}
+{% macro bulletin_body(text) -%}
+{% for paragraph in text.split("\n\n") if paragraph.strip() %}
+<p>{% for line in paragraph.strip("\n").split("\n") %}{{ line }}{% if not loop.last %}<br>{% endif %}{% endfor %}</p>
+{% endfor %}
+{%- endmacro %}

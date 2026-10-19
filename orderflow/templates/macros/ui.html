@@ -1,0 +1,172 @@
+{# Shared UI macros. Pages call these instead of hand-writing markup, so the
+   design system controls how every control looks. See docs/ui.md. #}
+
+{% macro icon(name, label=None, class="") -%}
+<svg class="icon {{ class }}" {% if label %}role="img" aria-label="{{ label }}"{% else %}aria-hidden="true"{% endif %} focusable="false"><use href="{{ url_for('static', filename='img/icons.svg') }}#{{ name }}"></use></svg>
+{%- endmacro %}
+
+{% macro field(f, hint=None, class="", type=None, placeholder=None, autocomplete=None, autofocus=False, inputmode=None, step=None, min=None, max=None, rows=None, list=None) -%}
+{% set has_error = f.errors | length > 0 %}
+{% set describedby = [] %}
+{% if hint %}{% set _ = describedby.append(f.id ~ '-hint') %}{% endif %}
+{% if has_error %}{% set _ = describedby.append(f.id ~ '-error') %}{% endif %}
+{% set attrs = {} %}
+{% if placeholder %}{% set _ = attrs.update({'placeholder': placeholder}) %}{% endif %}
+{% if autocomplete %}{% set _ = attrs.update({'autocomplete': autocomplete}) %}{% endif %}
+{% if autofocus %}{% set _ = attrs.update({'autofocus': True}) %}{% endif %}
+{% if inputmode %}{% set _ = attrs.update({'inputmode': inputmode}) %}{% endif %}
+{% if step %}{% set _ = attrs.update({'step': step}) %}{% endif %}
+{% if min is not none %}{% set _ = attrs.update({'min': min}) %}{% endif %}
+{% if max is not none %}{% set _ = attrs.update({'max': max}) %}{% endif %}
+{% if rows %}{% set _ = attrs.update({'rows': rows}) %}{% endif %}
+{% if list %}{% set _ = attrs.update({'list': list}) %}{% endif %}
+{% if type %}{% set _ = attrs.update({'type': type}) %}{% endif %}
+{% if describedby %}{% set _ = attrs.update({'aria-describedby': describedby | join(' ')}) %}{% endif %}
+{% if has_error %}{% set _ = attrs.update({'aria-invalid': 'true'}) %}{% endif %}
+{% if f.type == 'BooleanField' %}
+<div class="field field--check {{ class }}{% if has_error %} field--error{% endif %}">
+  <label class="check">
+    {{ f(class="check__input", **attrs) }}
+    <span class="check__label">{{ f.label.text }}</span>
+  </label>
+  {% if hint %}<p class="field__hint" id="{{ f.id }}-hint">{{ hint }}</p>{% endif %}
+  {% if has_error %}<p class="field__error" id="{{ f.id }}-error">{{ f.errors[0] }}</p>{% endif %}
+</div>
+{% else %}
+{% set control = 'select' if f.type in ('SelectField', 'SelectMultipleField') else ('textarea' if f.type == 'TextAreaField' else 'input') %}
+<div class="field {{ class }}{% if has_error %} field--error{% endif %}">
+  {{ f.label(class="field__label") }}
+  {% if hint %}<p class="field__hint" id="{{ f.id }}-hint">{{ hint }}</p>{% endif %}
+  {{ f(class=control, **attrs) }}
+  {% if has_error %}<p class="field__error" id="{{ f.id }}-error">{{ f.errors[0] }}</p>{% endif %}
+</div>
+{% endif %}
+{%- endmacro %}
+
+{% macro form_errors(form) -%}
+{% set non_field = form.form_errors if form.form_errors is defined else [] %}
+{% if non_field %}
+<div class="alert alert--danger" role="alert">{{ non_field[0] }}</div>
+{% endif %}
+{%- endmacro %}
+
+{% macro button(label, variant="primary", type="submit", icon_name=None, size=None, class="", name=None, value=None) -%}
+<button type="{{ type }}" class="btn btn--{{ variant }}{% if size %} btn--{{ size }}{% endif %} {{ class }}"{% if name %} name="{{ name }}"{% endif %}{% if value is not none %} value="{{ value }}"{% endif %}>
+  {%- if icon_name %}{{ icon(icon_name) }}{% endif %}<span>{{ label }}</span>
+</button>
+{%- endmacro %}
+
+{% macro link_button(label, href, variant="secondary", icon_name=None, size=None, class="") -%}
+<a href="{{ href }}" class="btn btn--{{ variant }}{% if size %} btn--{{ size }}{% endif %} {{ class }}">
+  {%- if icon_name %}{{ icon(icon_name) }}{% endif %}<span>{{ label }}</span>
+</a>
+{%- endmacro %}
+
+{# A one-button POST form. If confirm is given, the page asks before submitting. #}
+{% macro post_button(action, label, variant="secondary", confirm=None, confirm_label=None, icon_name=None, size=None, fields=None, class="") -%}
+<form method="post" action="{{ action }}" class="inline-form {{ class }}"{% if confirm %} data-confirm="{{ confirm }}" data-confirm-label="{{ confirm_label or label }}" data-confirm-variant="{{ variant }}"{% endif %}>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  {% for key, value in (fields or {}).items() %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endfor %}
+  {{ button(label, variant=variant, icon_name=icon_name, size=size) }}
+</form>
+{%- endmacro %}
+
+{% macro status_badge(status) -%}
+<span class="badge badge--{{ status }}"><span class="badge__dot" aria-hidden="true"></span>{{ STATUS_LABELS.get(status, status | title) }}</span>
+{%- endmacro %}
+
+{% macro badge(label, tone="neutral") -%}
+<span class="badge badge--{{ tone }}">{{ label }}</span>
+{%- endmacro %}
+
+{% macro money(paise, class="") -%}
+<span class="money {{ class }}">{{ paise | inr }}</span>
+{%- endmacro %}
+
+{# badge: markup shown beside the title, such as status_badge(order.status) #}
+{% macro page_header(title, subtitle=None, eyebrow=None, badge=None) -%}
+<header class="page-header">
+  <div class="page-header__text">
+    {% if eyebrow %}<p class="page-header__eyebrow">{{ eyebrow }}</p>{% endif %}
+    {% if badge %}
+    <div class="page-header__title-row">
+      <h1 class="page-header__title">{{ title }}</h1>
+      {{ badge }}
+    </div>
+    {% else %}
+    <h1 class="page-header__title">{{ title }}</h1>
+    {% endif %}
+    {% if subtitle %}<p class="page-header__subtitle">{{ subtitle }}</p>{% endif %}
+  </div>
+  {% if caller is defined %}<div class="page-header__actions">{{ caller() }}</div>{% endif %}
+</header>
+{%- endmacro %}
+
+{# action_variant: "secondary" when the page header already has the primary
+   button, or for a reset such as "Clear filters" #}
+{% macro empty_state(title, text=None, action_url=None, action_label=None, icon_name="box", action_variant="primary") -%}
+<div class="empty-state">
+  <div class="empty-state__icon">{{ icon(icon_name) }}</div>
+  <h2 class="empty-state__title">{{ title }}</h2>
+  {% if text %}<p class="empty-state__text">{{ text }}</p>{% endif %}
+  {% if action_url %}{{ link_button(action_label, action_url, variant=action_variant) }}{% endif %}
+</div>
+{%- endmacro %}
+
+{% macro stat(label, value, hint=None, tone=None, href=None) -%}
+{% set tag = 'a' if href else 'div' %}
+<{{ tag }} class="stat{% if tone %} stat--{{ tone }}{% endif %}"{% if href %} href="{{ href }}"{% endif %}>
+  <span class="stat__label">{{ label }}</span>
+  <span class="stat__value">{{ value }}</span>
+  {% if hint %}<span class="stat__hint">{{ hint }}</span>{% endif %}
+</{{ tag }}>
+{%- endmacro %}
+
+{# pagination: a SQLAlchemy Pagination object; endpoint builds the page links.
+   The links keep only the list filters named in keep, never every query
+   argument: a stray ?endpoint= or ?_method= would otherwise reach url_for
+   as one of its own arguments and fail. #}
+{% macro pagination(page, endpoint, keep=("q", "status", "category", "from", "to")) -%}
+{% if page and page.pages > 1 %}
+{% set link_args = dict(request.view_args or {}) %}
+{% for key, value in request.args.items() if key in keep %}
+{% set _ = link_args.update({key: value}) %}
+{% endfor %}
+<nav class="pagination" aria-label="Pages">
+  {% if page.has_prev %}
+    {% set _ = link_args.update({'page': page.prev_num}) %}
+    <a class="pagination__link" href="{{ url_for(endpoint, **link_args) }}" rel="prev">{{ icon('chevron-left') }}<span>Previous</span></a>
+  {% else %}
+    <span class="pagination__link is-disabled" aria-disabled="true">{{ icon('chevron-left') }}<span>Previous</span></span>
+  {% endif %}
+  <span class="pagination__status">Page {{ page.page }} of {{ page.pages }}</span>
+  {% if page.has_next %}
+    {% set _ = link_args.update({'page': page.next_num}) %}
+    <a class="pagination__link" href="{{ url_for(endpoint, **link_args) }}" rel="next"><span>Next</span>{{ icon('chevron-right') }}</a>
+  {% else %}
+    <span class="pagination__link is-disabled" aria-disabled="true"><span>Next</span>{{ icon('chevron-right') }}</span>
+  {% endif %}
+</nav>
+{% endif %}
+{%- endmacro %}
+
+{% macro flashes() -%}
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+<div class="flashes" role="status" aria-live="polite">
+  {% for category, message in messages %}
+  {% set tone = category if category in ('success', 'info', 'warning', 'danger') else 'info' %}
+  <div class="alert alert--{{ tone }}" data-flash>
+    {{ icon({'success': 'check-circle', 'info': 'info', 'warning': 'alert', 'danger': 'alert'}[tone]) }}
+    <p class="alert__text">{{ message }}</p>
+    <button type="button" class="alert__close" data-dismiss aria-label="Dismiss">{{ icon('x') }}</button>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endwith %}
+{%- endmacro %}
+
+{% macro csrf() -%}
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+{%- endmacro %}

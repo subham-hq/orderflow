@@ -1,0 +1,5 @@
+Hi {{ user.first_name }},
+
+You now sign in to {% if user.is_client %}your {{ user.company.name }} account{% else %}the {{ user.company.name }} workspace{% endif %} on {{ app_name }} with {{ new_email_hint }} instead of this address. We'll send account emails there from now on.
+
+If you didn't ask for this, {% if user.is_client %}contact {{ user.company.name }}{% elif not user.is_owner %}tell the owner of your workspace{% elif contact_email %}write to us at {{ contact_email }}{% else %}reply to this email{% endif %} straight away.

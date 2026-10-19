@@ -1,0 +1,63 @@
+{% extends "layouts/app.html" %}
+{% from "macros/ui.html" import field, form_errors, button, link_button, page_header %}
+{% from "admin/clients_macros.html" import account_badge %}
+{% set active_nav = "clients" %}
+{% set editing = client is not none %}
+{% block title %}{% if editing %}Edit {{ client.full_name }}{% else %}Invite a client{% endif %}{% endblock %}
+{% block topbar_title %}Clients{% endblock %}
+{% block content %}
+{% if editing %}
+{{ page_header(client.buyer_company or client.full_name, "Update their contact details. Their orders aren't affected.", eyebrow="Edit client", badge=account_badge(client)) }}
+{% else %}
+{{ page_header("Invite a client", "We'll email them a link to set a password and open their ordering portal.", eyebrow="Clients") }}
+{% endif %}
+
+<div class="sidebar-layout">
+  <form method="post" class="stack" novalidate>
+    {{ form.hidden_tag() }}
+    {{ form_errors(form) }}
+    <div class="card">
+      <div class="card__header"><h2 class="card__title">Contact</h2></div>
+      <div class="card__body stack">
+        {{ field(form.buyer_company, hint="The business they buy for. It's shown on their orders and invoices.", autofocus=not editing, autocomplete="organization", placeholder="Sunrise Retail LLP") }}
+        <div class="grid grid--2">
+          {{ field(form.first_name, autocomplete="off") }}
+          {{ field(form.last_name, autocomplete="off") }}
+        </div>
+        {% if not editing %}
+        {{ field(form.email, hint="The invitation goes here, and they'll sign in with it.", autocomplete="off", placeholder="name@business.in") }}
+        {% elif client.has_accepted_invite %}
+        {{ field(form.email, hint="They sign in with " ~ client.email ~ ". If you change it, we'll email a link to the new address, and it changes once they open the link, sign in and confirm.", autocomplete="off") }}
+        {% else %}
+        {{ field(form.email, hint="They haven't accepted their invitation yet. If you change this, we'll send a fresh invitation to the new address.", autocomplete="off") }}
+        {% endif %}
+        {{ field(form.phone, hint="Optional.", autocomplete="off", inputmode="tel", placeholder="+91 98450 12345") }}
+      </div>
+    </div>
+    <div class="cluster">
+      {% if editing %}
+      {{ button("Save changes") }}
+      {{ link_button("Cancel", url_for('admin.client_detail', user_id=client.id), variant="ghost") }}
+      {% else %}
+      {{ button("Send invitation", icon_name="send") }}
+      {{ link_button("Cancel", url_for('admin.clients'), variant="ghost") }}
+      {% endif %}
+    </div>
+  </form>
+
+  <aside class="stack" aria-label="About client accounts">
+    <div class="card">
+      <div class="card__header"><h2 class="card__title">{% if editing %}Good to know{% else %}What happens next{% endif %}</h2></div>
+      <div class="card__body stack">
+        {% if editing %}
+        <p>Changes here update their account straight away{% if client.has_accepted_invite %}, except a new email address: that waits until they confirm it{% endif %}. Orders they've already placed keep the details they were placed with.</p>
+        <p class="muted">To stop someone ordering, suspend their account from the client page instead of deleting it.</p>
+        {% else %}
+        <p>They get an email from {{ current_user.company.name }} with a link to set a password. The link works for 7 days, and you can resend it any time.</p>
+        <p>Once they're in, they can browse your active products and send you purchase orders to approve.</p>
+        {% endif %}
+      </div>
+    </div>
+  </aside>
+</div>
+{% endblock %}

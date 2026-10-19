@@ -1,0 +1,327 @@
+{% extends "layouts/marketing.html" %}
+{% from "macros/ui.html" import icon, field, button, status_badge, flashes %}
+{% block title %}Wholesale ordering for suppliers{% endblock %}
+{% block description %}{{ APP_NAME }} gives suppliers a private catalog and ordering portal for their business clients, with approvals, GST on every line and proforma invoices. Free during early access.{% endblock %}
+{% block meta %}
+{% set page_url = url_for('public.index', _external=True) %}
+<link rel="canonical" href="{{ page_url }}">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="{{ APP_NAME }}">
+<meta property="og:locale" content="en_IN">
+<meta property="og:url" content="{{ page_url }}">
+<meta property="og:title" content="{{ APP_NAME }}: wholesale orders, placed online and approved in a click">
+<meta property="og:description" content="A private catalog and ordering portal for your business clients, with approvals, GST on every line and proforma invoices.">
+<meta property="og:image" content="{{ url_for('static', filename='img/icon-512.png', _external=True) }}">
+<meta property="og:image:width" content="512">
+<meta property="og:image:height" content="512">
+<meta property="og:image:alt" content="The {{ APP_NAME }} logo">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="{{ APP_NAME }}: wholesale orders, placed online and approved in a click">
+<meta name="twitter:description" content="A private catalog and ordering portal for your business clients, with approvals, GST on every line and proforma invoices.">
+{% endblock %}
+{# Flash messages here come from the contact form, so they're shown next to it #}
+{% block flashes %}{% endblock %}
+{% block content %}
+{% set signup_url = url_for('auth.signup') %}
+
+<section class="hero" aria-labelledby="hero-title">
+  <div class="container hero__inner">
+    <div class="hero__copy">
+      <p class="hero__eyebrow">B2B ordering for Indian suppliers</p>
+      <h1 class="hero__title" id="hero-title">Wholesale orders, placed online and <span class="hero__highlight">approved in a click.</span></h1>
+      <p class="hero__lead">{{ APP_NAME }} gives your business clients a private catalog and ordering portal. Your team reviews every purchase order, approves it or rejects it with a reason, and marks it fulfilled, with GST worked out on every line and a full history of who did what.</p>
+      <div class="hero__actions">
+        <a class="btn btn--primary btn--lg" href="{{ signup_url }}"><span>Start free</span>{{ icon('arrow-right') }}</a>
+        <a class="btn btn--secondary btn--lg" href="#how-it-works">See how it works</a>
+      </div>
+      <p class="hero__note">Free during early access. No card needed.</p>
+    </div>
+
+    {# An example order that moves from pending to approved to fulfilled.
+       Without animation it shows the finished order. #}
+    <figure class="hero__visual weave" aria-labelledby="hero-visual-caption">
+      <div class="hero-order">
+        <div class="hero-order__head">
+          <div>
+            <p class="hero-order__number">ORD-000025</p>
+            <p class="hero-order__client">Sunrise Retail LLP</p>
+          </div>
+          <div class="hero-order__status">
+            <span class="hero-order__state hero-order__state--1" aria-hidden="true">{{ status_badge('pending') }}</span>
+            <span class="hero-order__state hero-order__state--2" aria-hidden="true">{{ status_badge('approved') }}</span>
+            <span class="hero-order__state hero-order__state--3">{{ status_badge('fulfilled') }}</span>
+          </div>
+        </div>
+        <ol class="hero-order__rail" aria-label="Order progress">
+          <li class="hero-order__step hero-order__step--1">Placed</li>
+          <li class="hero-order__step hero-order__step--2">Approved</li>
+          <li class="hero-order__step hero-order__step--3">Fulfilled</li>
+        </ol>
+        <table class="hero-order__lines">
+          <caption class="visually-hidden">Items on the example order</caption>
+          <thead class="visually-hidden">
+            <tr><th scope="col">Item</th><th scope="col">Amount</th></tr>
+          </thead>
+          <tbody>
+            {% for name, sku, quantity, unit, amount in [
+              ('Corrugated carton, 5-ply', 'CTN-001', 40, 'box', 170000),
+              ('BOPP tape, 48 mm x 65 m', 'TAP-010', 24, 'roll', 163200),
+              ('Stretch film, 18 in x 23 micron', 'STR-200', 6, 'roll', 249000),
+            ] %}
+            <tr>
+              <td><span class="hero-order__item">{{ name }}</span><span class="hero-order__sku">{{ sku }} · {{ quantity }} {{ unit }}</span></td>
+              <td class="num">{{ amount | inr }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        <dl class="summary">
+          <div class="summary__row"><dt>Subtotal</dt><dd>{{ 582200 | inr }}</dd></div>
+          <div class="summary__row"><dt>GST ({{ 1800 | gst }})</dt><dd>{{ 104796 | inr }}</dd></div>
+          <div class="summary__row summary__total"><dt>Total</dt><dd>{{ 686996 | inr }}</dd></div>
+        </dl>
+        <ol class="hero-order__log" aria-label="Order history">
+          <li class="hero-order__event hero-order__event--1">Placed by Ananya Rao <time>10:42 AM</time></li>
+          <li class="hero-order__event hero-order__event--2">Approved by Priya Nair <time>11:05 AM</time></li>
+          <li class="hero-order__event hero-order__event--3">Fulfilled by Arjun Das <time>4:30 PM</time></li>
+        </ol>
+      </div>
+      <div class="hero-mail" aria-hidden="true">
+        <span class="hero-mail__note hero-mail__note--1">{{ icon('mail') }}Ananya was emailed: order received</span>
+        <span class="hero-mail__note hero-mail__note--2">{{ icon('mail') }}Ananya was emailed: order approved</span>
+        <span class="hero-mail__note hero-mail__note--3">{{ icon('mail') }}Ananya was emailed: order fulfilled</span>
+      </div>
+      <figcaption class="visually-hidden" id="hero-visual-caption">An example order from Sunrise Retail LLP for three packaging items, {{ 686996 | inr }} including GST. It was placed by the client, approved by the supplier, then fulfilled, and the client was emailed at each step.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="audience" aria-labelledby="audience-title">
+  <div class="container audience__inner">
+    <h2 class="audience__title" id="audience-title">Built for suppliers who sell to other businesses</h2>
+    <ul class="audience__list">
+      <li>Distributors</li>
+      <li>Manufacturers</li>
+      <li>Wholesalers</li>
+      <li>HoReCa suppliers</li>
+    </ul>
+  </div>
+</section>
+
+<section class="landing-section" id="features" aria-labelledby="features-title">
+  <div class="container stack stack--xl">
+    <header class="section-intro" data-reveal>
+      <p class="eyebrow">Product</p>
+      <h2 class="section-title" id="features-title">One order desk for your team and every client you sell to.</h2>
+      <p class="lead">No more orders scattered across phone calls, messages and spreadsheets. Clients order from your catalog; you see every order in one list, with its status and history.</p>
+    </header>
+
+    <div class="feature-row" data-reveal>
+      <div class="feature-row__copy">
+        <h3 class="feature-row__title">A private portal for each of your clients</h3>
+        <p>Each client signs in to a portal with your name on it and sees only your catalog. They search and browse your products, build a cart, add a note for your team and place a purchase order.</p>
+        <ul class="ticks">
+          <li>{{ icon('check') }}<span>Reorder a past order in one step</span></li>
+          <li>{{ icon('check') }}<span>Follow every order's status and timeline</span></li>
+          <li>{{ icon('check') }}<span>Download a proforma invoice to print or save as PDF</span></li>
+        </ul>
+      </div>
+      <div class="showcase" aria-hidden="true">
+        <p class="showcase__label">Your client's portal</p>
+        <div class="product-grid">
+          {% for category, name, sku, unit, price, rate in [
+            ('Fasteners', 'Hex bolt M10 x 50, zinc plated', 'BLT-M10', 'pack of 100', 52000, 1800),
+            ('Staples', 'Sona Masoori rice, 25 kg', 'RCE-25K', 'bag', 145000, 500),
+          ] %}
+          <div class="product-card">
+            <span class="product-card__category">{{ category }}</span>
+            <span class="product-card__name">{{ name }}</span>
+            <span class="product-card__sku">{{ sku }} · per {{ unit }}</span>
+            <p class="product-card__price">{{ price | inr }} <span class="product-card__tax">+ {{ rate | gst }} GST</span></p>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="feature-row feature-row--reverse" data-reveal>
+      <div class="feature-row__copy">
+        <h3 class="feature-row__title">Approve, reject or fulfil, with a full timeline</h3>
+        <p>Every order moves through clear steps: pending review, approved, fulfilled. Reject with a reason the client can read, and see who changed what and when. Orders can only move in the directions that make sense, so an order can't be fulfilled before it's approved.</p>
+      </div>
+      <div class="showcase" aria-hidden="true">
+        <p class="showcase__label">Your workspace</p>
+        <div class="card review">
+          <div class="review__head">
+            <span><span class="mono">ORD-000019</span> · Sunrise Retail LLP</span>
+            {{ status_badge('pending') }}
+          </div>
+          <p class="review__meta">2 items · {{ 5791800 | inr }} including {{ 275800 | inr }} GST</p>
+          <ol class="timeline timeline--compact">
+            <li class="timeline__item timeline__item--pending">
+              <span class="timeline__dot"></span>
+              <div class="timeline__body">
+                <p class="timeline__title">Order placed by Ananya Rao</p>
+                <p class="timeline__meta">8 Oct, 10:12 AM</p>
+              </div>
+            </li>
+            <li class="timeline__item timeline__item--pending timeline__item--next">
+              <span class="timeline__dot"></span>
+              <div class="timeline__body">
+                <p class="timeline__title">Waiting for your review</p>
+                <p class="timeline__meta">Approve or reject to let the client know</p>
+              </div>
+            </li>
+          </ol>
+          <div class="cluster">
+            <span class="btn btn--primary btn--sm">Approve order</span>
+            <span class="btn btn--secondary btn--sm">Reject with a reason</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <ul class="feature-grid" data-reveal="stagger">
+      {% for icon_name, title, text in [
+        ('receipt', 'GST on every line', 'Set a GST rate on each product. Tax is worked out line by line, rounded to the paisa and shown apart from the subtotal on carts, orders and invoices.'),
+        ('mail', 'Email at every step', 'Clients hear when you receive, approve, reject or fulfil their order. Your team hears about new orders and cancellations.'),
+        ('chart', 'A dashboard that answers questions', 'Revenue, orders waiting for review, your top products and your top clients, at a glance.'),
+        ('download', 'CSV in, CSV out', 'Import your product list from a CSV file, and export orders for your spreadsheet or accounting software.'),
+        ('user-plus', 'Invite-only accounts', 'You invite clients and teammates by email, and every account confirms its email address before it can be used.'),
+        ('shield', 'Your data stays yours', "Each supplier's data is kept apart from every other supplier's. Sign-in attempts are rate limited, passwords are hashed and every page is served over HTTPS."),
+      ] %}
+      <li class="feature">
+        <span class="feature__icon">{{ icon(icon_name) }}</span>
+        <h3 class="feature__title">{{ title }}</h3>
+        <p class="feature__text">{{ text }}</p>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+</section>
+
+<section class="band band--ink" id="how-it-works" aria-labelledby="how-title">
+  <div class="container stack stack--xl">
+    <header class="section-intro" data-reveal>
+      <p class="eyebrow">How it works</p>
+      <h2 class="section-title" id="how-title">Up and running in three steps</h2>
+    </header>
+    <ol class="steps" data-reveal="stagger">
+      <li class="step">
+        <span class="step__number" aria-hidden="true">01</span>
+        <h3 class="step__title">Add your catalog</h3>
+        <p class="step__text">Add products one at a time, or import a CSV file with each product's SKU, name, unit, price and GST rate.</p>
+      </li>
+      <li class="step">
+        <span class="step__number" aria-hidden="true">02</span>
+        <h3 class="step__title">Invite your clients</h3>
+        <p class="step__text">Each buyer gets an email invitation, chooses a password and sees only your catalog and their own orders.</p>
+      </li>
+      <li class="step">
+        <span class="step__number" aria-hidden="true">03</span>
+        <h3 class="step__title">Review and fulfil</h3>
+        <p class="step__text">New orders arrive in your workspace and your inbox. Approve, reject with a reason or mark fulfilled; the client is emailed each time.</p>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<section class="landing-section" id="pricing" aria-labelledby="pricing-title">
+  <div class="container pricing">
+    <div class="pricing__copy" data-reveal>
+      <p class="eyebrow">Pricing</p>
+      <h2 class="section-title" id="pricing-title">One plan. Free during early access.</h2>
+      <p class="lead">Everything {{ APP_NAME }} does is included, for your whole team and all of your clients. If that changes, we'll tell workspace owners by email before it takes effect.</p>
+    </div>
+    <div class="plan" data-reveal>
+      <div class="plan__head">
+        <h3 class="plan__name">Early access</h3>
+        <p class="plan__price">Free</p>
+      </div>
+      <p class="plan__note">What's included:</p>
+      <ul class="ticks ticks--2col">
+        {% for item in [
+          'Private catalog and client portal',
+          'Approval workflow and order timeline',
+          'GST-aware totals and proforma invoices',
+          'Email notifications for clients and staff',
+          'Dashboard and order CSV export',
+          'Product CSV import',
+          'Team accounts for your staff',
+          'Separate, secure data for your business',
+        ] %}
+        <li>{{ icon('check') }}<span>{{ item }}</span></li>
+        {% endfor %}
+      </ul>
+      <a class="btn btn--primary btn--lg btn--block" href="{{ signup_url }}">Start free</a>
+    </div>
+  </div>
+</section>
+
+<section class="landing-section landing-section--surface" id="faq" aria-labelledby="faq-title">
+  <div class="container faq">
+    <div class="faq__intro">
+      <p class="eyebrow">FAQ</p>
+      <h2 class="section-title" id="faq-title">Questions, answered</h2>
+      <p class="muted">Something else on your mind? <a class="text-link" href="#contact">Ask us</a>.</p>
+    </div>
+    <div class="faq__list" data-reveal>
+      {% for question, answer in [
+        ('Do my clients need to sign up or pay?', "No. You invite each client by email. They choose a password and order from your catalog. Clients can't create accounts on their own."),
+        ('How is GST worked out?', 'Each product has its own GST rate. Tax is calculated on every line, rounded to the nearest paisa and shown separately from the subtotal.'),
+        ('What happens to past orders when I change a price?', 'Nothing. Every order keeps the product name, price and GST rate it was placed with, so past orders and invoices never change.'),
+        ('Is the proforma invoice a tax invoice?', 'No. Clients can print it or save it as a PDF for their records, and you still issue your own GST tax invoice.'),
+        ('Can I get my data out?', 'Yes. You can export your orders as a CSV file from your workspace whenever you like.'),
+        ('Who can see my catalog and orders?', "Your team sees everything in your workspace. Each client sees your catalog and only their own orders. No other supplier can see your data."),
+        ('Does it work on a phone?', "Yes. Your workspace and the client portal work in any modern browser on a phone, tablet or computer. There's nothing to install."),
+      ] %}
+      <details class="faq__item"{% if loop.first %} open{% endif %}>
+        <summary class="faq__question">{{ question }}<span class="faq__toggle" aria-hidden="true">{{ icon('plus') }}</span></summary>
+        <p class="faq__answer">{{ answer }}</p>
+      </details>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="landing-section" id="contact" aria-labelledby="contact-title">
+  <div class="container contact">
+    <div class="contact__copy">
+      <p class="eyebrow">Contact</p>
+      <h2 class="section-title" id="contact-title">Talk to us</h2>
+      <p class="lead">Tell us what you sell and who you sell to. We reply by email within one working day.</p>
+    </div>
+    <div class="card contact__form">
+      <div class="card__body">
+        {{ flashes() }}
+        {# The #contact fragment opens the page again at the form, errors in view, even without JavaScript #}
+        <form method="post" action="{{ url_for('public.contact', _anchor='contact') }}" class="stack">
+          {{ contact_form.hidden_tag() }}
+          <div class="grid grid--2">
+            {{ field(contact_form.name, autocomplete="name") }}
+            {{ field(contact_form.email, autocomplete="email") }}
+          </div>
+          {{ field(contact_form.company, autocomplete="organization") }}
+          {{ field(contact_form.message, rows=4, hint="For example: packaging supplies to 40 retail stores in Bengaluru.") }}
+          <div class="form-actions">
+            {{ button("Send message", icon_name="send") }}
+            <p class="muted">We use your details only to reply to you.</p>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="cta" aria-labelledby="cta-title">
+  <div class="container">
+    <div class="cta__panel weave" data-reveal>
+      <h2 class="cta__title" id="cta-title">Give your clients a better way to order.</h2>
+      <div class="cta__actions">
+        <a class="btn btn--accent btn--lg" href="{{ signup_url }}">Start free</a>
+        <a class="cta__link" href="#contact">Questions? Talk to us</a>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

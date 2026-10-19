@@ -1,0 +1,12 @@
+{# Block tags sit on their own lines: trim_blocks drops the newline after each one #}
+New enquiry from the {{ app_name }} website
+
+Name: {{ lead.name }}
+Email: {{ lead.email }}
+{% if lead.company %}
+Company: {{ lead.company }}
+{% endif %}
+{% if lead.message %}
+
+{{ lead.message }}
+{% endif %}

@@ -1,0 +1,8 @@
+{% extends "emails/_layout.html" %}
+{% block preheader %}{{ order.client.buyer_company or order.client.full_name }} cancelled {{ order.number }} before it was reviewed.{% endblock %}
+{% block content %}
+<h1 style="margin:0 0 12px;font-size:22px;line-height:1.3;color:#0c1440;">Order {{ order.number }} was cancelled</h1>
+<p style="margin:0;">{{ order.client.full_name }}{% if order.client.buyer_company %} from {{ order.client.buyer_company }}{% endif %} cancelled their order for {{ order.total_paise | inr }} before it was reviewed. There's nothing you need to do.</p>
+{% with label="View order" %}{% include "emails/_button.html" %}{% endwith %}
+{% endblock %}
+{% block footer %}You're receiving this because you're on the {{ order.company.name }} team on {{ app_name }}.{% endblock %}

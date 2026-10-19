@@ -1,0 +1,3 @@
+{{ order.client.full_name }}{% if order.client.buyer_company %} ({{ order.client.buyer_company }}){% endif %} cancelled order {{ order.number }} for {{ order.total_paise | inr }} before it was reviewed.
+
+View the order: {{ link }}

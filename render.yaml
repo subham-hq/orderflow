@@ -1,0 +1,59 @@
+# Render Blueprint: one web service and one Postgres database.
+# Create it from the Render dashboard: New > Blueprint > pick this repository.
+# You'll be asked for the values marked `sync: false`. See docs/deploy.md.
+
+services:
+  - type: web
+    name: orderflow
+    runtime: python
+    region: singapore
+    buildCommand: pip install -r requirements.txt
+    startCommand: ./bin/start.sh
+    healthCheckPath: /healthz
+    autoDeployTrigger: commit
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: PYTHON_VERSION
+        value: "3.12.10"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: orderflow-db
+          property: connectionString
+      - key: MAIL_BACKEND
+        value: resend
+      # One gunicorn worker with eight threads: rate limits are counted in
+      # memory per worker, so one worker keeps every limit exact. To run more
+      # workers or instances, add Render Key Value and set
+      # RATELIMIT_STORAGE_URI (see docs/deploy.md).
+      - key: WEB_CONCURRENCY
+        value: "1"
+      - key: GUNICORN_THREADS
+        value: "8"
+      # Your site address, e.g. https://orderflow.example.com (no trailing slash)
+      - key: APP_BASE_URL
+        sync: false
+      # API key from https://resend.com/api-keys (sending access is enough)
+      - key: RESEND_API_KEY
+        sync: false
+      # Sender on your verified Resend domain, e.g. OrderFlow <orders@example.com>
+      - key: MAIL_FROM
+        sync: false
+      # Inbox that receives landing-page enquiries and is shown in the legal pages
+      - key: CONTACT_EMAIL
+        sync: false
+      # The business that runs the site, shown in the Privacy Policy and Terms
+      - key: LEGAL_NAME
+        sync: false
+
+databases:
+  - name: orderflow-db
+    region: singapore
+    databaseName: orderflow
+    user: orderflow
+    postgresMajorVersion: "17"
+    # No connections from the internet: the web service reaches the database
+    # over Render's private network. See docs/deploy.md to allow your own IP.
+    ipAllowList: []

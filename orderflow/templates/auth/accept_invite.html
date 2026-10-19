@@ -1,0 +1,18 @@
+{% extends "layouts/auth.html" %}
+{% from "macros/ui.html" import field, button %}
+{% block title %}Join {{ invitee.company.name }}{% endblock %}
+{% block content %}
+<p class="auth__eyebrow">{{ invitee.company.name }}</p>
+<h1 class="auth__title">Welcome, {{ invitee.first_name }}</h1>
+<p class="auth__lead">
+  {% if invitee.is_client %}Set a password to start ordering from {{ invitee.company.name }}.
+  {% else %}Set a password to join the {{ invitee.company.name }} workspace.{% endif %}
+  You'll sign in as <strong>{{ invitee.email }}</strong>.
+</p>
+<form method="post" class="stack" novalidate>
+  {{ form.hidden_tag() }}
+  {{ field(form.password, autocomplete="new-password", hint=password_hint, autofocus=True) }}
+  {{ field(form.confirm, autocomplete="new-password") }}
+  {{ button("Set password and continue", class="btn--block") }}
+</form>
+{% endblock %}

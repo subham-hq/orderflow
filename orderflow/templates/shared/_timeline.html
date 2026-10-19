@@ -1,0 +1,14 @@
+{# Status history for an order. Expects `order`. #}
+{% set verbs = {'pending': 'Order placed', 'approved': 'Approved', 'rejected': 'Rejected', 'fulfilled': 'Fulfilled', 'cancelled': 'Cancelled'} %}
+<ol class="timeline">
+  {% for event in order.events | reverse %}
+  <li class="timeline__item timeline__item--{{ event.to_status }}">
+    <span class="timeline__dot" aria-hidden="true"></span>
+    <div class="timeline__body">
+      <p class="timeline__title">{{ verbs.get(event.to_status, event.to_status | title) }}{% if event.actor %} by {{ 'you' if current_user.is_authenticated and event.actor_id == current_user.id else event.actor.full_name }}{% endif %}</p>
+      <p class="timeline__meta"><time datetime="{{ event.created_at | datetime('%Y-%m-%dT%H:%M%z') }}">{{ event.created_at | datetime }}</time></p>
+      {% if event.message %}<p class="timeline__note">{{ event.message }}</p>{% endif %}
+    </div>
+  </li>
+  {% endfor %}
+</ol>

@@ -1,0 +1,102 @@
+{% extends "layouts/app.html" %}
+{% from "macros/ui.html" import icon, button, link_button, page_header, empty_state, pagination %}
+{% from "admin/clients_macros.html" import account_badge, last_sign_in %}
+{% set active_nav = "clients" %}
+{% block title %}Clients{% endblock %}
+{% block topbar_title %}Clients{% endblock %}
+{% block content %}
+{% call page_header("Clients", "The businesses that order from you. Each client gets a private portal to browse your catalog and place orders.") %}
+  {{ link_button("Invite client", url_for('admin.client_invite'), variant="primary", icon_name="user-plus") }}
+{% endcall %}
+
+{% if not total_clients %}
+<div class="card">
+  {{ empty_state("Invite your first client", "Add a buyer by email. They'll get a link to set a password, then they can browse your catalog and send you purchase orders.", url_for('admin.client_invite'), "Invite a client", icon_name="users", action_variant="secondary") }}
+</div>
+{% else %}
+<section class="stack" aria-label="Clients">
+  <nav class="tabs" aria-label="Filter by status">
+    {% for key, label in [("", "All"), ("active", "Active"), ("invited", "Invited"), ("suspended", "Suspended")] %}
+    <a class="tab{% if status == key %} is-active{% endif %}" href="{{ url_for('admin.clients', q=q or None, status=key or None) }}"{% if status == key %} aria-current="page"{% endif %}>{{ label }} <span class="muted">{{ counts[key] }}</span></a>
+    {% endfor %}
+  </nav>
+
+  <form method="get" action="{{ url_for('admin.clients') }}" class="toolbar" role="search">
+    <div class="search">
+      {{ icon('search') }}
+      <label class="visually-hidden" for="client-search">Search clients</label>
+      <input class="input" type="search" id="client-search" name="q" value="{{ q }}" maxlength="100" placeholder="Search by name, email or business">
+    </div>
+    {% if status %}<input type="hidden" name="status" value="{{ status }}">{% endif %}
+    {{ button("Search", variant="secondary") }}
+    {% if filtering %}<a class="text-link" href="{{ url_for('admin.clients') }}">Clear filters</a>{% endif %}
+  </form>
+
+  {% if page.items %}
+  <div class="card card--flush">
+    <div class="table-wrap">
+      <table class="table table--stack table--clients">
+        <caption class="visually-hidden">Clients, sorted by business name</caption>
+        <thead>
+          <tr>
+            <th scope="col">Client</th>
+            <th scope="col">Email</th>
+            <th scope="col">Status</th>
+            <th scope="col" class="num">Orders</th>
+            <th scope="col">Last sign-in</th>
+            <th scope="col"><span class="visually-hidden">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for person in page.items %}
+          <tr{% if not person.active %} class="is-muted"{% endif %}>
+            <td>
+              <a class="table__primary text-link" href="{{ url_for('admin.client_detail', user_id=person.id) }}">{{ person.buyer_company or person.full_name }}</a>
+              {% if person.buyer_company %}<span class="table__secondary">{{ person.full_name }}</span>{% endif %}
+            </td>
+            <td><a class="text-link" href="mailto:{{ person.email }}">{{ person.email }}</a></td>
+            <td>
+              {{ account_badge(person) }}
+              {% if person.active and not person.has_accepted_invite and person.invite_sent_at %}<span class="table__secondary">Invited {{ person.invite_sent_at | timeago }}</span>{% endif %}
+            </td>
+            <td class="num">{{ "{:,}".format(order_counts.get(person.id, 0)) }}</td>
+            <td class="nowrap">{{ last_sign_in(person) }}</td>
+            <td class="text-right nowrap">
+              <div class="cluster">
+                {{ link_button("View", url_for('admin.client_detail', user_id=person.id), variant="ghost", size="sm", icon_name="eye") }}
+                {{ link_button("Edit", url_for('admin.client_edit', user_id=person.id), variant="ghost", size="sm", icon_name="edit") }}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="split">
+    <p class="muted">Showing {{ page.first }}–{{ page.last }} of {{ page.total }} client{{ "" if page.total == 1 else "s" }}</p>
+    {{ pagination(page, 'admin.clients') }}
+  </div>
+  {% elif status and counts[""] %}
+  {# The search finds clients, just none with this status #}
+  {% set matching = counts[""] %}
+  <div class="card">
+    {% if q %}
+    {{ empty_state("No " ~ status ~ " clients match your search", "Your search matches " ~ "{:,}".format(matching) ~ (" client" if matching == 1 else " clients") ~ ", but " ~ ("they aren't " if matching == 1 else "none of them are ") ~ status ~ ".", url_for('admin.clients', q=q), "Show all matching clients", icon_name="search", action_variant="secondary") }}
+    {% else %}
+    {% set tab_text = {
+      "active": "No one has accepted an invitation yet. Clients show here once they set a password and can sign in.",
+      "invited": "Everyone you've invited has accepted. Clients you invite show here until they set a password.",
+      "suspended": "No one is suspended. Clients you suspend are listed here, and you can reactivate them any time.",
+    } %}
+    {{ empty_state("No " ~ status ~ " clients", tab_text[status], url_for('admin.clients'), "Show all clients", icon_name="users", action_variant="secondary") }}
+    {% endif %}
+  </div>
+  {% else %}
+  <div class="card">
+    {{ empty_state("No clients match", "Try a different search or status, or clear the filters to see everyone.", url_for('admin.clients'), "Clear filters", icon_name="search", action_variant="secondary") }}
+  </div>
+  {% endif %}
+</section>
+{% endif %}
+{% endblock %}

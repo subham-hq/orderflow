@@ -1,0 +1,14 @@
+{# Block tags sit on their own lines: trim_blocks drops the newline after each one #}
+Hi {{ user.first_name }},
+
+{% if user.is_client %}
+{{ inviter_name }} at {{ user.company.name }} has set up an {{ app_name }} account for {{ user.buyer_company or 'you' }}. You can browse their catalog, place purchase orders and track them in one place.
+{% else %}
+{{ inviter_name }} invited you to help manage orders for {{ user.company.name }} on {{ app_name }}.
+{% endif %}
+
+Accept the invitation and choose a password here:
+
+{{ link }}
+
+This link works for 7 days.

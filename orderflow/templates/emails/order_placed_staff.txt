@@ -1,0 +1,15 @@
+{# Block tags sit on their own lines: trim_blocks drops the newline after each one #}
+New order {{ order.number }} from {{ order.client.full_name }}{% if order.client.buyer_company %} ({{ order.client.buyer_company }}){% endif %}.
+
+{% for item in order.items %}
+- {{ item.quantity }} x {{ item.name }} ({{ item.sku }}): {{ item.line_subtotal_paise | inr }}
+{% endfor %}
+
+Total: {{ order.total_paise | inr }}
+{% if order.notes %}
+
+Notes:
+{{ order.notes }}
+{% endif %}
+
+Review it: {{ link }}

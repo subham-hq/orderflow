@@ -1,0 +1,120 @@
+{% extends "layouts/app.html" %}
+{% from "macros/ui.html" import icon, button, link_button, post_button, page_header, badge, money, empty_state, pagination %}
+{% set active_nav = "products" %}
+{% block title %}Catalog{% endblock %}
+{% block topbar_title %}Catalog{% endblock %}
+{% block content %}
+{% call page_header("Catalog", "The products your clients can see and order in their portal.") %}
+  {{ link_button("Import CSV", url_for('admin.products_import'), variant="secondary") }}
+  {% if total_products %}{{ link_button("Export CSV", url_for('admin.products_export'), variant="secondary", icon_name="download") }}{% endif %}
+  {{ link_button("New product", url_for('admin.product_new'), variant="primary", icon_name="plus") }}
+{% endcall %}
+
+{% if not total_products %}
+<div class="card">
+  <div class="card__body stack">
+    {{ empty_state("Add your first product", "Your catalog is what clients browse when they place an order. Add products one at a time, or import them all from a spreadsheet.", url_for('admin.product_new'), "Add a product", action_variant="secondary") }}
+    <p class="muted">Have a spreadsheet already? <a class="text-link" href="{{ url_for('admin.products_import') }}">Import a CSV file</a>.</p>
+  </div>
+</div>
+{% else %}
+<section class="stack" aria-label="Products">
+  <nav class="tabs" aria-label="Filter by status">
+    {% for key, label in [("", "All"), ("active", "Active"), ("hidden", "Hidden")] %}
+    <a class="tab{% if status == key %} is-active{% endif %}" href="{{ url_for('admin.products', q=q or None, category=category or None, status=key or None) }}"{% if status == key %} aria-current="page"{% endif %}>{{ label }} <span class="muted">{{ counts[key] }}</span></a>
+    {% endfor %}
+  </nav>
+
+  <form method="get" action="{{ url_for('admin.products') }}" class="toolbar" role="search">
+    <div class="search">
+      {{ icon('search') }}
+      <label class="visually-hidden" for="product-search">Search products</label>
+      <input class="input" type="search" id="product-search" name="q" value="{{ q }}" maxlength="100" placeholder="Search by name, SKU or description">
+    </div>
+    <label class="visually-hidden" for="product-category">Category</label>
+    <select class="select" id="product-category" name="category" data-autosubmit>
+      <option value="">All categories</option>
+      {% for name in categories %}
+      <option value="{{ name }}"{% if name == category %} selected{% endif %}>{{ name }}</option>
+      {% endfor %}
+      {% if category and category not in categories %}
+      <option value="{{ category }}" selected>{{ category }}</option>
+      {% endif %}
+    </select>
+    {% if status %}<input type="hidden" name="status" value="{{ status }}">{% endif %}
+    {{ button("Search", variant="secondary") }}
+    {% if filtering %}<a class="text-link" href="{{ url_for('admin.products') }}">Clear filters</a>{% endif %}
+  </form>
+
+  {% if page.items %}
+  <div class="card card--flush">
+    <div class="table-wrap">
+      <table class="table table--stack table--products">
+        <caption class="visually-hidden">Products, sorted by name</caption>
+        <thead>
+          <tr>
+            <th scope="col">Product</th>
+            <th scope="col">Category</th>
+            <th scope="col">Unit</th>
+            <th scope="col" class="num">Price</th>
+            <th scope="col" class="num">GST</th>
+            <th scope="col">Status</th>
+            <th scope="col"><span class="visually-hidden">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for product in page.items %}
+          <tr{% if not product.is_active %} class="is-muted"{% endif %}>
+            <td>
+              <a class="table__primary text-link" href="{{ url_for('admin.product_edit', product_id=product.id) }}">{{ product.name }}</a>
+              <span class="table__secondary mono">{{ product.sku }}</span>
+            </td>
+            <td>{% if product.category %}{{ product.category }}{% else %}<span class="muted">No category</span>{% endif %}</td>
+            <td class="nowrap">{{ product.unit }}</td>
+            <td class="num">{{ money(product.price_paise) }}</td>
+            <td class="num">{{ product.gst_rate_bp | gst }}</td>
+            <td>{% if product.is_active %}{{ badge("Active", "success") }}{% else %}{{ badge("Hidden", "neutral") }}{% endif %}</td>
+            <td class="text-right nowrap">
+              <div class="cluster">
+                {{ link_button("Edit", url_for('admin.product_edit', product_id=product.id), variant="ghost", size="sm", icon_name="edit") }}
+                {% if product.is_active %}
+                {{ post_button(url_for('admin.product_status', product_id=product.id), "Hide", variant="ghost", size="sm", icon_name="eye-off", fields={"active": 0, "next": request.full_path}) }}
+                {% else %}
+                {{ post_button(url_for('admin.product_status', product_id=product.id), "Show", variant="ghost", size="sm", icon_name="eye", fields={"active": 1, "next": request.full_path}) }}
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="split">
+    <p class="muted">Showing {{ page.first }}–{{ page.last }} of {{ page.total }} product{{ "" if page.total == 1 else "s" }}</p>
+    {{ pagination(page, 'admin.products') }}
+  </div>
+  {% elif status and counts[""] %}
+  {# The search or category finds products, just none with this status #}
+  {% set matching = counts[""] %}
+  {% set products_word = "product" if matching == 1 else "products" %}
+  {% set none_are = ("it isn't " if matching == 1 else "none of them are ") ~ status %}
+  <div class="card">
+    {% if q %}
+    {{ empty_state("No " ~ status ~ " products match your search", "Your search matches " ~ "{:,}".format(matching) ~ " " ~ products_word ~ ", but " ~ none_are ~ ".", url_for('admin.products', q=q, category=category or None), "Show all matching products", icon_name="search", action_variant="secondary") }}
+    {% elif category %}
+    {{ empty_state("No " ~ status ~ " products in “" ~ category ~ "”", "“" ~ category ~ "” has " ~ "{:,}".format(matching) ~ " " ~ products_word ~ ", but " ~ none_are ~ ".", url_for('admin.products', category=category), "Show all of “" ~ category ~ "”", icon_name="tag", action_variant="secondary") }}
+    {% elif status == "hidden" %}
+    {{ empty_state("No hidden products", "Every product in your catalog is visible to clients. When you hide a product, it's listed here until you show it again.", url_for('admin.products'), "Show all products", icon_name="eye-off", action_variant="secondary") }}
+    {% else %}
+    {{ empty_state("No active products", "Every product is hidden from clients right now, so they can't order anything. Show a product to put it back in their catalog.", url_for('admin.products', status="hidden"), "Show hidden products", icon_name="eye", action_variant="secondary") }}
+    {% endif %}
+  </div>
+  {% else %}
+  <div class="card">
+    {{ empty_state("No products match", "Try a different search or category, or clear the filters to see your whole catalog.", url_for('admin.products'), "Clear filters", icon_name="search", action_variant="secondary") }}
+  </div>
+  {% endif %}
+</section>
+{% endif %}
+{% endblock %}

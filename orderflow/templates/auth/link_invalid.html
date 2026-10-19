@@ -1,0 +1,9 @@
+{% extends "layouts/auth.html" %}
+{% from "macros/ui.html" import icon, link_button %}
+{% block title %}Link not valid{% endblock %}
+{% block content %}
+<div class="auth__icon auth__icon--warning">{{ icon('alert') }}</div>
+<h1 class="auth__title">This link can't be used</h1>
+<p class="auth__lead">{{ message }}</p>
+{{ link_button(action_label, action_url, variant="primary", class="btn--block") }}
+{% endblock %}

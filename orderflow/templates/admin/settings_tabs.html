@@ -1,0 +1,6 @@
+{# Tabs shared by the settings pages. Expects settings_tab ("company" or "profile"). #}
+<nav class="tabs" aria-label="Settings">
+  {% for key, endpoint, label in [("company", "admin.settings", "Company"), ("profile", "admin.profile", "Your profile")] %}
+  <a class="tab{% if settings_tab == key %} is-active{% endif %}" href="{{ url_for(endpoint) }}"{% if settings_tab == key %} aria-current="page"{% endif %}>{{ label }}</a>
+  {% endfor %}
+</nav>

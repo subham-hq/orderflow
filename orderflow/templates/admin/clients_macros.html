@@ -1,0 +1,14 @@
+{# Account helpers shared by the client and team pages. #}
+{% from "macros/ui.html" import badge %}
+
+{# Active / Invited / Suspended, matching services.clients.account_status() #}
+{% macro account_badge(user) -%}
+{% if not user.active %}{{ badge("Suspended", "danger") }}
+{% elif not user.has_accepted_invite %}{{ badge("Invited", "info") }}
+{% else %}{{ badge("Active", "success") }}{% endif %}
+{%- endmacro %}
+
+{# Last sign-in as "3 days ago" (exact time on hover), or "Never" #}
+{% macro last_sign_in(user) -%}
+{% if user.last_login_at %}<span title="{{ user.last_login_at | datetime }}">{{ user.last_login_at | timeago }}</span>{% else %}<span class="muted">Never</span>{% endif %}
+{%- endmacro %}

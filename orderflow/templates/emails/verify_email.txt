@@ -1,0 +1,7 @@
+Hi {{ user.first_name }},
+
+Thanks for creating the {{ user.company.name }} workspace on {{ app_name }}. Confirm your email address by opening this link:
+
+{{ link }}
+
+This link works for 3 days. If you didn't sign up, you can ignore this email.

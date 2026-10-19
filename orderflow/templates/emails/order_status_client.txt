@@ -1,0 +1,19 @@
+{# Block tags sit on their own lines: trim_blocks drops the newline after each one #}
+Hi {{ order.client.first_name }},
+
+{% if to_status == 'approved' %}
+{{ order.company.name }} approved your order {{ order.number }} for {{ order.total_paise | inr }}.
+{% elif to_status == 'fulfilled' %}
+{{ order.company.name }} has fulfilled your order {{ order.number }}.
+{% elif to_status == 'rejected' %}
+{{ order.company.name }} couldn't accept your order {{ order.number }}.
+{% else %}
+Your order {{ order.number }} was cancelled by {{ order.company.name }}.
+{% endif %}
+{% if message %}
+
+Note from {{ order.company.name }}:
+{{ message }}
+{% endif %}
+
+View the order: {{ link }}
