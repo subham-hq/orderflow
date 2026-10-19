@@ -2,8 +2,10 @@ name: CI
 
 on:
   push:
-    branches: [main, v2]
+    branches: [main]
   pull_request:
+  # Lets you start a run from the Actions tab ("Run workflow")
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.ref }}
