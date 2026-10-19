@@ -19,26 +19,36 @@ on every line and a full history of who did what.
   reason, with a timeline of every change
 - Product catalog with GST slabs, units and categories, plus CSV import and
   export
-- Invite clients and teammates by email; suspend or reactivate them at any
-  time (suspension signs them out everywhere)
+- Invite clients and teammates by email (invitations are rate limited per
+  person and per workspace); suspend or reactivate them at any time, and
+  suspension signs them out everywhere
+- Change a client's or your own sign-in email safely: the new address has to
+  confirm a link before the switch
 - Bulletins shown on client dashboards, with expiry dates in your time zone
 - Company settings: legal name, GSTIN, address, support contact, time zone
   and order number prefix
 
 **For their clients**
 
-- A private portal with the supplier's live catalog, search and categories
+- A private portal with the supplier's live catalog, search and category
+  filters with product counts
 - Cart with quantities, GST and totals; protected against double submits
-- Order history, status updates by email, cancel while pending, one-click
-  reorder, and printable proforma invoices
+- Order history with an Open tab, status updates by email (replies go to
+  the supplier), cancel while pending, one-click reorder, and printable
+  proforma invoices
 
 **Security**
 
 - Every supplier's data is isolated; records from another company are never
   reachable
 - Email verification, password reset by email, invite-only client accounts
-- Passwords hashed, strength-checked; sign-in is rate limited
-- Changing a password or suspending an account ends every other session
+- Passwords hashed and strength-checked; only wrong passwords count toward
+  the sign-in limit, per account and network, so nobody can lock you out
+- Changing a password or suspending an account ends every other session, and
+  the account holder gets an email whenever their password changes
+- Idle sessions end after 12 hours; signing out also clears "keep me signed in"
+- Emailed links (verification, reset, invitation) are single-use, expire, and
+  are kept out of the server's access log
 - CSRF protection on every form, a strict Content Security Policy, secure
   cookies and HSTS in production
 
