@@ -6,7 +6,7 @@ import pytest
 
 from orderflow import create_app
 from orderflow.errors import wait_message
-from orderflow.extensions import db
+from orderflow.extensions import db, limiter
 from tests.conftest import FreshContextClient
 
 
@@ -28,10 +28,12 @@ def limit_page(response):
 
 
 def test_the_limit_page_says_how_long_an_hour_long_limit_lasts(limited_app):
+    limiter.reset()
     client = limited_app.test_client()
-    for _ in range(5):
-        assert client.post("/forgot-password", data={"email": "nobody@example.com"}).status_code == 200
-    response = client.post("/forgot-password", data={"email": "nobody@example.com"})
+    # Different addresses, so the per-address limit (3 an hour) never trips first
+    for n in range(5):
+        assert client.post("/forgot-password", data={"email": f"nobody{n}@example.com"}).status_code == 200
+    response = client.post("/forgot-password", data={"email": "nobody9@example.com"})
     page = limit_page(response)
     assert "Please wait an hour and try again." in page
     assert "a minute" not in page
@@ -39,14 +41,26 @@ def test_the_limit_page_says_how_long_an_hour_long_limit_lasts(limited_app):
 
 
 def test_the_limit_page_for_sign_in_matches_the_limit_that_was_hit(limited_app):
+    limiter.reset()
     client = limited_app.test_client()
     wrong = {"email": "owner@example.com", "password": "not the password"}
-    # Ten tries for one address from ten places: the 15-minute per-address limit
-    for n in range(10):
-        client.post("/login", data=wrong, environ_base={"REMOTE_ADDR": f"203.0.113.{n}"})
-    response = client.post("/login", data=wrong, environ_base={"REMOTE_ADDR": "203.0.113.99"})
-    assert "Please wait 15 minutes and try again." in limit_page(response)
+    # Ten wrong passwords for one account from one place trip the limits for
+    # that place; the page must describe the wait the response actually sets
+    for _ in range(10):
+        client.post("/login", data=wrong, environ_base={"REMOTE_ADDR": "203.0.113.5"})
+    response = client.post("/login", data=wrong, environ_base={"REMOTE_ADDR": "203.0.113.5"})
+    retry_after = int(response.headers["Retry-After"])
+    assert 0 < retry_after <= 15 * 60
+    assert wait_message(retry_after) in limit_page(response)
 
+    # Wrong passwords sent from elsewhere never lock the account out here
+    assert client.post("/login", data=wrong, environ_base={"REMOTE_ADDR": "192.0.2.44"}).status_code == 200
+
+
+def test_the_limit_page_for_many_accounts_from_one_place_says_a_minute(limited_app):
+    limiter.reset()
+    client = limited_app.test_client()
+    wrong = {"email": "owner@example.com", "password": "not the password"}
     # Ten tries from one place for different addresses: the one-minute per-IP limit
     for n in range(10):
         client.post(
