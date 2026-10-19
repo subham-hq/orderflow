@@ -8,6 +8,12 @@ from orderflow.extensions import db
 from orderflow.mail import outbox
 from tests import factories
 
+# Import every module create_app() would load, before any test runs. Modules
+# that do `from .timeutil import utcnow` bind the function on first import, so
+# if that first import happened inside a test that patches timeutil.utcnow,
+# the patched clock would stick for the rest of the session.
+create_app("testing")
+
 
 class FreshContextClient(FlaskClient):
     """Run every request in its own app context, as in production.
@@ -22,6 +28,23 @@ class FreshContextClient(FlaskClient):
             response = super().open(*args, **kwargs)
         db.session.expire_all()  # let the test see what the request changed
         return response
+
+
+@pytest.fixture(autouse=True)
+def healthy_rate_limiter():
+    """Start every test with the rate limiter's storage marked as working.
+
+    Flask-Limiter keeps one "storage is down, use the in-memory fallback" flag
+    on the shared limiter object, and every app in the test session reuses it.
+    A test that breaks the storage on purpose would otherwise leave later
+    tests counting in a different place, recovering on a timer part-way
+    through, and failing or passing depending on how fast the suite runs.
+    """
+    from orderflow.extensions import limiter
+
+    limiter._storage_dead = False
+    yield
+    limiter._storage_dead = False
 
 
 @pytest.fixture
