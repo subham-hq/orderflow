@@ -57,7 +57,13 @@ def prefilled_phone(page):
 @pytest.mark.parametrize("phone", STAFF_ONLY_BEFORE)
 def test_a_number_staff_saved_never_stops_the_client_saving_their_details(app, owner, buyer, phone):
     staff = sign_in(app, owner)
-    edit = {"first_name": "Ananya", "last_name": "", "buyer_company": "Buyer Pvt Ltd", "phone": phone}
+    edit = {
+        "first_name": "Ananya",
+        "last_name": "",
+        "buyer_company": "Buyer Pvt Ltd",
+        "email": buyer.email,
+        "phone": phone,
+    }
     assert staff.post(f"/app/clients/{buyer.id}/edit", data=edit).status_code == 302
     assert stored(buyer).phone == phone
 
