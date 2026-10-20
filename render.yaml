@@ -6,6 +6,9 @@ services:
   - type: web
     name: orderflow
     runtime: python
+    # Free plan: no card needed, but the service sleeps after about 15 idle
+    # minutes. Change to a paid plan (e.g. starter) for an always-on service.
+    plan: free
     region: singapore
     buildCommand: pip install -r requirements.txt
     startCommand: ./bin/start.sh
@@ -50,6 +53,9 @@ services:
 
 databases:
   - name: orderflow-db
+    # Free plan: expires 30 days after it's created, and its data goes with it.
+    # See "Running on the free plan" in docs/deploy.md to reset or upgrade.
+    plan: free
     region: singapore
     databaseName: orderflow
     user: orderflow

@@ -49,9 +49,9 @@ Your sender address must be on the verified domain, for example
    development settings and a public key, and in production it refuses to
    start without `DATABASE_URL` rather than keep orders in a SQLite file that
    the next deploy deletes.
-4. Choose instance types. The free web service sleeps when it's idle and free
-   Render Postgres databases expire, so use paid instances for a public
-   launch.
+4. The Blueprint uses Render's **free** plans, so no card is needed. Read
+   [Running on the free plan](#running-on-the-free-plan) for what that
+   means, and how to switch to paid plans for a public launch.
 5. Click **Apply**. Render installs the dependencies, and on every start
    `bin/start.sh` applies database migrations and then starts gunicorn.
    Render checks `/healthz` before sending traffic to a new deploy.
@@ -84,6 +84,35 @@ Your sender address must be on the verified domain, for example
 Don't run `flask seed-demo` on production; it creates a demo company with
 sample data and known passwords. Use it locally or on a separate staging
 service.
+
+## Running on the free plan
+
+`render.yaml` sets `plan: free` on the web service and the database.
+
+- **The web service sleeps** after about 15 minutes without visitors. The
+  next visit wakes it, which takes up to about a minute.
+- **The database expires 30 days after it's created.** Render emails you
+  before it does. Everything in it (accounts, products, orders) is lost
+  when it's deleted.
+- The web service's **Shell** tab isn't available on free instances, so
+  commands such as `flask leads` can't be run there. Enquiries still reach
+  `CONTACT_EMAIL` by email.
+
+To start again with a fresh database when it expires:
+
+1. In Render, open **orderflow-db → Settings → Delete Database**.
+2. Open **Blueprints → orderflow** and click **Manual Sync**. Render creates
+   a new free database and connects `DATABASE_URL` to it again.
+3. Open the **orderflow** web service and choose **Manual Deploy → Deploy
+   latest commit**. On start, `bin/start.sh` creates the tables in the new
+   database.
+4. Sign up again on the site.
+
+To keep the data and stop the site sleeping, upgrade instead: change both
+`plan: free` lines in `render.yaml` to paid plans (for example `starter`
+for the web service and `basic-256mb` for the database) and push, or pick
+the instance types in each service's **Settings**. Render asks for a card
+once.
 
 ## Operating the service
 
